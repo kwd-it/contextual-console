@@ -78,9 +78,25 @@ Use **Cursor** (or similar) with a **focused prompt** that covers only the curre
 
 **Iterate freely:** prompt, change, run tests or manual checks, refine. Do not worry about commit message polish during iteration.
 
-### 4. Test the result
+### 4. Review changes (before testing)
 
-After implementation:
+After Cursor completes a task, review the actual file changes before running tests.
+
+Minimum checks:
+
+- `git status`
+- `git diff --stat`
+- Inspect any unexpected files with `git diff`
+
+Guidance:
+
+- Do not assume all AI-generated changes should be kept.
+- Keep meaningful changes (feature logic, relevant tests, docs).
+- Remove unrelated or accidental changes before proceeding.
+
+### 5. Test the result
+
+After review:
 
 - Run automated tests (`composer test` / `php artisan test` / Pest as configured in the repo).
 - Manually exercise critical paths (browser, API client, queue worker) when the change touches UX, auth, or async behaviour.
@@ -89,7 +105,7 @@ After implementation:
 
 Fixes found during testing do not change the eventual **commit type** (see below).
 
-### 5. Impact review before merge
+### 6. Impact review before merge
 
 Before merging to `main`:
 
@@ -97,7 +113,7 @@ Before merging to `main`:
 - Confirm **README** and, when shipping, **CHANGELOG** still match reality.
 - Confirm **no unintended breaking changes**, or that they are versioned and called out in release notes.
 
-### 6. Commit the feature or fix
+### 7. Commit the feature or fix
 
 Once behaviour is correct, choose the commit type from the **final** outcome, not iteration history:
 
@@ -112,7 +128,7 @@ Example:
 feat(change-log): include actor id on recorded changes
 ```
 
-### 7. Decide version bump (on the branch)
+### 8. Decide version bump (on the branch)
 
 Follow **semantic versioning** in spirit:
 
@@ -124,7 +140,7 @@ Follow **semantic versioning** in spirit:
 
 Document any intentional breakage in **CHANGELOG** and briefly in **README** if users must act.
 
-### 8. Bump version and docs
+### 9. Bump version and docs
 
 When cutting a release, update as applicable for this project:
 
@@ -138,7 +154,7 @@ Prefer a **separate** release-style commit, for example:
 chore(release): v0.2.0
 ```
 
-### 9. Merge, tag, clean up
+### 10. Merge, tag, clean up
 
 Merge the branch into `main`, **tag** the release on `main` if you version that way, delete the feature branch.
 
