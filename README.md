@@ -10,7 +10,7 @@ The long-term focus is operational visibility across many properties: change his
 
 ## Current status
 
-**v0.1.0** — early foundation. The app is a standard Laravel project with a small slice of domain and platform structure in place.
+**v0.1.1** — early foundation plus automatic logging of plot price changes when comparing two plot payloads.
 
 ## Implemented foundation
 
@@ -18,7 +18,7 @@ The long-term focus is operational visibility across many properties: change his
 |------|-------------------|
 | **Model** | `App\Core\Models\ChangeLog` — stores entity type/id, field name, old/new values, and `changed_at`. |
 | **Database** | `change_logs` table (see `database/migrations/2026_04_09_052942_create_change_logs_table.php`). |
-| **Service** | `App\Domains\Housebuilder\Services\ChangeDetectionService` — `record($model, $field, $old, $new)` persists a row via `ChangeLog`. |
+| **Services** | `ChangeDetectionService` (`record`, `recordPlotPrice`) and `PlotChangeDetector::detect` for comparing two plot payloads and logging price changes via `ChangeLog`. |
 
 Everything else is default Laravel scaffolding (auth migrations, queue/cache tables, welcome UI, tests).
 
