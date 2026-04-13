@@ -16,9 +16,19 @@ class ChangeDetectionService
 
     public function record($model, $field, $old, $new)
     {
+        return $this->write(class_basename($model), $model->id, $field, $old, $new);
+    }
+
+    public function recordPlotPrice(int|string $plotId, mixed $oldPrice, mixed $newPrice): ChangeLog
+    {
+        return $this->write('plot', $plotId, 'price', $oldPrice, $newPrice);
+    }
+
+    private function write(string $entityType, int|string $entityId, string $field, mixed $old, mixed $new): ChangeLog
+    {
         return ChangeLog::create([
-            'entity_type' => class_basename($model),
-            'entity_id' => $model->id,
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
             'field' => $field,
             'old_value' => $old,
             'new_value' => $new,
