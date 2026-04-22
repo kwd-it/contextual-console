@@ -22,6 +22,7 @@ class PlotChangeDetector
             return;
         }
 
+        // Canonical plot key: the plot payload's `id` field (see PlotDatasetComparisonService::plotsById).
         $this->changeDetection->recordPlotPrice($plotId, $oldPrice, $newPrice);
     }
 }

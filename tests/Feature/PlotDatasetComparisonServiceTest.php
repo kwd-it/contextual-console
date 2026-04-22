@@ -36,6 +36,7 @@ it('summarises added, removed, unchanged, and price-changed plots', function () 
 
     expect(ChangeLog::count())->toBe(1);
     $log = ChangeLog::first();
+    expect($log->entity_type)->toBe('plot');
     expect((int) $log->entity_id)->toBe(1);
     expect($log->field)->toBe('price');
 });
