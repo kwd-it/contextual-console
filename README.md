@@ -10,7 +10,7 @@ The long-term focus is operational visibility across many properties: change his
 
 ## Current status
 
-**v0.1.1** — early foundation plus automatic logging of plot price changes when comparing two plot payloads.
+**v0.1.2** — dataset-level plot comparison (added, removed, changed, unchanged summaries by plot `id`; matched plots still price-only via `PlotChangeDetector`) plus consistent plot price logging through `recordDomainField` (`entity_type` `plot`, `entity_id` from the dataset). `record()` remains for model-style change records.
 
 ## Implemented foundation
 
@@ -18,7 +18,7 @@ The long-term focus is operational visibility across many properties: change his
 |------|-------------------|
 | **Model** | `App\Core\Models\ChangeLog` — stores entity type/id, field name, old/new values, and `changed_at`. |
 | **Database** | `change_logs` table (see `database/migrations/2026_04_09_052942_create_change_logs_table.php`). |
-| **Services** | `ChangeDetectionService` (`record`, `recordPlotPrice`) and `PlotChangeDetector::detect` for comparing two plot payloads and logging price changes via `ChangeLog`. |
+| **Services** | `ChangeDetectionService` (`record`, `recordDomainField`, `recordPlotPrice`), `PlotChangeDetector`, and `PlotDatasetComparisonService` for dataset-level plot comparison and price logging on matched plots via `ChangeLog`. |
 
 Everything else is default Laravel scaffolding (auth migrations, queue/cache tables, welcome UI, tests).
 
