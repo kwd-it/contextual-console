@@ -1,16 +1,22 @@
 # Contextual Console
 
-**Contextual Console** is an observability and intelligence platform for structured digital properties. It aims to give teams a clearer picture of what changed, what looks wrong, and where data or behaviour may be inconsistent.
+**Contextual Console** is an early-stage Laravel application for recording and reviewing changes in structured datasets. It aims to help teams answer: what changed, what looks inconsistent, and what might need investigation.
 
 The first vertical is **housebuilders**; domain-specific logic lives alongside shared platform code.
 
 ## Product direction
 
-The long-term focus is operational visibility across many properties: change history, data quality signals, and health of feeds or sync paths—not a single-site CMS replacement.
+The long-term focus is operational visibility across many properties: change history and consistency signals—not a single-site CMS replacement.
 
 ## Current status
 
-**v0.1.2** — dataset-level plot comparison (added, removed, changed, unchanged summaries by plot `id`; matched plots still price-only via `PlotChangeDetector`) plus consistent plot price logging through `recordDomainField` (`entity_type` `plot`, `entity_id` from the dataset). `record()` remains for model-style change records.
+**v0.1.3** — dataset-level plot comparison and run flow:
+
+- **Change logging contract**: stable domain-style change logging via `ChangeDetectionService::recordDomainField()` with `entity_type=plot` and `entity_id` set to the canonical plot dataset `id`.
+- **Presence changes**: added/removed plots are logged as `ChangeLog` rows with `field=presence`.
+- **Matched plot changes**: matched plots are no longer price-only; a small explicit whitelist of comparable fields is logged (currently `price` and `status`), and each changed field is logged separately.
+- **Run flow persisted**: a per-source snapshot + comparison run flow exists via `MonitoredSource`, `DatasetSnapshot`, and `DatasetComparisonRun`, with persisted run summaries.
+- **Manual ingest**: an internal/dev artisan command can run a monitored source from a supplied JSON payload file (uses the same run flow).
 
 ## Implemented foundation
 
@@ -18,7 +24,9 @@ The long-term focus is operational visibility across many properties: change his
 |------|-------------------|
 | **Model** | `App\Core\Models\ChangeLog` — stores entity type/id, field name, old/new values, and `changed_at`. |
 | **Database** | `change_logs` table (see `database/migrations/2026_04_09_052942_create_change_logs_table.php`). |
-| **Services** | `ChangeDetectionService` (`record`, `recordDomainField`, `recordPlotPrice`), `PlotChangeDetector`, and `PlotDatasetComparisonService` for dataset-level plot comparison and price logging on matched plots via `ChangeLog`. |
+| **Models (run flow)** | `App\Core\Models\MonitoredSource`, `DatasetSnapshot`, `DatasetComparisonRun` — persisted per-source snapshots and comparison runs. |
+| **Services** | `ChangeDetectionService` (`record`, `recordDomainField`, `recordPlotPrice`), `PlotDatasetComparisonService`, `PlotChangeDetector` (whitelisted fields), `PlotDatasetPresenceChangeLogger`, `PlotDatasetRunService` (snapshot + compare + persist summary). |
+| **Command (internal)** | `php artisan contextual-console:run-plot-source {sourceKey} --file=/path/to/payload.json` — run a monitored source from a JSON payload file. |
 
 Everything else is default Laravel scaffolding (auth migrations, queue/cache tables, welcome UI, tests).
 
@@ -28,6 +36,17 @@ Everything else is default Laravel scaffolding (auth migrations, queue/cache tab
 - **`app/Domains/Housebuilder`** — housebuilder-specific services and future domain code.
 
 This split is intentional so additional verticals can follow the same pattern later.
+
+## Run flow (high level)
+
+For Housebuilder plot datasets, the current flow is:
+
+- **Monitored source** (`MonitoredSource`): identifies a dataset feed/source by a stable `key` (e.g. `hb:foo`).
+- **Snapshot** (`DatasetSnapshot`): a persisted capture of the source payload (array of plots keyed by plot `id` for comparison purposes).
+- **Comparison run** (`DatasetComparisonRun`):
+  - **Baseline**: the first snapshot for a given source creates a run with `status=baseline` (no comparison summary).
+  - **Completed**: subsequent snapshots compare the current payload to the immediately previous snapshot for the same source, write change logs, and persist a summary (`added`, `removed`, `changed`, `unchanged`, plus `added_ids`/`removed_ids`).
+- **Change logs** (`ChangeLog`): field-level records for matched plot changes (whitelisted fields) and dataset presence changes (`field=presence`).
 
 ## Near-term roadmap
 
@@ -101,6 +120,19 @@ Manual steps:
    ```bash
    composer test
    ```
+
+## Manual ingest (internal/dev)
+
+Run a Housebuilder plot monitored source from a supplied JSON payload file:
+
+```bash
+php artisan contextual-console:run-plot-source hb:foo --file=storage/app/test-payload-1.json
+```
+
+Notes:
+
+- The JSON file must be a **top-level array** of plot objects and each plot must include an `id`.
+- The monitored source must already exist in the database (`monitored_sources.key=hb:foo`); this command does not create it.
 
 ## License
 

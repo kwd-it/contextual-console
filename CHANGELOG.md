@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-04-23
+
+### Added
+
+- Added/removed plots are now logged as presence changes using the stable domain change log contract (`entity_type=plot`, `entity_id` = canonical dataset plot `id`, `field=presence`).
+- A persisted per-source run flow now exists: `MonitoredSource` → `DatasetSnapshot` → `DatasetComparisonRun`, with stored comparison summaries on completed runs.
+- Internal/dev artisan command to run a monitored plot source from a supplied JSON payload file: `contextual-console:run-plot-source {sourceKey} --file=/path/to/payload.json`.
+
+### Changed
+
+- Matched plot comparison is no longer price-only: a small explicit whitelist of comparable fields is supported (currently `price` and `status`), and each changed field is logged separately.
+- Dataset comparison runs are isolated per monitored source (each source compares only against its own previous snapshot).
+
+### Notes
+
+- First run for a given monitored source is recorded as `baseline` (no previous snapshot, no comparison summary).
+
 ## [0.1.2] - 2026-04-22
 
 ### Added
