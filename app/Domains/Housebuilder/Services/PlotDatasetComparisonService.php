@@ -15,7 +15,14 @@ class PlotDatasetComparisonService
      *
      * @param  iterable<int, array<string, mixed>>  $before
      * @param  iterable<int, array<string, mixed>>  $after
-     * @return array{added: int, removed: int, changed: int, unchanged: int}
+     * @return array{
+     *   added: int,
+     *   removed: int,
+     *   changed: int,
+     *   unchanged: int,
+     *   added_ids: array<int, int|string>,
+     *   removed_ids: array<int, int|string>
+     * }
      */
     public function compare(iterable $before, iterable $after): array
     {
@@ -25,8 +32,11 @@ class PlotDatasetComparisonService
         $beforeIds = $beforeById->keys();
         $afterIds = $afterById->keys();
 
-        $added = $afterIds->diff($beforeIds)->count();
-        $removed = $beforeIds->diff($afterIds)->count();
+        $addedIds = $afterIds->diff($beforeIds)->values();
+        $removedIds = $beforeIds->diff($afterIds)->values();
+
+        $added = $addedIds->count();
+        $removed = $removedIds->count();
 
         $changed = 0;
         $unchanged = 0;
@@ -52,6 +62,8 @@ class PlotDatasetComparisonService
             'removed' => $removed,
             'changed' => $changed,
             'unchanged' => $unchanged,
+            'added_ids' => $addedIds->all(),
+            'removed_ids' => $removedIds->all(),
         ];
     }
 
