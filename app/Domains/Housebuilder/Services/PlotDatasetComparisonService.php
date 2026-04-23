@@ -11,7 +11,7 @@ class PlotDatasetComparisonService
     ) {}
 
     /**
-     * Compare two plot datasets keyed by plot `id`. Logs price changes for matched plots via PlotChangeDetector.
+     * Compare two plot datasets keyed by plot `id`. Logs whitelisted field changes for matched plots via PlotChangeDetector.
      *
      * @param  iterable<int, array<string, mixed>>  $before
      * @param  iterable<int, array<string, mixed>>  $after
@@ -45,15 +45,12 @@ class PlotDatasetComparisonService
             $oldPlot = $beforeById->get($id);
             $newPlot = $afterById->get($id);
 
-            $this->plotChangeDetector->detect($oldPlot, $newPlot);
+            $logged = $this->plotChangeDetector->detect($oldPlot, $newPlot);
 
-            $oldPrice = $oldPlot['price'] ?? null;
-            $newPrice = $newPlot['price'] ?? null;
-
-            if ($oldPrice == $newPrice) {
-                $unchanged++;
-            } else {
+            if ($logged > 0) {
                 $changed++;
+            } else {
+                $unchanged++;
             }
         }
 
