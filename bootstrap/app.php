@@ -7,6 +7,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         \App\Console\Commands\RunPlotSourceCommand::class,
+        \App\Console\Commands\SourceStatusCommand::class,
     ])
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
