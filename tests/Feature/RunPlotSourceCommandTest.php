@@ -38,7 +38,8 @@ it('runs a successful baseline run from a JSON file', function () {
     $this->artisan('contextual-console:run-plot-source', [
         'sourceKey' => $source->key,
         '--file' => $file,
-    ])->assertExitCode(0);
+    ])->expectsOutputToContain('Issues: 0')
+        ->assertExitCode(0);
 
     expect(DatasetSnapshot::query()->where('source_id', $source->id)->count())->toBe(1);
     expect(DatasetComparisonRun::query()->where('source_id', $source->id)->count())->toBe(1);
@@ -68,12 +69,14 @@ it('runs a successful completed run from a JSON file after a baseline exists', f
     $this->artisan('contextual-console:run-plot-source', [
         'sourceKey' => $source->key,
         '--file' => $baselineFile,
-    ])->assertExitCode(0);
+    ])->expectsOutputToContain('Issues: 0')
+        ->assertExitCode(0);
 
     $this->artisan('contextual-console:run-plot-source', [
         'sourceKey' => $source->key,
         '--file' => $changedFile,
-    ])->assertExitCode(0);
+    ])->expectsOutputToContain('Issues: 0')
+        ->assertExitCode(0);
 
     expect(DatasetSnapshot::query()->where('source_id', $source->id)->count())->toBe(2);
     expect(DatasetComparisonRun::query()->where('source_id', $source->id)->count())->toBe(2);
@@ -94,6 +97,26 @@ it('runs a successful completed run from a JSON file after a baseline exists', f
     expect(ChangeLog::query()->where('entity_type', 'plot')->where('entity_id', 1)->where('field', 'price')->exists())->toBeTrue();
     expect(ChangeLog::query()->where('entity_type', 'plot')->where('entity_id', 1)->where('field', 'status')->exists())->toBeTrue();
     expect(ChangeLog::query()->where('entity_type', 'plot')->where('entity_id', 2)->where('field', 'presence')->exists())->toBeTrue();
+});
+
+it('prints issue counts (and severity breakdown) when invalid payload data is supplied', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:manual-invalid-payload',
+        'name' => 'Manual Invalid Payload',
+    ]);
+
+    $file = writeTempJsonFile([
+        'bad-record',
+        ['price' => 100_000, 'status' => 'available'], // missing id
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ]);
+
+    $this->artisan('contextual-console:run-plot-source', [
+        'sourceKey' => $source->key,
+        '--file' => $file,
+    ])->expectsOutputToContain('Issues: 2')
+        ->expectsOutputToContain('- error: 2')
+        ->assertExitCode(0);
 });
 
 it('fails with a useful message when the source key is unknown', function () {

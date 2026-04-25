@@ -2,9 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class RunPlotSourceCommand extends Command
 {
@@ -74,6 +76,24 @@ class RunPlotSourceCommand extends Command
             $unchanged = $run->summary['unchanged'] ?? null;
 
             $this->line("summary: added={$added} removed={$removed} changed={$changed} unchanged={$unchanged}");
+        }
+
+        $issueQuery = DatasetIssue::query()->where('dataset_comparison_run_id', $run->id);
+        $issueCount = (int) $issueQuery->count();
+        $this->line("Issues: {$issueCount}");
+
+        if ($issueCount > 0) {
+            $bySeverity = $issueQuery
+                ->select('severity', DB::raw('count(*) as total'))
+                ->groupBy('severity')
+                ->pluck('total', 'severity');
+
+            foreach (['error', 'warning', 'info'] as $severity) {
+                $count = (int) ($bySeverity[$severity] ?? 0);
+                if ($count > 0) {
+                    $this->line("- {$severity}: {$count}");
+                }
+            }
         }
 
         return self::SUCCESS;

@@ -2,6 +2,7 @@
 
 use App\Core\Models\ChangeLog;
 use App\Core\Models\DatasetComparisonRun;
+use App\Core\Models\DatasetIssue;
 use App\Core\Models\DatasetSnapshot;
 use App\Core\Models\MonitoredSource;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
@@ -30,6 +31,39 @@ it('creates a baseline run for the first snapshot without change logging', funct
     expect($run->summary)->toBeNull();
 
     expect(ChangeLog::count())->toBe(0);
+    expect(DatasetIssue::count())->toBe(0);
+});
+
+it('persists dataset issues for a baseline run', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:baseline-issues',
+        'name' => 'Baseline Issues',
+    ]);
+
+    $payload = [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+        ['id' => 2, 'price' => null, 'status' => 'pending'],
+        ['id' => 2, 'price' => -1, 'status' => 'sold'],
+        'bad-record',
+    ];
+
+    $run = app(PlotDatasetRunService::class)->run($source, $payload);
+    $run->refresh();
+
+    expect($run->status)->toBe('baseline');
+
+    $snapshot = DatasetSnapshot::query()->where('source_id', $source->id)->latest('id')->firstOrFail();
+
+    $issues = DatasetIssue::query()->where('dataset_comparison_run_id', $run->id)->get();
+    expect($issues)->toHaveCount(5);
+
+    expect($issues->every(fn ($issue) => $issue->monitored_source_id === $source->id))->toBeTrue();
+    expect($issues->every(fn ($issue) => $issue->dataset_snapshot_id === $snapshot->id))->toBeTrue();
+    expect($issues->every(fn ($issue) => $issue->dataset_comparison_run_id === $run->id))->toBeTrue();
+
+    expect($issues->where('issue_type', 'invalid_record')->count())->toBe(1);
+    expect($issues->where('severity', 'error')->count())->toBe(2); // invalid_record + duplicate_value
+    expect($issues->where('severity', 'warning')->count())->toBe(3); // missing price, invalid status, invalid price
 });
 
 it('creates a completed run for a second snapshot and persists the comparison summary + logs', function () {
@@ -71,6 +105,50 @@ it('creates a completed run for a second snapshot and persists the comparison su
     expect(ChangeLog::query()->where('entity_type', 'plot')->where('entity_id', 1)->where('field', 'price')->exists())->toBeTrue();
     expect(ChangeLog::query()->where('entity_type', 'plot')->where('entity_id', 1)->where('field', 'status')->exists())->toBeTrue();
     expect(ChangeLog::query()->where('entity_type', 'plot')->where('entity_id', 2)->where('field', 'presence')->exists())->toBeTrue();
+});
+
+it('completes a run even when the current payload has invalid rows; persists issues; compares only comparable records', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:completed-invalid-rows',
+        'name' => 'Completed Invalid Rows',
+    ]);
+
+    $baseline = [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ];
+
+    $second = [
+        'bad-record', // should be ignored by comparison, but recorded as an issue
+        ['price' => 999, 'status' => 'available'], // missing id (ignored by comparison; issue)
+        ['id' => 1, 'price' => 110_000, 'status' => 'reserved'], // comparable: changed
+        ['id' => 2, 'price' => 200_000, 'status' => 'available'], // comparable: added
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+    $run2 = $service->run($source, $second);
+    $run2->refresh();
+
+    expect($run2->status)->toBe('completed');
+    expect($run2->summary)->toBe([
+        'added' => 1,
+        'removed' => 0,
+        'changed' => 1,
+        'unchanged' => 0,
+        'added_ids' => [2],
+        'removed_ids' => [],
+    ]);
+
+    // Comparison + logging should still work for comparable records
+    expect(ChangeLog::query()->where('entity_type', 'plot')->where('entity_id', 1)->where('field', 'price')->exists())->toBeTrue();
+    expect(ChangeLog::query()->where('entity_type', 'plot')->where('entity_id', 1)->where('field', 'status')->exists())->toBeTrue();
+    expect(ChangeLog::query()->where('entity_type', 'plot')->where('entity_id', 2)->where('field', 'presence')->exists())->toBeTrue();
+
+    // Issues should be detected from the raw current payload and linked to this run
+    $issues = DatasetIssue::query()->where('dataset_comparison_run_id', $run2->id)->get();
+    expect($issues)->toHaveCount(2);
+    expect($issues->where('issue_type', 'invalid_record')->count())->toBe(1);
+    expect($issues->where('issue_type', 'missing_required_field')->where('field', 'id')->count())->toBe(1);
 });
 
 it('isolates runs per source (second run compares only against that sources prior snapshot)', function () {
