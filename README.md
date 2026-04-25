@@ -134,6 +134,36 @@ Notes:
 - The JSON file must be a **top-level array** of plot objects and each plot must include an `id`.
 - The monitored source must already exist in the database (`monitored_sources.key=hb:foo`); this command does not create it.
 
+## HTTP ingest (internal/dev)
+
+To ingest real production data from a remote JSON endpoint (read-only), configure the monitored source with HTTP fields:
+
+- `endpoint_url`: full URL to a ContextualWP-style JSON endpoint (or any endpoint that returns a top-level JSON array)
+- `auth_header_name`: header name to send a token in (e.g. `Authorization` or `X-ContextualWP-Token`) (optional)
+- `auth_token_env_key`: name of the environment variable containing the token (optional)
+
+Example (no real credentials):
+
+1. Create or update a monitored source row (example):
+
+   - `key`: `hb:example`
+   - `name`: `Housebuilder Example`
+   - `endpoint_url`: `https://example.com/wp-json/contextualwp/v1/plots`
+   - `auth_header_name`: `X-ContextualWP-Token`
+   - `auth_token_env_key`: `CONTEXTUALWP_TOKEN_HB_EXAMPLE`
+
+2. Add the token to your local `.env` (do **not** commit it):
+
+   ```env
+   CONTEXTUALWP_TOKEN_HB_EXAMPLE=your-token-here
+   ```
+
+3. Run the ingest:
+
+```bash
+php artisan contextual-console:run-http-plot-source hb:example
+```
+
 ## Source status (internal/dev)
 
 - **CLI**: `php artisan contextual-console:source-status`
