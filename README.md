@@ -134,6 +134,11 @@ Notes:
 - The JSON file must be a **top-level array** of plot objects and each plot must include an `id`.
 - The monitored source must already exist in the database (`monitored_sources.key=hb:foo`); this command does not create it.
 
+## Source status (internal/dev)
+
+- **CLI**: `php artisan contextual-console:source-status`
+- **Page**: visit `/sources` for a simple read-only status overview of monitored sources.
+
 ## License
 
 This project is released under the [MIT License](LICENSE).
