@@ -138,6 +138,7 @@ Notes:
 
 - **CLI**: `php artisan contextual-console:source-status`
 - **Page**: visit `/sources` for a simple read-only status overview of monitored sources.
+- **Source detail**: visit `/sources/{source}` for a read-only view of recent runs and latest dataset issues for a monitored source.
 
 ## License
 

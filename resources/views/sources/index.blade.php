@@ -59,7 +59,7 @@
 
                         <tr>
                             <td>
-                                {{ $s['source_name'] ?? '' }}
+                                <a href="{{ route('sources.show', $s['source_id']) }}">{{ $s['source_name'] ?? '' }}</a>
                                 <div class="details muted mono">
                                     Run ID: {{ $s['latest_run_id'] ?? '-' }}
                                     · Current snapshot ID: {{ $s['current_snapshot_id'] ?? '-' }}

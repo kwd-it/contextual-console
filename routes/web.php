@@ -9,3 +9,6 @@ Route::get('/', function () {
 
 Route::get('/sources', [SourceStatusController::class, 'index'])
     ->name('sources.index');
+
+Route::get('/sources/{source}', [SourceStatusController::class, 'show'])
+    ->name('sources.show');
