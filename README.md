@@ -170,6 +170,14 @@ php artisan contextual-console:run-http-plot-source hb:example
 - **Page**: visit `/sources` for a simple read-only status overview of monitored sources.
 - **Source detail**: visit `/sources/{source}` for a read-only view of recent runs and latest dataset issues for a monitored source.
 
+Dashboard pages now require session login (minimal admin auth).
+
+To create an admin user locally (no real credentials):
+
+```bash
+php artisan contextual-console:create-admin-user --name="Admin" --email="admin@example.com" --password="a-long-secure-password"
+```
+
 ## License
 
 This project is released under the [MIT License](LICENSE).

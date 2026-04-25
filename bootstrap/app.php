@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
+        \App\Console\Commands\CreateAdminUserCommand::class,
         \App\Console\Commands\RunPlotSourceCommand::class,
         \App\Console\Commands\RunHttpPlotSourceCommand::class,
         \App\Console\Commands\SourceStatusCommand::class,

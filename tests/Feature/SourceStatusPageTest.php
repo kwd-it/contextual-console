@@ -3,27 +3,33 @@
 use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 it('loads the source status page', function () {
-    $this->get('/sources')->assertOk();
+    $this->actingAs(User::factory()->create())
+        ->get('/sources')
+        ->assertOk();
 });
 
 it('shows an empty state when no monitored sources exist', function () {
-    $this->get('/sources')
+    $this->actingAs(User::factory()->create())
+        ->get('/sources')
         ->assertOk()
         ->assertSeeText('No monitored sources found.');
 });
 
 it('shows a source with no runs', function () {
+    $user = User::factory()->create();
     $source = MonitoredSource::create([
         'key' => 'hb:page-no-runs',
         'name' => 'Page No Runs',
     ]);
 
-    $this->get('/sources')
+    $this->actingAs($user)
+        ->get('/sources')
         ->assertOk()
         ->assertSeeText($source->name)
         ->assertSeeText($source->key)
@@ -32,36 +38,42 @@ it('shows a source with no runs', function () {
 });
 
 it('links a source name to the source detail page', function () {
+    $user = User::factory()->create();
     $source = MonitoredSource::create([
         'key' => 'hb:page-link-detail',
         'name' => 'Page Link Detail',
     ]);
 
-    $this->get('/sources')
+    $this->actingAs($user)
+        ->get('/sources')
         ->assertOk()
         ->assertSee('href="' . route('sources.show', $source) . '"', false)
         ->assertSeeText($source->name);
 });
 
 it('loads the source detail page successfully', function () {
+    $user = User::factory()->create();
     $source = MonitoredSource::create([
         'key' => 'hb:page-detail-loads',
         'name' => 'Page Detail Loads',
     ]);
 
-    $this->get(route('sources.show', $source))
+    $this->actingAs($user)
+        ->get(route('sources.show', $source))
         ->assertOk()
         ->assertSeeText($source->name)
         ->assertSeeText($source->key);
 });
 
 it('shows a source with no runs on the detail page', function () {
+    $user = User::factory()->create();
     $source = MonitoredSource::create([
         'key' => 'hb:page-detail-no-runs',
         'name' => 'Page Detail No Runs',
     ]);
 
-    $this->get(route('sources.show', $source))
+    $this->actingAs($user)
+        ->get(route('sources.show', $source))
         ->assertOk()
         ->assertSeeText($source->name)
         ->assertSeeText($source->key)
@@ -69,6 +81,7 @@ it('shows a source with no runs on the detail page', function () {
 });
 
 it('shows latest run summary and recent runs on the detail page', function () {
+    $user = User::factory()->create();
     $source = MonitoredSource::create([
         'key' => 'hb:page-detail-recent-runs',
         'name' => 'Page Detail Recent Runs',
@@ -93,7 +106,8 @@ it('shows latest run summary and recent runs on the detail page', function () {
     $added = (int) ($run2->summary['added'] ?? 0);
     $changed = (int) ($run2->summary['changed'] ?? 0);
 
-    $this->get(route('sources.show', $source))
+    $this->actingAs($user)
+        ->get(route('sources.show', $source))
         ->assertOk()
         ->assertSeeText('Latest run summary')
         ->assertSeeText('Recent runs')
@@ -105,6 +119,7 @@ it('shows latest run summary and recent runs on the detail page', function () {
 });
 
 it('shows latest run issues on the detail page', function () {
+    $user = User::factory()->create();
     $source = MonitoredSource::create([
         'key' => 'hb:page-detail-latest-issues',
         'name' => 'Page Detail Latest Issues',
@@ -133,7 +148,8 @@ it('shows latest run issues on the detail page', function () {
 
     expect($issue)->not->toBeNull();
 
-    $this->get(route('sources.show', $source))
+    $this->actingAs($user)
+        ->get(route('sources.show', $source))
         ->assertOk()
         ->assertSeeText('Latest run issues')
         ->assertSeeText((string) $issue->severity)
@@ -142,6 +158,7 @@ it('shows latest run issues on the detail page', function () {
 });
 
 it('does not show old-run issues as latest-run issues', function () {
+    $user = User::factory()->create();
     $source = MonitoredSource::create([
         'key' => 'hb:page-detail-old-issues',
         'name' => 'Page Detail Old Issues',
@@ -176,13 +193,15 @@ it('does not show old-run issues as latest-run issues', function () {
 
     expect($latestIssues)->toBe(0);
 
-    $this->get(route('sources.show', $source))
+    $this->actingAs($user)
+        ->get(route('sources.show', $source))
         ->assertOk()
         ->assertSeeText('No issues found for the latest run.')
         ->assertDontSeeText((string) $oldIssueMessage);
 });
 
 it('shows latest completed run summary and issue counts', function () {
+    $user = User::factory()->create();
     $source = MonitoredSource::create([
         'key' => 'hb:page-completed-issues',
         'name' => 'Page Completed Issues',
@@ -218,7 +237,7 @@ it('shows latest completed run summary and issue counts', function () {
     expect($added)->toBeGreaterThan(0);
     expect($changed)->toBeGreaterThan(0);
 
-    $resp = $this->get('/sources')
+    $resp = $this->actingAs($user)->get('/sources')
         ->assertOk()
         ->assertSeeText($source->name)
         ->assertSeeText('completed')
