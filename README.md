@@ -69,6 +69,10 @@ Priorities will shift with the first production integrations.
 
 Default local database in `.env.example` is **SQLite**.
 
+## Deployment (private VPS)
+
+See `docs/DEPLOYMENT.md` for a first private VPS deployment guide (Ubuntu LTS + Nginx + PHP-FPM, HTTPS, environment settings, creating the first admin user, configuring a real HTTP source, and running a manual ingest).
+
 ## Local development
 
 First-time bootstrap in one shot (see `composer.json` `setup` script): `composer run setup` installs dependencies, creates `.env` if missing, generates the app key, runs migrations, and runs `npm install` plus `npm run build`. With SQLite, create an empty `database/database.sqlite` file first if migrate fails because the file is missing.
