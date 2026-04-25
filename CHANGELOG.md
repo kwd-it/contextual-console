@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-04-25
+
+### Added
+
+- Dataset issue detection for Housebuilder plot payloads (invalid/missing ids, duplicates, missing/invalid `price` and `status`), persisted per run.
+- Source run status summary via `contextual-console:source-status` (latest run status, change counts, issue severity counts).
+- Read-only browser UI: `/sources` status page and `/sources/{source}` detail page (latest run summary, recent runs, latest issues).
+- Read-only HTTP ingest for monitored sources via `contextual-console:run-http-plot-source`, with auth tokens referenced by env var key (not stored in DB).
+- Minimal admin authentication (session login) protecting dashboard pages, plus `contextual-console:create-admin-user` to bootstrap the first user.
+
+### Documentation
+
+- Added private VPS deployment guide (`docs/DEPLOYMENT.md`) including first admin user creation and HTTP source smoke test.
+
 ## [0.1.3] - 2026-04-23
 
 ### Added

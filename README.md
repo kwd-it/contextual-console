@@ -10,13 +10,17 @@ The long-term focus is operational visibility across many properties: change his
 
 ## Current status
 
-**v0.1.3** — dataset-level plot comparison and run flow:
+**v0.2.0** — dataset change visibility plus issue detection, source status UI, HTTP ingest, and admin auth:
 
 - **Change logging contract**: stable domain-style change logging via `ChangeDetectionService::recordDomainField()` with `entity_type=plot` and `entity_id` set to the canonical plot dataset `id`.
 - **Presence changes**: added/removed plots are logged as `ChangeLog` rows with `field=presence`.
 - **Matched plot changes**: matched plots are no longer price-only; a small explicit whitelist of comparable fields is logged (currently `price` and `status`), and each changed field is logged separately.
 - **Run flow persisted**: a per-source snapshot + comparison run flow exists via `MonitoredSource`, `DatasetSnapshot`, and `DatasetComparisonRun`, with persisted run summaries.
 - **Manual ingest**: an internal/dev artisan command can run a monitored source from a supplied JSON payload file (uses the same run flow).
+- **Dataset issue detection**: invalid/missing ids, duplicates, and missing/invalid `price`/`status` are detected for Housebuilder plot payloads and persisted per run.
+- **Source status**: CLI summary via `php artisan contextual-console:source-status`, plus read-only pages at `/sources` and `/sources/{source}`.
+- **HTTP ingest**: read-only ingestion from configured remote JSON endpoints via `php artisan contextual-console:run-http-plot-source` (auth tokens referenced by env var key).
+- **Admin login**: dashboard pages require session login (`/login`); bootstrap with `php artisan contextual-console:create-admin-user`.
 
 ## Implemented foundation
 
