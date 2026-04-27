@@ -111,6 +111,37 @@ it('returns failure when the remote payload is invalid', function () {
     expect(DatasetSnapshot::count())->toBe(0);
 });
 
+it('ingests a contextualwp-style wrapped list after unwrap and field mapping', function () {
+    Http::fake([
+        'https://example.test/wp-json/mcp/v1/list_contexts' => Http::response([
+            'contexts' => [
+                ['post_id' => 7, 'acf' => ['price' => 300_000, 'status' => 'sold']],
+            ],
+        ], 200),
+    ]);
+
+    $source = MonitoredSource::create([
+        'key' => 'hb:http-contextualwp-shape',
+        'name' => 'HTTP ContextualWP shape',
+        'endpoint_url' => 'https://example.test/wp-json/mcp/v1/list_contexts',
+        'http_plot_payload_adapter' => 'contextualwp_list_contexts',
+    ]);
+
+    $this->artisan('contextual-console:run-http-plot-source', [
+        'sourceKey' => $source->key,
+    ])->expectsOutputToContain('Issues: 0')
+        ->assertExitCode(0);
+
+    $snapshot = DatasetSnapshot::query()->where('source_id', $source->id)->latest('id')->firstOrFail();
+    $payload = $snapshot->payload;
+    expect($payload)->toBeArray()
+        ->and($payload[0])->toMatchArray([
+            'id' => 7,
+            'price' => 300_000,
+            'status' => 'sold',
+        ]);
+});
+
 it('prints issue counts (and severity breakdown) when remote payload contains invalid plot data', function () {
     Http::fake([
         'https://example.test/plots' => Http::response([

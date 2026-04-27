@@ -13,6 +13,8 @@ class MonitoredSource extends Model
         'endpoint_url',
         'auth_header_name',
         'auth_token_env_key',
+        'http_json_items_key',
+        'http_plot_payload_adapter',
     ];
 
     /**

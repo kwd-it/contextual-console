@@ -29,7 +29,7 @@ class HttpJsonSourceFetcher
         $tokenEnvKey = (string) ($source->auth_token_env_key ?? '');
 
         if ($headerName !== '' && $tokenEnvKey !== '') {
-            $headers[$headerName] = $this->resolveAuthToken($tokenEnvKey);
+            $headers[$headerName] = $this->resolveAuthHeaderValue($tokenEnvKey);
         }
 
         try {
@@ -49,32 +49,73 @@ class HttpJsonSourceFetcher
 
         $body = $response->body();
 
-        $decodedForType = json_decode($body);
+        /** @var mixed $decoded */
+        $decoded = json_decode($body, true);
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new RuntimeException('Invalid JSON response: '.json_last_error_msg());
         }
 
-        if (! is_array($decodedForType)) {
-            throw new RuntimeException('Invalid JSON response: expected a JSON array at the top level.');
+        if (! is_array($decoded)) {
+            throw new RuntimeException('Invalid JSON response: expected a JSON object or array.');
         }
 
-        /** @var mixed $decoded */
-        $decoded = json_decode($body, true);
-        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
-            throw new RuntimeException('Invalid JSON response: expected a JSON array at the top level.');
-        }
-
-        /** @var array<int, mixed> $decoded */
-        return $decoded;
+        /** @var array<int|string, mixed> $decoded */
+        return $this->extractPlotListItems($source, $decoded);
     }
 
-    private function resolveAuthToken(string $tokenEnvKey): string
+    /**
+     * @param  array<int|string, mixed>  $decoded
+     * @return array<int, mixed>
+     */
+    private function extractPlotListItems(MonitoredSource $source, array $decoded): array
     {
-        $token = env($tokenEnvKey);
-        if (! is_string($token) || trim($token) === '') {
-            throw new RuntimeException("Missing required auth token env value for key '{$tokenEnvKey}'.");
+        $itemsKey = trim((string) ($source->http_json_items_key ?? ''));
+        if ($itemsKey === '' && (string) ($source->http_plot_payload_adapter ?? '') === 'contextualwp_list_contexts') {
+            $itemsKey = 'contexts';
         }
 
-        return $token;
+        if ($itemsKey === '') {
+            if (! array_is_list($decoded)) {
+                throw new RuntimeException(
+                    'Invalid JSON response: expected a JSON array at the top level. '.
+                    'For wrapped list responses (for example ContextualWP list_contexts), set http_json_items_key on the monitored source, '.
+                    'or set http_plot_payload_adapter to contextualwp_list_contexts to read the default contexts array.',
+                );
+            }
+
+            /** @var array<int, mixed> */
+            return $decoded;
+        }
+
+        if (array_is_list($decoded)) {
+            throw new RuntimeException(
+                "Invalid JSON response: expected a JSON object at the top level when http_json_items_key is '{$itemsKey}'.",
+            );
+        }
+
+        if (! array_key_exists($itemsKey, $decoded)) {
+            throw new RuntimeException("Invalid JSON response: missing key '{$itemsKey}'.");
+        }
+
+        $items = $decoded[$itemsKey];
+        if (! is_array($items) || ! array_is_list($items)) {
+            throw new RuntimeException("Invalid JSON response: value at '{$itemsKey}' must be a JSON array.");
+        }
+
+        /** @var array<int, mixed> $items */
+        return $items;
+    }
+
+    private function resolveAuthHeaderValue(string $tokenEnvKey): string
+    {
+        $value = env($tokenEnvKey);
+        if (! is_string($value) || trim($value) === '') {
+            throw new RuntimeException(
+                "Missing required auth header env value for key '{$tokenEnvKey}'. ".
+                'Set that variable in your environment (for example .env); the full header value is read from env, not from the database.',
+            );
+        }
+
+        return $value;
     }
 }

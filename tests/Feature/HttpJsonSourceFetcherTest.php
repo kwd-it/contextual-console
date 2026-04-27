@@ -46,6 +46,29 @@ it('sends the configured auth header when auth settings are present', function (
     expect($payload)->toBe([['id' => 1]]);
 });
 
+it('sends a full Authorization header value from env when configured', function () {
+    $_ENV['CC_TEST_BASIC_AUTH'] = 'Basic dGVzdDp0b2tlbg==';
+    putenv('CC_TEST_BASIC_AUTH=Basic dGVzdDp0b2tlbg==');
+
+    Http::fake(function ($request) {
+        expect($request->header('Authorization'))->toBe(['Basic dGVzdDp0b2tlbg==']);
+
+        return Http::response([['id' => 1]], 200);
+    });
+
+    $source = MonitoredSource::create([
+        'key' => 'hb:http-auth-basic',
+        'name' => 'HTTP Auth Basic',
+        'endpoint_url' => 'https://example.test/plots',
+        'auth_header_name' => 'Authorization',
+        'auth_token_env_key' => 'CC_TEST_BASIC_AUTH',
+    ]);
+
+    $payload = app(HttpJsonSourceFetcher::class)->fetch($source);
+
+    expect($payload)->toBe([['id' => 1]]);
+});
+
 it('fails clearly when endpoint_url is missing', function () {
     $source = MonitoredSource::create([
         'key' => 'hb:http-missing-endpoint',
@@ -74,7 +97,7 @@ it('fails clearly when auth token env key is configured but no token is availabl
     ]);
 
     expect(fn () => app(HttpJsonSourceFetcher::class)->fetch($source))
-        ->toThrow(RuntimeException::class, 'Missing required auth token env value');
+        ->toThrow(RuntimeException::class, 'Missing required auth header env value');
 });
 
 it('fails clearly on non-successful HTTP response', function () {
@@ -119,5 +142,43 @@ it('fails clearly when JSON is not a top-level array', function () {
     ]);
 
     expect(fn () => app(HttpJsonSourceFetcher::class)->fetch($source))
-        ->toThrow(RuntimeException::class, 'expected a JSON array');
+        ->toThrow(RuntimeException::class, 'expected a JSON array at the top level');
+});
+
+it('unwraps a JSON object list using http_json_items_key', function () {
+    Http::fake([
+        'https://example.test/plots' => Http::response([
+            'items' => [['id' => 1, 'price' => 1, 'status' => 'available']],
+        ], 200),
+    ]);
+
+    $source = MonitoredSource::create([
+        'key' => 'hb:http-wrapped',
+        'name' => 'HTTP Wrapped',
+        'endpoint_url' => 'https://example.test/plots',
+        'http_json_items_key' => 'items',
+    ]);
+
+    $payload = app(HttpJsonSourceFetcher::class)->fetch($source);
+
+    expect($payload)->toBe([['id' => 1, 'price' => 1, 'status' => 'available']]);
+});
+
+it('defaults to the contexts key when contextualwp_list_contexts adapter is set and items key is empty', function () {
+    Http::fake([
+        'https://example.test/mcp' => Http::response([
+            'contexts' => [['id' => 5]],
+        ], 200),
+    ]);
+
+    $source = MonitoredSource::create([
+        'key' => 'hb:http-contextualwp-default-key',
+        'name' => 'HTTP ContextualWP default key',
+        'endpoint_url' => 'https://example.test/mcp',
+        'http_plot_payload_adapter' => 'contextualwp_list_contexts',
+    ]);
+
+    $payload = app(HttpJsonSourceFetcher::class)->fetch($source);
+
+    expect($payload)->toBe([['id' => 5]]);
 });

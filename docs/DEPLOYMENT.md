@@ -60,18 +60,19 @@ If you are using HTTPS (you should):
 
 - **`SESSION_SECURE_COOKIE=true`**
 
-### ContextualWP endpoint tokens (HTTP ingest)
+### ContextualWP / HTTP ingest auth (env only)
 
-For HTTP sources that use token auth, the monitored source references an env var name (for example `CONTEXTUALWP_TOKEN_HB_EXAMPLE`).
+For HTTP sources, `monitored_sources` stores only `auth_header_name` and `auth_token_env_key`. The environment variable named by `auth_token_env_key` must hold the **header value only** (for example a raw bearer token, or `Basic …` for Application Passwords). The header **name** (for example `Authorization`) is stored in `auth_header_name`; do not prefix the env value with `Authorization:`.
 
-- Define the token value in `.env` using that key name
-- Do **not** store tokens in the database
-- Do **not** commit tokens
+- Define that value in `.env` on the server
+- Do **not** store secrets in the database, code, docs, fixtures, or seeders
+- Do **not** commit real credentials
 
-Example (placeholder only):
+Examples (placeholders only):
 
 ```env
 CONTEXTUALWP_TOKEN_HB_EXAMPLE=
+WYATT_CONTEXTUALWP_AUTH=
 ```
 
 ---
@@ -157,7 +158,9 @@ Create a `MonitoredSource` row (via DB client or your preferred admin workflow) 
 - `name`
 - `endpoint_url`
 - optionally `auth_header_name`
-- optionally `auth_token_env_key` (the env var name that holds the token)
+- optionally `auth_token_env_key` (the env var name whose value is sent as the full header value)
+- optionally `http_json_items_key` (when the JSON body wraps the list in an object)
+- optionally `http_plot_payload_adapter` (set to `contextualwp_list_contexts` for ContextualWP-style list payloads)
 
 11. **Run a first HTTP ingest manually**:
 
@@ -220,7 +223,7 @@ Do not rely on the VPS alone as the only copy. Plan for disk loss, accidental de
 - Create a **strong admin password**
 - No public registration (admin users are manually provisioned)
 - **HTTPS enabled**
-- ContextualWP tokens stored in **`.env`**, not DB
+- ContextualWP / HTTP ingest secrets stored in **`.env`**, not DB
 - Tokens can be **rotated**
 - Only **read-only endpoints** are used for ingest
 - Do not expose unnecessary client/customer data in logs, source payloads, or the dashboard
@@ -234,7 +237,8 @@ Example flow for one real source:
 1. Configure one `MonitoredSource` with:
    - `endpoint_url`
    - `auth_header_name` (optional)
-   - `auth_token_env_key` (optional, but recommended if auth is required)
+   - `auth_token_env_key` (optional, but recommended if auth is required; value in `.env` is the entire header string)
+   - `http_json_items_key` / `http_plot_payload_adapter` (optional; see project `README.md` HTTP ingest section)
 
 Example values:
 

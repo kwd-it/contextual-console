@@ -146,9 +146,12 @@ Notes:
 
 To ingest real production data from a remote JSON endpoint (read-only), configure the monitored source with HTTP fields:
 
-- `endpoint_url`: full URL to a ContextualWP-style JSON endpoint (or any endpoint that returns a top-level JSON array)
-- `auth_header_name`: header name to send a token in (e.g. `Authorization` or `X-ContextualWP-Token`) (optional)
-- `auth_token_env_key`: name of the environment variable containing the token (optional)
+- `endpoint_url`: full URL to a JSON endpoint (read-only GET).
+- `auth_header_name` + `auth_token_env_key` (optional): the **name** of the HTTP header (for example `Authorization`) and the **name** of an environment variable whose value is sent as that header’s **value only**—not a `Header-Name: …` line (for example use `Basic …` in env when `auth_header_name` is `Authorization`). Nothing secret is stored in the database.
+- `http_json_items_key` (optional): when the JSON body is an **object** wrapping the list (not a top-level array), set this to the property that holds the array of plot records (for example `contexts` on ContextualWP `list_contexts` responses).
+- `http_plot_payload_adapter` (optional): `contextualwp_list_contexts` maps common ContextualWP / WordPress-style rows (for example `post_id`, `acf.price`) onto the plot fields the console compares (`id`, `price`, `status`). When this adapter is set and `http_json_items_key` is empty, the fetcher defaults the wrapper key to `contexts`.
+
+**Expected plot records** (after unwrap and optional adapter): a JSON array of objects. Each object should include a stable `id` for comparison; `price` and `status` are validated when present (see `PlotDatasetIssueDetector`).
 
 Example (no real credentials):
 
@@ -171,6 +174,31 @@ Example (no real credentials):
 ```bash
 php artisan contextual-console:run-http-plot-source hb:example
 ```
+
+### Local live ContextualWP (HTTPS, placeholders only)
+
+Your laptop can call a **public** WordPress HTTPS URL; the site does **not** need to reach your local Laravel app.
+
+1. In `.env`, define a placeholder env var holding the **value** that will be sent on the configured header (for Application Password Basic auth that is typically `Basic <base64-placeholder>`—without an `Authorization:` prefix). Example names only:
+
+   ```env
+   WYATT_CONTEXTUALWP_AUTH="Basic <base64-placeholder>"
+   ```
+
+2. Insert or update a `monitored_sources` row with (example placeholders):
+
+   - `endpoint_url`: `https://example.com/wp-json/mcp/v1/list_contexts?post_type=plots&limit=10`
+   - `auth_header_name`: `Authorization` (separate from the env value above)
+   - `auth_token_env_key`: `WYATT_CONTEXTUALWP_AUTH`
+   - `http_plot_payload_adapter`: `contextualwp_list_contexts` (unwraps `contexts` by default and normalises common field shapes)
+
+3. Run:
+
+```bash
+php artisan contextual-console:run-http-plot-source hb:your-source-key
+```
+
+If the env var referenced by `auth_token_env_key` is missing or empty, the command fails with an explicit error before any HTTP request is made.
 
 ## Source status (internal/dev)
 
