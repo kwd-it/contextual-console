@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-04-27
+
+### Added
+
+- ContextualWP HTTP source compatibility for monitored plot sources (read-only ingest unchanged in spirit).
+- Support for wrapped HTTP JSON list payloads via optional `http_json_items_key` on `MonitoredSource`.
+- Optional `http_plot_payload_adapter` with **`contextualwp_list_contexts`**, including default unwrapping of ContextualWP **`contexts`** payloads when that adapter is set and no items key is configured.
+- Mapping of common ContextualWP / WordPress / ACF-style fields onto Console plot fields (especially `id`, `price`, and `status`) for ingest and comparison, including safe handling of ACF select-style `value` / `label` shapes for status.
+- Support for **full HTTP auth header values** from environment variables for HTTP sources (for example WordPress Application Password **Basic** auth), with header names stored separately in the database—**never** commit live credentials; keep secrets in `.env` only.
+
+### Documentation
+
+- Documented local testing of a live ContextualWP source from a local Contextual Console install (`README.md`, `docs/DEPLOYMENT.md`).
+- Clarified HTTP ingest auth: the env var holds the **header value only** (not an `Authorization:` prefix line); `auth_header_name` stores the header name separately.
+
+### Notes
+
+- **ContextualWP core** remains generic. Housebuilder-specific plot dataset richness (for example full `price` / `status` in payloads) belongs in the **ContextualWP Housebuilder Pack**; today’s `list_contexts` responses may only expose summary fields (such as `id`, `title`, `description`, `last_updated`). Missing `price` / `status` **warnings** from the Console issue detector are therefore expected until a richer Housebuilder Pack endpoint is available.
+
 ## [0.2.0] - 2026-04-25
 
 ### Added

@@ -10,7 +10,9 @@ The long-term focus is operational visibility across many properties: change his
 
 ## Current status
 
-**v0.2.0** — dataset change visibility plus issue detection, source status UI, HTTP ingest, and admin auth:
+**v0.2.1** — ContextualWP-compatible HTTP plot ingest: wrapped JSON lists (`http_json_items_key`), optional **`contextualwp_list_contexts`** adapter on `http_plot_payload_adapter` (default unwrap of `contexts`, mapping of common WordPress / ACF fields to plot `id` / `price` / `status`), and **full auth header values from env** (for example WordPress Application Password Basic Auth). **ContextualWP** stays generic; richer Housebuilder plot feeds belong in the **ContextualWP Housebuilder Pack**—today’s `list_contexts` summaries may only include fields such as `id`, `title`, `description`, and `last_updated`, so missing `price` / `status` warnings are expected until a richer Pack endpoint exists. **Never commit live credentials**; keep them in `.env` only.
+
+Also includes **v0.2.0** capabilities:
 
 - **Change logging contract**: stable domain-style change logging via `ChangeDetectionService::recordDomainField()` with `entity_type=plot` and `entity_id` set to the canonical plot dataset `id`.
 - **Presence changes**: added/removed plots are logged as `ChangeLog` rows with `field=presence`.
@@ -19,7 +21,7 @@ The long-term focus is operational visibility across many properties: change his
 - **Manual ingest**: an internal/dev artisan command can run a monitored source from a supplied JSON payload file (uses the same run flow).
 - **Dataset issue detection**: invalid/missing ids, duplicates, and missing/invalid `price`/`status` are detected for Housebuilder plot payloads and persisted per run.
 - **Source status**: CLI summary via `php artisan contextual-console:source-status`, plus read-only pages at `/sources` and `/sources/{source}`.
-- **HTTP ingest**: read-only ingestion from configured remote JSON endpoints via `php artisan contextual-console:run-http-plot-source` (auth tokens referenced by env var key).
+- **HTTP ingest**: read-only GET from configured endpoints via `php artisan contextual-console:run-http-plot-source`; auth uses `auth_header_name` plus an env-backed header value (`auth_token_env_key`); optional wrapped-list and ContextualWP adapter fields on `MonitoredSource` as documented in this README.
 - **Admin login**: dashboard pages require session login (`/login`); bootstrap with `php artisan contextual-console:create-admin-user`.
 
 ## Implemented foundation
@@ -29,8 +31,8 @@ The long-term focus is operational visibility across many properties: change his
 | **Model** | `App\Core\Models\ChangeLog` — stores entity type/id, field name, old/new values, and `changed_at`. |
 | **Database** | `change_logs` table (see `database/migrations/2026_04_09_052942_create_change_logs_table.php`). |
 | **Models (run flow)** | `App\Core\Models\MonitoredSource`, `DatasetSnapshot`, `DatasetComparisonRun` — persisted per-source snapshots and comparison runs. |
-| **Services** | `ChangeDetectionService` (`record`, `recordDomainField`, `recordPlotPrice`), `PlotDatasetComparisonService`, `PlotChangeDetector` (whitelisted fields), `PlotDatasetPresenceChangeLogger`, `PlotDatasetRunService` (snapshot + compare + persist summary). |
-| **Command (internal)** | `php artisan contextual-console:run-plot-source {sourceKey} --file=/path/to/payload.json` — run a monitored source from a JSON payload file. |
+| **Services** | `ChangeDetectionService` (`record`, `recordDomainField`, `recordPlotPrice`), `PlotDatasetComparisonService`, `PlotChangeDetector` (whitelisted fields), `PlotDatasetPresenceChangeLogger`, `PlotDatasetRunService` (snapshot + compare + persist summary), `HttpJsonSourceFetcher` (HTTP GET + JSON unwrap + env header values), `PlotHttpIngestNormalizer` (optional `contextualwp_list_contexts` adapter). |
+| **Command (internal)** | `php artisan contextual-console:run-plot-source {sourceKey} --file=/path/to/payload.json`; `php artisan contextual-console:run-http-plot-source {sourceKey}`. |
 
 Everything else is default Laravel scaffolding (auth migrations, queue/cache tables, welcome UI, tests).
 
