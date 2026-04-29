@@ -151,7 +151,7 @@ When cutting a release, update as applicable for this project:
 Prefer a **separate** release-style commit, for example:
 
 ```text
-chore(release): v0.2.1
+chore(release): v0.2.2
 ```
 
 ### 10. Merge, tag, clean up

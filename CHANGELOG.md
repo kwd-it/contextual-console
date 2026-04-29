@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-04-29
+
+### Changed
+
+- Housebuilder plot dataset issue detection (`PlotDatasetIssueDetector`): accept `coming_soon` as a valid status; warn on missing `price` only when `status` is `available`; do not warn on missing `price` for `coming_soon`, `reserved`, or `sold`. Missing or invalid `status` still warns. When `price` is present and non-empty, it must still be numeric and ≥ 0.
+
+### Documentation
+
+- README: current status to **v0.2.2**; clarified dataset issue rules and **Expected plot records**; noted that a ContextualWP Housebuilder Pack plots endpoint returning a top-level JSON array aligned with Console plot fields can use HTTP ingest without `http_json_items_key` or `http_plot_payload_adapter`.
+
+### Notes
+
+- Very large Housebuilder Pack responses can exceed the Console HTTP client’s default timeout; addressing `limit`/pagination and timeouts is expected to be handled in the Pack (or follow-up Console work), not in this patch release.
+
 ## [0.2.1] - 2026-04-27
 
 ### Added
