@@ -130,7 +130,7 @@ class PlotHttpIngestNormalizer
     }
 
     /**
-     * PlotDatasetIssueDetector lowercases before validating against available|reserved|sold.
+     * PlotDatasetIssueDetector lowercases before validating against available|coming_soon|reserved|sold.
      */
     private function normalisePlotStatusString(string $status): string
     {

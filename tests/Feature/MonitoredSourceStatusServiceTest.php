@@ -123,7 +123,7 @@ it('returns issue counts for the latest run', function () {
 
     $invalidPayload = [
         ['id' => 1, 'price' => 100_000, 'status' => 'available'],
-        ['id' => 2, 'price' => null, 'status' => 'pending'], // warning: missing price + invalid status
+        ['id' => 2, 'price' => null, 'status' => 'pending'], // warning: invalid status (price not required when not available)
         ['id' => 2, 'price' => -1, 'status' => 'sold'], // error: duplicate id + warning: invalid price
         'bad-record', // error: invalid_record
     ];

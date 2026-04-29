@@ -55,7 +55,7 @@ it('persists dataset issues for a baseline run', function () {
     $snapshot = DatasetSnapshot::query()->where('source_id', $source->id)->latest('id')->firstOrFail();
 
     $issues = DatasetIssue::query()->where('dataset_comparison_run_id', $run->id)->get();
-    expect($issues)->toHaveCount(5);
+    expect($issues)->toHaveCount(4);
 
     expect($issues->every(fn ($issue) => $issue->monitored_source_id === $source->id))->toBeTrue();
     expect($issues->every(fn ($issue) => $issue->dataset_snapshot_id === $snapshot->id))->toBeTrue();
@@ -63,7 +63,7 @@ it('persists dataset issues for a baseline run', function () {
 
     expect($issues->where('issue_type', 'invalid_record')->count())->toBe(1);
     expect($issues->where('severity', 'error')->count())->toBe(2); // invalid_record + duplicate_value
-    expect($issues->where('severity', 'warning')->count())->toBe(3); // missing price, invalid status, invalid price
+    expect($issues->where('severity', 'warning')->count())->toBe(2); // invalid status, invalid price (price not required for pending)
 });
 
 it('creates a completed run for a second snapshot and persists the comparison summary + logs', function () {

@@ -15,7 +15,7 @@ class PlotDatasetIssueDetector
     public const ISSUE_TYPE_INVALID_RECORD = 'invalid_record';
 
     /** @var array<int, string> */
-    private const ALLOWED_STATUSES = ['available', 'reserved', 'sold'];
+    private const ALLOWED_STATUSES = ['available', 'coming_soon', 'reserved', 'sold'];
 
     /**
      * @param  array<int, mixed>  $payload
@@ -76,7 +76,7 @@ class PlotDatasetIssueDetector
                 }
             }
 
-            if ($this->isMissingRequired($plot, 'price')) {
+            if ($this->shouldRequirePrice($plot) && $this->isMissingRequired($plot, 'price')) {
                 $issues[] = $this->issue(
                     entityId: $id,
                     field: 'price',
@@ -85,7 +85,7 @@ class PlotDatasetIssueDetector
                     message: 'Plot is missing a price.',
                     context: ['index' => $index],
                 );
-            } elseif (array_key_exists('price', $plot)) {
+            } elseif (array_key_exists('price', $plot) && ! $this->isMissingRequired($plot, 'price')) {
                 $price = $plot['price'];
                 if (! is_numeric($price) || (float) $price < 0) {
                     $issues[] = $this->issue(
@@ -130,6 +130,27 @@ class PlotDatasetIssueDetector
         }
 
         return $issues;
+    }
+
+    /**
+     * Price is required only for plots whose status is present, valid, and `available`.
+     *
+     * @param  array<string, mixed>  $plot
+     */
+    private function shouldRequirePrice(array $plot): bool
+    {
+        if ($this->isMissingRequired($plot, 'status')) {
+            return false;
+        }
+
+        $statusRaw = $plot['status'];
+        $status = is_string($statusRaw) ? strtolower(trim($statusRaw)) : null;
+
+        if ($status === null || $status === '' || ! in_array($status, self::ALLOWED_STATUSES, true)) {
+            return false;
+        }
+
+        return $status === 'available';
     }
 
     /**

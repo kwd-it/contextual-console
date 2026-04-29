@@ -6,6 +6,8 @@ it('returns no issues for a valid payload', function () {
     $payload = [
         ['id' => 1, 'price' => 100_000, 'status' => 'available'],
         ['id' => 2, 'price' => 200_000, 'status' => 'reserved'],
+        ['id' => 3, 'status' => 'coming_soon'],
+        ['id' => 4, 'status' => 'sold'],
     ];
 
     $issues = app(PlotDatasetIssueDetector::class)->detect($payload);
@@ -140,8 +142,32 @@ it('detects an invalid status', function () {
     expect($issues[0]['context'])->toMatchArray([
         'index' => 0,
         'received' => 'pending',
-        'allowed' => ['available', 'reserved', 'sold'],
+        'allowed' => ['available', 'coming_soon', 'reserved', 'sold'],
     ]);
+});
+
+it('does not warn about missing price for coming_soon, reserved, or sold', function () {
+    $payload = [
+        ['id' => 1, 'status' => 'coming_soon'],
+        ['id' => 2, 'status' => 'reserved'],
+        ['id' => 3, 'status' => 'sold'],
+    ];
+
+    $issues = app(PlotDatasetIssueDetector::class)->detect($payload);
+
+    expect($issues)->toBe([]);
+});
+
+it('still warns about invalid non-numeric price when a price is provided for sold', function () {
+    $payload = [
+        ['id' => 1, 'price' => 'not-a-number', 'status' => 'sold'],
+    ];
+
+    $issues = app(PlotDatasetIssueDetector::class)->detect($payload);
+
+    expect($issues)->toHaveCount(1);
+    expect($issues[0]['field'])->toBe('price');
+    expect($issues[0]['issue_type'])->toBe('invalid_value');
 });
 
 it('detects a non-array payload item as an invalid record and does not crash', function () {
@@ -166,20 +192,20 @@ it('detects a non-array payload item as an invalid record and does not crash', f
 
 it('can return multiple issues from one payload', function () {
     $payload = [
-        ['price' => null, 'status' => 'pending'], // missing id + missing price + invalid status
+        ['price' => null, 'status' => 'pending'], // missing id + invalid status (price not required for non-available)
         ['id' => 5, 'price' => 'nope', 'status' => 'available'], // invalid price
         ['id' => 5, 'price' => 100_000, 'status' => 'sold'], // duplicate id
     ];
 
     $issues = app(PlotDatasetIssueDetector::class)->detect($payload);
 
-    expect($issues)->toHaveCount(5);
+    expect($issues)->toHaveCount(4);
 
     expect(collect($issues)->where('field', 'id')->pluck('issue_type')->values()->all())
         ->toBe(['missing_required_field', 'duplicate_value']);
 
     expect(collect($issues)->where('field', 'price')->pluck('issue_type')->values()->all())
-        ->toBe(['missing_required_field', 'invalid_value']);
+        ->toBe(['invalid_value']);
 
     expect(collect($issues)->where('field', 'status')->pluck('issue_type')->values()->all())
         ->toBe(['invalid_value']);
