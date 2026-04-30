@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-04-30
+
+### Added
+
+- Optional paginated HTTP fetching for monitored Housebuilder plot sources (`HttpJsonSourceFetcher`):
+  - When `http_pagination_mode` is `null`, behaviour is unchanged (single request; treated as full dataset).
+  - When `http_pagination_mode=page_per_page`, the fetcher requests page 1..N using configured query params, combines all returned items into one array, then passes the combined dataset into the existing normalisation/snapshot/comparison/issue detection flow.
+  - Stop conditions: a page returns zero items, a page returns fewer items than `http_per_page`, or `http_max_pages` is reached.
+
+### Database
+
+- Added optional pagination fields on `monitored_sources`:
+  - `http_pagination_mode` (supports `page_per_page`)
+  - `http_page_param`
+  - `http_per_page_param`
+  - `http_per_page`
+  - `http_max_pages`
+
+### Documentation
+
+- README and deployment docs: documented paginated HTTP plot source fetching and new monitored source pagination fields, with a Wyatt Homes example configuration.
+
 ## [0.2.2] - 2026-04-29
 
 ### Changed

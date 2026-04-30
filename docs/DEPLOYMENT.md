@@ -161,6 +161,8 @@ Create a `MonitoredSource` row (via DB client or your preferred admin workflow) 
 - optionally `auth_token_env_key` (the env var name whose value is sent as the full header value)
 - optionally `http_json_items_key` (when the JSON body wraps the list in an object)
 - optionally `http_plot_payload_adapter` (set to `contextualwp_list_contexts` for ContextualWP-style list payloads)
+- optionally `http_pagination_mode` (set to `page_per_page` to fetch multiple pages and combine before ingest)
+- optionally `http_page_param`, `http_per_page_param`, `http_per_page`, `http_max_pages` (pagination configuration; defaults exist when omitted)
 
 11. **Run a first HTTP ingest manually**:
 

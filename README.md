@@ -10,21 +10,22 @@ The long-term focus is operational visibility across many properties: change his
 
 ## Current status
 
-**v0.2.2** — Housebuilder plot issue rules aligned with real feeds: valid statuses include `coming_soon`; missing `price` is warned only when `status` is `available`; non-empty `price` must be numeric and ≥ 0. See **Dataset issue detection** below, **Expected plot records** under HTTP ingest, and `CHANGELOG.md`.
+This project is early-stage but usable for manually ingesting and reviewing changes in Housebuilder plot datasets:
 
-**v0.2.1** — ContextualWP-compatible HTTP plot ingest: wrapped JSON lists (`http_json_items_key`), optional **`contextualwp_list_contexts`** adapter on `http_plot_payload_adapter` (default unwrap of `contexts`, mapping of common WordPress / ACF fields to plot `id` / `price` / `status`), and **full auth header values from env** (for example WordPress Application Password Basic Auth). **ContextualWP** stays generic; richer Housebuilder plot feeds belong in the **ContextualWP Housebuilder Pack**—today’s `list_contexts` summaries may only include fields such as `id`, `title`, `description`, and `last_updated`, so missing `price` / `status` warnings are expected until a richer Pack endpoint exists. **Never commit live credentials**; keep them in `.env` only.
+- **Monitored sources** (`MonitoredSource`): identify feeds by stable `key`, with a configured endpoint and optional HTTP ingest settings.
+- **HTTP JSON plot ingest**: read-only GET via `php artisan contextual-console:run-http-plot-source`.
+- **Auth header values from env** (optional): `auth_header_name` + `auth_token_env_key` send a full header value from environment (nothing secret stored in DB).
+- **Wrapped JSON list payloads** (optional): unwrap list responses via `http_json_items_key`.
+- **ContextualWP list-context adapter** (optional): `http_plot_payload_adapter=contextualwp_list_contexts` normalises common WordPress / ACF field shapes onto Console plot fields (`id`, `price`, `status`).
+- **Optional paginated source fetching** (optional): when enabled, fetch multiple pages from an endpoint, combine all items into one dataset, then proceed with normalisation/snapshot/compare.
+- **Dataset snapshots** (`DatasetSnapshot`): persisted payload captures per source.
+- **Comparison runs** (`DatasetComparisonRun`): baseline then compare-to-previous summaries (`added`, `removed`, `changed`, `unchanged`) and change logs.
+- **Issue detection**: dataset-level validation (invalid/missing ids, duplicates, missing/invalid `status`, and status-aware `price` rules). See `PlotDatasetIssueDetector`.
+- **Source status**: CLI summary via `php artisan contextual-console:source-status`.
+- **Read-only dashboard pages**: `/sources` and `/sources/{source}` (login required).
+- **Admin login**: session login, bootstrap with `php artisan contextual-console:create-admin-user`.
 
-Also includes **v0.2.0** capabilities:
-
-- **Change logging contract**: stable domain-style change logging via `ChangeDetectionService::recordDomainField()` with `entity_type=plot` and `entity_id` set to the canonical plot dataset `id`.
-- **Presence changes**: added/removed plots are logged as `ChangeLog` rows with `field=presence`.
-- **Matched plot changes**: matched plots are no longer price-only; a small explicit whitelist of comparable fields is logged (currently `price` and `status`), and each changed field is logged separately.
-- **Run flow persisted**: a per-source snapshot + comparison run flow exists via `MonitoredSource`, `DatasetSnapshot`, and `DatasetComparisonRun`, with persisted run summaries.
-- **Manual ingest**: an internal/dev artisan command can run a monitored source from a supplied JSON payload file (uses the same run flow).
-- **Dataset issue detection**: invalid/missing ids, duplicates, missing or invalid `status` (`available`, `coming_soon`, `reserved`, `sold`), and `price` checks tuned for real feeds (missing `price` warned only when `status` is `available`; non-empty `price` must be numeric and ≥ 0). See `PlotDatasetIssueDetector`.
-- **Source status**: CLI summary via `php artisan contextual-console:source-status`, plus read-only pages at `/sources` and `/sources/{source}`.
-- **HTTP ingest**: read-only GET from configured endpoints via `php artisan contextual-console:run-http-plot-source`; auth uses `auth_header_name` plus an env-backed header value (`auth_token_env_key`); optional wrapped-list and ContextualWP adapter fields on `MonitoredSource` as documented in this README.
-- **Admin login**: dashboard pages require session login (`/login`); bootstrap with `php artisan contextual-console:create-admin-user`.
+For release history, see `CHANGELOG.md`.
 
 ## Implemented foundation
 
@@ -155,9 +156,31 @@ To ingest real production data from a remote JSON endpoint (read-only), configur
 - `http_json_items_key` (optional): when the JSON body is an **object** wrapping the list (not a top-level array), set this to the property that holds the array of plot records (for example `contexts` on ContextualWP `list_contexts` responses).
 - `http_plot_payload_adapter` (optional): `contextualwp_list_contexts` maps common ContextualWP / WordPress-style rows (for example `post_id`, `acf.price`) onto the plot fields the console compares (`id`, `price`, `status`). When this adapter is set and `http_json_items_key` is empty, the fetcher defaults the wrapper key to `contexts`.
 
+### Pagination (added in v0.3.0)
+
+- `http_pagination_mode` (optional): when set, enables paginated fetching from the endpoint before ingest:
+  - `page_per_page`: request page 1..N using `http_page_param` + `http_per_page_param`, combining all returned items into a single array before normalisation/snapshot/comparison.
+- `http_page_param` (optional, default `page`): query param name for page number.
+- `http_per_page_param` (optional, default `per_page`): query param name for page size.
+- `http_per_page` (optional, default `100`): number of items to request per page.
+- `http_max_pages` (optional, default `20`): safety cap to prevent unbounded paging.
+
 **Expected plot records** (after unwrap and optional adapter): a JSON array of objects. Each object should include a stable `id` for comparison. **`status`** must be one of `available`, `coming_soon`, `reserved`, or `sold` (case-insensitive). Missing **`status`** is warned. **`price`**: a missing or empty price triggers a warning **only** when `status` is `available`; for other valid statuses, omitting price is normal. If `price` is present and non-empty, it must be numeric and ≥ 0 regardless of status. A **ContextualWP Housebuilder Pack** plots endpoint that already returns a **top-level array** of objects with these Console-aligned fields needs no `http_json_items_key` or `http_plot_payload_adapter`. See `PlotDatasetIssueDetector`.
 
-Very large responses may hit the HTTP client default timeout; improving `limit`/pagination is a Pack (or separate Console) follow-up.
+Very large responses may hit the HTTP client default timeout; prefer smaller responses (for example server-side `limit`) or enable Console pagination on the monitored source when supported by the endpoint.
+
+### Example: Wyatt Housebuilder Pack plots endpoint (paginated)
+
+```php
+\App\Core\Models\MonitoredSource::where('key', 'wyatt:housebuilder')->update([
+    'endpoint_url' => 'https://www.wyatthomes.co.uk/wp-json/contextualwp-housebuilder/v1/plots',
+    'http_pagination_mode' => 'page_per_page',
+    'http_page_param' => 'page',
+    'http_per_page_param' => 'limit',
+    'http_per_page' => 100,
+    'http_max_pages' => 10,
+]);
+```
 
 Example (no real credentials):
 
