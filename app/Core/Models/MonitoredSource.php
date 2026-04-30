@@ -15,6 +15,11 @@ class MonitoredSource extends Model
         'auth_token_env_key',
         'http_json_items_key',
         'http_plot_payload_adapter',
+        'http_pagination_mode',
+        'http_page_param',
+        'http_per_page_param',
+        'http_per_page',
+        'http_max_pages',
     ];
 
     /**

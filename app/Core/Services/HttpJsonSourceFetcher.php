@@ -32,6 +32,67 @@ class HttpJsonSourceFetcher
             $headers[$headerName] = $this->resolveAuthHeaderValue($tokenEnvKey);
         }
 
+        $paginationMode = trim((string) ($source->http_pagination_mode ?? ''));
+        if ($paginationMode === '') {
+            return $this->fetchAndExtractItems($source, $endpointUrl, $headers);
+        }
+
+        if ($paginationMode !== 'page_per_page') {
+            throw new RuntimeException("Unsupported http_pagination_mode '{$paginationMode}' for monitored source '{$source->key}'.");
+        }
+
+        return $this->fetchAllPagesByPagePerPage($source, $endpointUrl, $headers);
+    }
+
+    /**
+     * @param  array<string, string>  $headers
+     * @return array<int, mixed>
+     */
+    private function fetchAllPagesByPagePerPage(MonitoredSource $source, string $endpointUrl, array $headers): array
+    {
+        $pageParam = trim((string) ($source->http_page_param ?? '')) ?: 'page';
+        $perPageParam = trim((string) ($source->http_per_page_param ?? '')) ?: 'per_page';
+
+        $perPage = (int) ($source->http_per_page ?? 100);
+        if ($perPage <= 0) {
+            $perPage = 100;
+        }
+
+        $maxPages = (int) ($source->http_max_pages ?? 20);
+        if ($maxPages <= 0) {
+            $maxPages = 20;
+        }
+
+        $all = [];
+
+        for ($page = 1; $page <= $maxPages; $page++) {
+            $url = $this->withMergedQueryParams($endpointUrl, [
+                $pageParam => $page,
+                $perPageParam => $perPage,
+            ]);
+
+            $items = $this->fetchAndExtractItems($source, $url, $headers);
+
+            if (count($items) === 0) {
+                break;
+            }
+
+            array_push($all, ...$items);
+
+            if (count($items) < $perPage) {
+                break;
+            }
+        }
+
+        return $all;
+    }
+
+    /**
+     * @param  array<string, string>  $headers
+     * @return array<int, mixed>
+     */
+    private function fetchAndExtractItems(MonitoredSource $source, string $endpointUrl, array $headers): array
+    {
         try {
             $response = $this->http
                 ->timeout(10)
@@ -61,6 +122,61 @@ class HttpJsonSourceFetcher
 
         /** @var array<int|string, mixed> $decoded */
         return $this->extractPlotListItems($source, $decoded);
+    }
+
+    /**
+     * Merge query params into a URL without losing existing query.
+     *
+     * @param  array<string, scalar|null>  $query
+     */
+    private function withMergedQueryParams(string $url, array $query): string
+    {
+        $parts = parse_url($url);
+        if ($parts === false) {
+            throw new RuntimeException("Invalid endpoint URL: {$url}");
+        }
+
+        $existing = [];
+        if (isset($parts['query']) && is_string($parts['query']) && $parts['query'] !== '') {
+            parse_str($parts['query'], $existing);
+        }
+
+        foreach ($query as $k => $v) {
+            $existing[$k] = $v;
+        }
+
+        $scheme = $parts['scheme'] ?? null;
+        $host = $parts['host'] ?? null;
+
+        if (! is_string($scheme) || ! is_string($host) || $scheme === '' || $host === '') {
+            throw new RuntimeException("Invalid endpoint URL: {$url}");
+        }
+
+        $rebuilt = $scheme.'://'.$host;
+
+        if (isset($parts['port'])) {
+            $rebuilt .= ':'.$parts['port'];
+        }
+
+        if (isset($parts['user']) && is_string($parts['user'])) {
+            $rebuilt = $scheme.'://'.$parts['user'].(isset($parts['pass']) ? ':'.$parts['pass'] : '').'@'.$host;
+            if (isset($parts['port'])) {
+                $rebuilt .= ':'.$parts['port'];
+            }
+        }
+
+        $rebuilt .= $parts['path'] ?? '';
+
+        $qs = http_build_query($existing);
+        if ($qs !== '') {
+            $rebuilt .= '?'.$qs;
+        }
+
+        if (isset($parts['fragment']) && is_string($parts['fragment']) && $parts['fragment'] !== '') {
+            $rebuilt .= '#'.$parts['fragment'];
+        }
+
+        return $rebuilt;
     }
 
     /**

@@ -182,3 +182,71 @@ it('defaults to the contexts key when contextualwp_list_contexts adapter is set 
 
     expect($payload)->toBe([['id' => 5]]);
 });
+
+it('fetches all pages when page_per_page pagination mode is enabled and merges results', function () {
+    $requests = [];
+
+    Http::fake(function ($request) use (&$requests) {
+        $requests[] = $request->url();
+
+        $parts = parse_url($request->url());
+        $query = [];
+        parse_str($parts['query'] ?? '', $query);
+
+        $page = (int) ($query['page'] ?? 0);
+        $perPage = (int) ($query['per_page'] ?? 0);
+
+        expect($perPage)->toBe(2);
+
+        return match ($page) {
+            1 => Http::response([['id' => 1], ['id' => 2]], 200), // full page => continue
+            2 => Http::response([['id' => 3]], 200), // partial page => stop
+            default => Http::response([['id' => 999]], 200),
+        };
+    });
+
+    $source = MonitoredSource::create([
+        'key' => 'hb:http-paginated',
+        'name' => 'HTTP Paginated',
+        'endpoint_url' => 'https://example.test/plots',
+        'http_pagination_mode' => 'page_per_page',
+        'http_page_param' => 'page',
+        'http_per_page_param' => 'per_page',
+        'http_per_page' => 2,
+        'http_max_pages' => 10,
+    ]);
+
+    $payload = app(HttpJsonSourceFetcher::class)->fetch($source);
+
+    expect($payload)->toBe([['id' => 1], ['id' => 2], ['id' => 3]])
+        ->and(count($requests))->toBe(2);
+});
+
+it('preserves existing query params when adding pagination params', function () {
+    Http::fake(function ($request) {
+        $parts = parse_url($request->url());
+        $query = [];
+        parse_str($parts['query'] ?? '', $query);
+
+        expect($query)->toMatchArray([
+            'foo' => 'bar',
+            'page' => '1',
+            'per_page' => '2',
+        ]);
+
+        return Http::response([['id' => 1]], 200);
+    });
+
+    $source = MonitoredSource::create([
+        'key' => 'hb:http-paginated-with-query',
+        'name' => 'HTTP Paginated With Query',
+        'endpoint_url' => 'https://example.test/plots?foo=bar',
+        'http_pagination_mode' => 'page_per_page',
+        'http_per_page' => 2,
+        'http_max_pages' => 1,
+    ]);
+
+    $payload = app(HttpJsonSourceFetcher::class)->fetch($source);
+
+    expect($payload)->toBe([['id' => 1]]);
+});
