@@ -87,11 +87,13 @@ class DailySummaryCommand extends Command
             $severityCountsByRunId[$runId][$severity] = $total;
         }
 
+        $this->line('Daily monitoring summary');
         $this->line(sprintf(
-            'Daily monitoring summary (last %d hour(s), since %s):',
+            'Period: last %d hour(s) (since %s)',
             $hours,
             $this->formatTime($cutoff),
         ));
+        $this->newLine();
 
         foreach ($runs as $run) {
             $source = $run->source;
@@ -114,21 +116,28 @@ class DailySummaryCommand extends Command
             $issueCount = (int) ($issueCountsByRunId[(int) $run->id] ?? 0);
             $severityCounts = $severityCountsByRunId[(int) $run->id] ?? [];
 
+            $this->line((string) $source->name);
+            $this->line(sprintf('Source key: %s', (string) $source->key));
             $this->line(sprintf(
-                'source_name="%s" source_key=%s latest_run_id=%d status=%s added=%d removed=%d changed=%d unchanged=%d issues=%d error=%d warning=%d info=%d',
-                (string) $source->name,
-                (string) $source->key,
+                'Latest run: #%d %s',
                 (int) $run->id,
                 (string) $run->status,
+            ));
+            $this->line(sprintf(
+                'Changes: added=%d removed=%d changed=%d unchanged=%d',
                 $added,
                 $removed,
                 $changed,
                 $unchanged,
+            ));
+            $this->line(sprintf(
+                'Issues: %d errors=%d warnings=%d info=%d',
                 $issueCount,
                 (int) ($severityCounts['error'] ?? 0),
                 (int) ($severityCounts['warning'] ?? 0),
                 (int) ($severityCounts['info'] ?? 0),
             ));
+            $this->newLine();
         }
 
         return self::SUCCESS;
