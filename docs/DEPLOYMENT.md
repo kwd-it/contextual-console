@@ -342,6 +342,25 @@ php -r "echo 'Basic ' . base64_encode('YOUR_WP_USERNAME:YOUR_APPLICATION_PASSWOR
 
 Never commit real usernames/passwords, command history containing them, or a populated `.env`.
 
+### Production smoke test (safe / no external calls)
+
+Before running any manual source checks or email sends, run:
+
+```bash
+php artisan contextual-console:smoke-test
+```
+
+This checks basic production readiness **without** calling external endpoints, sending mail, or running scheduled jobs:
+
+- `APP_URL` is set
+- database connection works
+- `migrations` table exists
+- an admin user exists
+- at least one monitored source exists
+- the monitored source has an endpoint URL
+- `CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO` is set
+- `MAIL_FROM_ADDRESS` is set
+
 ### Manual verification commands
 
 After deploy or config changes, run:
