@@ -144,11 +144,14 @@ it('completes a run even when the current payload has invalid rows; persists iss
     expect(ChangeLog::query()->where('entity_type', 'plot')->where('entity_id', 1)->where('field', 'status')->exists())->toBeTrue();
     expect(ChangeLog::query()->where('entity_type', 'plot')->where('entity_id', 2)->where('field', 'presence')->exists())->toBeTrue();
 
-    // Issues should be detected from the raw current payload and linked to this run
+    // Issues should be detected from the raw current payload and linked to this run.
+    // Change-log-driven issues are also created for matched plot field changes.
     $issues = DatasetIssue::query()->where('dataset_comparison_run_id', $run2->id)->get();
-    expect($issues)->toHaveCount(2);
+    expect($issues)->toHaveCount(4);
     expect($issues->where('issue_type', 'invalid_record')->count())->toBe(1);
     expect($issues->where('issue_type', 'missing_required_field')->where('field', 'id')->count())->toBe(1);
+    expect($issues->where('issue_type', 'plot_status_changed')->count())->toBe(1);
+    expect($issues->where('issue_type', 'plot_price_changed')->count())->toBe(1);
 });
 
 it('isolates runs per source (second run compares only against that sources prior snapshot)', function () {

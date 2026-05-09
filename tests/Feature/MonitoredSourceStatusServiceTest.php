@@ -175,17 +175,22 @@ it('does not count issues from older runs', function () {
     $run2->refresh();
 
     expect(DatasetIssue::query()->where('dataset_comparison_run_id', $run1->id)->count())->toBeGreaterThan(0);
-    expect(DatasetIssue::query()->where('dataset_comparison_run_id', $run2->id)->count())->toBe(0);
+    // The second run has no payload-quality issues, but does have change-log-driven review issues (price + status).
+    expect(DatasetIssue::query()->where('dataset_comparison_run_id', $run2->id)->count())->toBe(2);
+    expect(DatasetIssue::query()->where('dataset_comparison_run_id', $run2->id)->where('severity', 'info')->count())->toBe(2);
+    expect(DatasetIssue::query()->where('dataset_comparison_run_id', $run2->id)->where('severity', 'error')->count())->toBe(0);
+    expect(DatasetIssue::query()->where('dataset_comparison_run_id', $run2->id)->where('severity', 'warning')->count())->toBe(0);
 
     $summaries = app(MonitoredSourceStatusService::class)->summaries();
     $summary = summaryFor($summaries, $source->key);
 
     expect($summary['latest_run_id'])->toBe($run2->id);
     expect($summary['latest_run_status'])->toBe('completed');
-    expect($summary['issue_count'])->toBe(0);
+    // Latest run counts should reflect only run2, not the older baseline's issues.
+    expect($summary['issue_count'])->toBe(2);
     expect($summary['error_count'])->toBe(0);
     expect($summary['warning_count'])->toBe(0);
-    expect($summary['info_count'])->toBe(0);
+    expect($summary['info_count'])->toBe(2);
 });
 
 it('handles multiple sources independently', function () {

@@ -75,7 +75,8 @@ it('runs a successful completed run from a JSON file after a baseline exists', f
     $this->artisan('contextual-console:run-plot-source', [
         'sourceKey' => $source->key,
         '--file' => $changedFile,
-    ])->expectsOutputToContain('Issues: 0')
+    ])->expectsOutputToContain('Issues: 2')
+        ->expectsOutputToContain('- info: 2')
         ->assertExitCode(0);
 
     expect(DatasetSnapshot::query()->where('source_id', $source->id)->count())->toBe(2);

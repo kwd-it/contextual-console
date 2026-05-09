@@ -14,6 +14,7 @@ class PlotDatasetRunService
         private PlotDatasetComparisonService $comparison,
         private PlotDatasetPresenceChangeLogger $presenceLogger,
         private PlotDatasetIssueDetector $issueDetector,
+        private PlotDatasetChangeLogIssueCreator $changeLogIssueCreator,
     ) {}
 
     /**
@@ -82,6 +83,7 @@ class PlotDatasetRunService
         ]);
 
         $this->persistIssues($source, $currentSnapshot, $run, $payload);
+        $this->changeLogIssueCreator->createForRun($run);
 
         return $run;
     }
