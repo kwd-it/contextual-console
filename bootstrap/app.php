@@ -8,6 +8,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         \App\Console\Commands\CreateAdminUserCommand::class,
         \App\Console\Commands\DailySummaryCommand::class,
+        \App\Console\Commands\ProductionSmokeTestCommand::class,
         \App\Console\Commands\RunPlotSourceCommand::class,
         \App\Console\Commands\RunHttpPlotSourceCommand::class,
         \App\Console\Commands\RunScheduledSourcesCommand::class,
