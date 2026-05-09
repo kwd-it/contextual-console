@@ -9,6 +9,7 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Console\Commands\CreateAdminUserCommand::class,
         \App\Console\Commands\RunPlotSourceCommand::class,
         \App\Console\Commands\RunHttpPlotSourceCommand::class,
+        \App\Console\Commands\RunScheduledSourcesCommand::class,
         \App\Console\Commands\SourceStatusCommand::class,
     ])
     ->withRouting(
