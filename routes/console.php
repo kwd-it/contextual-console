@@ -9,4 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('contextual-console:run-scheduled-sources')
-    ->daily();
+    ->dailyAt('06:00');
+
+Schedule::command('contextual-console:daily-summary')
+    ->dailyAt('06:30');
