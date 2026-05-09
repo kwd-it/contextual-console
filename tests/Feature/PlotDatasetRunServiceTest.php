@@ -208,6 +208,84 @@ it('isolates runs per source (second run compares only against that sources prio
     ]);
 });
 
+it('links field-level change logs to the dataset comparison run that produced them', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:run-link',
+        'name' => 'Run Link',
+    ]);
+
+    $baseline = [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+        ['id' => 2, 'price' => 200_000, 'status' => 'available'],
+    ];
+
+    $second = [
+        ['id' => 1, 'price' => 110_000, 'status' => 'reserved'], // matched changed (price + status)
+        ['id' => 3, 'price' => 300_000, 'status' => 'available'], // added (presence)
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+
+    expect(ChangeLog::count())->toBe(0);
+
+    $run2 = $service->run($source, $second);
+
+    $logs = ChangeLog::query()->where('entity_type', 'plot')->get();
+    expect($logs)->toHaveCount(4);
+
+    expect($logs->every(fn ($log) => (int) $log->dataset_comparison_run_id === (int) $run2->id))->toBeTrue();
+
+    $price = ChangeLog::query()->where('field', 'price')->where('entity_id', 1)->firstOrFail();
+    expect((int) $price->dataset_comparison_run_id)->toBe((int) $run2->id);
+    expect($price->datasetComparisonRun)->not->toBeNull();
+    expect($price->datasetComparisonRun->id)->toBe($run2->id);
+
+    $status = ChangeLog::query()->where('field', 'status')->where('entity_id', 1)->firstOrFail();
+    expect((int) $status->dataset_comparison_run_id)->toBe((int) $run2->id);
+
+    $presenceAdded = ChangeLog::query()->where('field', 'presence')->where('entity_id', 3)->firstOrFail();
+    expect((int) $presenceAdded->dataset_comparison_run_id)->toBe((int) $run2->id);
+
+    $presenceRemoved = ChangeLog::query()->where('field', 'presence')->where('entity_id', 2)->firstOrFail();
+    expect((int) $presenceRemoved->dataset_comparison_run_id)->toBe((int) $run2->id);
+});
+
+it('links each runs change logs to its own dataset comparison run id', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:run-link-multi',
+        'name' => 'Run Link Multi',
+    ]);
+
+    $baseline = [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ];
+
+    $second = [
+        ['id' => 1, 'price' => 110_000, 'status' => 'available'], // price changed
+    ];
+
+    $third = [
+        ['id' => 1, 'price' => 110_000, 'status' => 'reserved'], // status changed
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+    $run2 = $service->run($source, $second);
+    $run3 = $service->run($source, $third);
+
+    expect($run2->id)->not->toBe($run3->id);
+
+    $priceLog = ChangeLog::query()->where('field', 'price')->where('entity_id', 1)->firstOrFail();
+    expect((int) $priceLog->dataset_comparison_run_id)->toBe((int) $run2->id);
+
+    $statusLog = ChangeLog::query()->where('field', 'status')->where('entity_id', 1)->firstOrFail();
+    expect((int) $statusLog->dataset_comparison_run_id)->toBe((int) $run3->id);
+
+    expect(ChangeLog::query()->where('dataset_comparison_run_id', $run2->id)->count())->toBe(1);
+    expect(ChangeLog::query()->where('dataset_comparison_run_id', $run3->id)->count())->toBe(1);
+});
+
 it('persists a summary that exactly matches the comparison output fields', function () {
     $source = MonitoredSource::create([
         'key' => 'hb:test-summary',

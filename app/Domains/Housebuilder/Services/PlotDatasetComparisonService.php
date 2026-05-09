@@ -24,7 +24,7 @@ class PlotDatasetComparisonService
      *   removed_ids: array<int, int|string>
      * }
      */
-    public function compare(iterable $before, iterable $after): array
+    public function compare(iterable $before, iterable $after, ?int $datasetComparisonRunId = null): array
     {
         $beforeById = $this->plotsById($before);
         $afterById = $this->plotsById($after);
@@ -45,7 +45,7 @@ class PlotDatasetComparisonService
             $oldPlot = $beforeById->get($id);
             $newPlot = $afterById->get($id);
 
-            $logged = $this->plotChangeDetector->detect($oldPlot, $newPlot);
+            $logged = $this->plotChangeDetector->detect($oldPlot, $newPlot, $datasetComparisonRunId);
 
             if ($logged > 0) {
                 $changed++;

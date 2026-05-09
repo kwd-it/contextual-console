@@ -17,15 +17,14 @@ class PlotDatasetPresenceChangeLogger
      *   removed_ids?: array<int, int|string>
      * }  $comparison
      */
-    public function logFromComparison(array $comparison): void
+    public function logFromComparison(array $comparison, ?int $datasetComparisonRunId = null): void
     {
         foreach (($comparison['added_ids'] ?? []) as $plotId) {
-            $this->changeDetection->recordDomainField('plot', $plotId, 'presence', null, 'present');
+            $this->changeDetection->recordDomainField('plot', $plotId, 'presence', null, 'present', $datasetComparisonRunId);
         }
 
         foreach (($comparison['removed_ids'] ?? []) as $plotId) {
-            $this->changeDetection->recordDomainField('plot', $plotId, 'presence', 'present', null);
+            $this->changeDetection->recordDomainField('plot', $plotId, 'presence', 'present', null, $datasetComparisonRunId);
         }
     }
 }
-

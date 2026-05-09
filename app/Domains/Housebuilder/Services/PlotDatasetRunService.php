@@ -53,23 +53,31 @@ class PlotDatasetRunService
             return $run;
         }
 
+        // Create the run up-front so any ChangeLog rows produced by the comparison
+        // and presence logging below can be linked to it via dataset_comparison_run_id.
+        $run = DatasetComparisonRun::create([
+            'source_id' => $source->id,
+            'current_snapshot_id' => $currentSnapshot->id,
+            'previous_snapshot_id' => $previousSnapshot->id,
+            'status' => 'completed',
+            'summary' => null,
+            'started_at' => $startedAt,
+            'finished_at' => null,
+        ]);
+
         $previousComparable = $this->comparablePayload($previousSnapshot->payload ?? []);
         $currentComparable = $this->comparablePayload($payload);
 
         $summary = $this->comparison->compare(
             $previousComparable,
             $currentComparable,
+            $run->id,
         );
 
-        $this->presenceLogger->logFromComparison($summary);
+        $this->presenceLogger->logFromComparison($summary, $run->id);
 
-        $run = DatasetComparisonRun::create([
-            'source_id' => $source->id,
-            'current_snapshot_id' => $currentSnapshot->id,
-            'previous_snapshot_id' => $previousSnapshot->id,
-            'status' => 'completed',
+        $run->update([
             'summary' => $summary,
-            'started_at' => $startedAt,
             'finished_at' => now(),
         ]);
 
@@ -129,4 +137,3 @@ class PlotDatasetRunService
         }
     }
 }
-

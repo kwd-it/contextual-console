@@ -13,7 +13,7 @@ class PlotChangeDetector
      *
      * Returns the number of field-level changes logged.
      */
-    public function detect(array $oldPlot, array $newPlot): int
+    public function detect(array $oldPlot, array $newPlot, ?int $datasetComparisonRunId = null): int
     {
         $plotId = $newPlot['id'] ?? $oldPlot['id'] ?? null;
         if ($plotId === null) {
@@ -31,7 +31,7 @@ class PlotChangeDetector
             }
 
             // Canonical plot key: the plot payload's `id` field (see PlotDatasetComparisonService::plotsById).
-            $this->changeDetection->recordDomainField('plot', $plotId, $field, $oldValue, $newValue);
+            $this->changeDetection->recordDomainField('plot', $plotId, $field, $oldValue, $newValue, $datasetComparisonRunId);
             $logged++;
         }
 
