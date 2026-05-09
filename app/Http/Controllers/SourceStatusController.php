@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Core\Models\ChangeLog;
 use App\Core\Models\DatasetComparisonRun;
 use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
@@ -70,6 +71,17 @@ class SourceStatusController extends Controller
                 ->get();
         }
 
+        $latestRunChanges = collect();
+        if ($latestRun !== null) {
+            $latestRunChanges = ChangeLog::query()
+                ->where('dataset_comparison_run_id', $latestRun->id)
+                ->orderBy('entity_id')
+                ->orderBy('field')
+                ->orderBy('id')
+                ->limit(250)
+                ->get();
+        }
+
         return view('sources.show', [
             'source' => $source,
             'recentRuns' => $recentRuns,
@@ -77,6 +89,7 @@ class SourceStatusController extends Controller
             'issueCountsByRunId' => $issueCountsByRunId,
             'severityCountsByRunId' => $severityCountsByRunId,
             'latestRunIssues' => $latestRunIssues,
+            'latestRunChanges' => $latestRunChanges,
         ]);
     }
 }

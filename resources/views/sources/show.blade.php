@@ -163,6 +163,36 @@
             </table>
         @endif
 
+        <h2>Latest run changes</h2>
+        @if ($latestRun === null)
+            <p class="muted">No changes found for the latest run.</p>
+        @elseif ($latestRunChanges->isEmpty())
+            <p class="muted">No changes found for the latest run.</p>
+        @else
+            <table>
+                <thead>
+                    <tr>
+                        <th>Entity</th>
+                        <th>Field</th>
+                        <th>Old value</th>
+                        <th>New value</th>
+                        <th>Changed at</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($latestRunChanges as $change)
+                        <tr>
+                            <td class="mono">{{ $change->entity_id }}</td>
+                            <td class="mono">{{ $change->field }}</td>
+                            <td class="mono">{{ $change->old_value ?? '-' }}</td>
+                            <td class="mono">{{ $change->new_value ?? '-' }}</td>
+                            <td class="mono">{{ $change->changed_at?->toDateTimeString() ?? '-' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+
         <h2>Latest run issues</h2>
         @if ($latestRun === null)
             <p class="muted">No issues found for the latest run.</p>

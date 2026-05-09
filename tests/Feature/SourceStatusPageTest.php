@@ -1,6 +1,7 @@
 <?php
 
 use App\Core\Models\DatasetIssue;
+use App\Core\Models\ChangeLog;
 use App\Core\Models\MonitoredSource;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
 use App\Models\User;
@@ -198,6 +199,144 @@ it('does not show old-run issues as latest-run issues', function () {
         ->assertOk()
         ->assertSeeText('No issues found for the latest run.')
         ->assertDontSeeText((string) $oldIssueMessage);
+});
+
+it('shows linked latest-run changes on the detail page', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:page-detail-latest-run-changes',
+        'name' => 'Page Detail Latest Run Changes',
+    ]);
+
+    $baseline = [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ];
+
+    $second = [
+        ['id' => 1, 'price' => 110_000, 'status' => 'reserved'], // changed
+        ['id' => 2, 'price' => 200_000, 'status' => 'available'], // added => presence change
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+    $run2 = $service->run($source, $second);
+    $run2->refresh();
+
+    $changes = ChangeLog::query()
+        ->where('dataset_comparison_run_id', $run2->id)
+        ->orderBy('entity_id')
+        ->orderBy('field')
+        ->get();
+
+    expect($changes->count())->toBeGreaterThan(0);
+
+    $sample = $changes->first();
+    expect($sample)->not->toBeNull();
+
+    $resp = $this->actingAs($user)->get(route('sources.show', $source))
+        ->assertOk()
+        ->assertSeeText('Latest run changes')
+        ->assertSeeText((string) $sample->entity_id)
+        ->assertSeeText((string) $sample->field);
+
+    if ($sample->old_value !== null) {
+        $resp->assertSeeText((string) $sample->old_value);
+    }
+
+    if ($sample->new_value !== null) {
+        $resp->assertSeeText((string) $sample->new_value);
+    }
+});
+
+it('does not show old-run changes as latest-run changes', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:page-detail-old-run-changes',
+        'name' => 'Page Detail Old Run Changes',
+    ]);
+
+    $baseline = [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+
+    // Run 2 introduces a status change that should NOT show in the latest run changes.
+    $run2 = $service->run($source, [
+        ['id' => 1, 'price' => 110_000, 'status' => 'coming_soon'], // changed (status + price)
+    ]);
+    $run2->refresh();
+
+    $oldRunChangeNewValue = ChangeLog::query()
+        ->where('dataset_comparison_run_id', $run2->id)
+        ->where('field', 'status')
+        ->orderByDesc('id')
+        ->value('new_value');
+
+    expect($oldRunChangeNewValue)->not->toBeNull();
+
+    // Run 3 only changes price; status remains the same, so the old status change should not appear.
+    $run3 = $service->run($source, [
+        ['id' => 1, 'price' => 120_000, 'status' => 'coming_soon'], // changed (price only)
+    ]);
+    $run3->refresh();
+
+    $latestRunChangesCount = ChangeLog::query()
+        ->where('dataset_comparison_run_id', $run3->id)
+        ->count();
+
+    expect($latestRunChangesCount)->toBeGreaterThan(0);
+
+    $this->actingAs($user)
+        ->get(route('sources.show', $source))
+        ->assertOk()
+        ->assertSeeText('Latest run changes')
+        ->assertDontSeeText((string) $oldRunChangeNewValue);
+});
+
+it('shows an empty state when latest run has no linked changes', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:page-detail-latest-run-no-changes',
+        'name' => 'Page Detail Latest Run No Changes',
+    ]);
+
+    $baseline = [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ];
+
+    $changed = [
+        ['id' => 1, 'price' => 110_000, 'status' => 'reserved'], // changed
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+
+    $run2 = $service->run($source, $changed);
+    $run2->refresh();
+
+    $run2ChangeCount = ChangeLog::query()
+        ->where('dataset_comparison_run_id', $run2->id)
+        ->count();
+
+    expect($run2ChangeCount)->toBeGreaterThan(0);
+
+    // Latest run repeats the same dataset, producing no change logs.
+    $run3 = $service->run($source, $changed);
+    $run3->refresh();
+
+    $run3ChangeCount = ChangeLog::query()
+        ->where('dataset_comparison_run_id', $run3->id)
+        ->count();
+
+    expect($run3ChangeCount)->toBe(0);
+
+    $this->actingAs($user)
+        ->get(route('sources.show', $source))
+        ->assertOk()
+        ->assertSeeText('Latest run changes')
+        ->assertSeeText('No changes found for the latest run.');
 });
 
 it('shows latest completed run summary and issue counts', function () {

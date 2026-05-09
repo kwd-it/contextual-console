@@ -17,6 +17,10 @@ class ChangeLog extends Model
         'changed_at',
     ];
 
+    protected $casts = [
+        'changed_at' => 'datetime',
+    ];
+
     /**
      * @return BelongsTo<DatasetComparisonRun, $this>
      */
