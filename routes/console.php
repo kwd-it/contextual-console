@@ -11,5 +11,5 @@ Artisan::command('inspire', function () {
 Schedule::command('contextual-console:run-scheduled-sources')
     ->dailyAt('06:00');
 
-Schedule::command('contextual-console:daily-summary')
+Schedule::command('contextual-console:daily-summary --email')
     ->dailyAt('06:30');
