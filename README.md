@@ -12,6 +12,8 @@ The long-term focus is operational visibility across many properties: change his
 
 This project is early-stage but usable for manually ingesting and reviewing changes in Housebuilder plot datasets:
 
+As of **v0.4.0**, this is the **first deployment-ready monitoring release**.
+
 - **Monitored sources** (`MonitoredSource`): identify feeds by stable `key`, with a configured endpoint and optional HTTP ingest settings.
 - **HTTP JSON plot ingest**: read-only GET via `php artisan contextual-console:run-http-plot-source`.
 - **Auth header values from env** (optional): `auth_header_name` + `auth_token_env_key` send a full header value from environment (nothing secret stored in DB).
