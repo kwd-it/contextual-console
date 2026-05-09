@@ -390,3 +390,89 @@ it('shows latest completed run summary and issue counts', function () {
         $resp->assertSeeText("warning={$warningIssues}");
     }
 });
+
+it('shows a failed latest run safely on the source list page', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:page-failed-run-list',
+        'name' => 'Page Failed Run List',
+    ]);
+
+    $run = \App\Core\Models\DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'source_run_failed',
+        'severity' => 'error',
+        'message' => 'Source run failed',
+        'context' => ['reason' => 'boom'],
+    ]);
+
+    $this->actingAs($user)
+        ->get('/sources')
+        ->assertOk()
+        ->assertSeeText($source->name)
+        ->assertSeeText($source->key)
+        ->assertSeeText('failed')
+        ->assertSeeText("Run ID: {$run->id}")
+        ->assertSeeText('Current snapshot ID: -')
+        ->assertSeeText('added=0')
+        ->assertSeeText('removed=0')
+        ->assertSeeText('changed=0')
+        ->assertSeeText('unchanged=0');
+});
+
+it('shows a failed latest run and its source_run_failed issue on the source detail page', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:page-failed-run-detail',
+        'name' => 'Page Failed Run Detail',
+    ]);
+
+    $run = \App\Core\Models\DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    $issue = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'source_run_failed',
+        'severity' => 'error',
+        'message' => 'Source run failed hard',
+        'context' => ['reason' => 'timeout'],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('sources.show', $source))
+        ->assertOk()
+        ->assertSeeText('Latest run summary')
+        ->assertSeeText('failed')
+        ->assertSeeText((string) $run->id)
+        ->assertSeeText('Current snapshot id')
+        ->assertSeeText('-')
+        ->assertSeeText('added=0')
+        ->assertSeeText('removed=0')
+        ->assertSeeText('changed=0')
+        ->assertSeeText('unchanged=0')
+        ->assertSeeText('Latest run issues')
+        ->assertSeeText((string) $issue->severity)
+        ->assertSeeText((string) $issue->issue_type)
+        ->assertSeeText((string) $issue->message);
+});
