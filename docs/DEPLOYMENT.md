@@ -5,7 +5,8 @@ This guide is for an **early private deployment** of Contextual Console on a sma
 Scope and non-goals for this branch:
 
 - This is **not** CI/CD automation.
-- No scheduling, queues, alerts, Docker, or provider tooling (Forge/Ploi/etc).
+- No queues-as-primary-ingest requirement, Docker, or provider tooling (Forge/Ploi/etc) is assumed here.
+- Scheduled jobs use Laravel’s **scheduler** plus a single **cron** entry on the server (see section 9).
 - Keep it small, practical, and easy to follow.
 
 ---
@@ -60,6 +61,22 @@ If you are using HTTPS (you should):
 
 - **`SESSION_SECURE_COOKIE=true`**
 
+### Mail (daily summary email)
+
+The `contextual-console:daily-summary --email` command sends mail through Laravel’s mail stack. Set at least:
+
+- **`MAIL_MAILER`**: e.g. `smtp` (or your provider’s mailer)
+- **`MAIL_HOST`**, **`MAIL_PORT`**
+- **`MAIL_USERNAME`**, **`MAIL_PASSWORD`** (if your provider requires them)
+- **`MAIL_SCHEME`**: e.g. `tls` or `ssl` when required by the provider
+- **`MAIL_FROM_ADDRESS`**, **`MAIL_FROM_NAME`**
+
+Align values with your provider’s documentation. Do not commit real credentials.
+
+### Daily summary recipient
+
+- **`CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO`**: recipient email address for the scheduled daily summary (used when the scheduler runs `contextual-console:daily-summary --email`).
+
 ### ContextualWP / HTTP ingest auth (env only)
 
 For HTTP sources, `monitored_sources` stores only `auth_header_name` and `auth_token_env_key`. The environment variable named by `auth_token_env_key` must hold the **header value only** (for example a raw bearer token, or `Basic …` for Application Passwords). The header **name** (for example `Authorization`) is stored in `auth_header_name`; do not prefix the env value with `Authorization:`.
@@ -68,12 +85,30 @@ For HTTP sources, `monitored_sources` stores only `auth_header_name` and `auth_t
 - Do **not** store secrets in the database, code, docs, fixtures, or seeders
 - Do **not** commit real credentials
 
+**Wyatt / WordPress example:** when the monitored source uses `auth_token_env_key` `WYATT_CONTEXTUALWP_AUTH`, set that variable on the server to the full header **value** (for Basic auth, typically `Basic <base64>`). See section 9 for generating the value from a WordPress Application Password without putting secrets in the repo.
+
 Examples (placeholders only):
 
 ```env
 CONTEXTUALWP_TOKEN_HB_EXAMPLE=
 WYATT_CONTEXTUALWP_AUTH=
+CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO=ops@example.com
 ```
+
+---
+
+### Production `.env` checklist (concise)
+
+| Variable | Notes |
+|----------|--------|
+| `APP_ENV` | `production` |
+| `APP_KEY` | `php artisan key:generate` on the server (once) |
+| `APP_URL` | Public HTTPS base URL of the app |
+| `APP_DEBUG` | `false` |
+| `DB_*` | SQLite **or** MySQL/Postgres (see Database above) |
+| `MAIL_*` | Provider-specific; required for emailed daily summary |
+| `CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO` | Inbox for the daily summary email |
+| `WYATT_CONTEXTUALWP_AUTH` | Only if a source uses that env key; header **value** only |
 
 ---
 
@@ -176,6 +211,8 @@ php artisan contextual-console:run-http-plot-source hb:example
 - Then `/sources`
 - Then `/sources/{source}`
 
+13. **Scheduler cron** (automated source checks + daily summary email): install the cron line in section 9 and set mail / `CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO` in `.env`.
+
 ---
 
 ## 4) Nginx notes (Laravel)
@@ -197,7 +234,7 @@ If you already have a Laravel Nginx snippet convention in your infra, use that r
   - Keep the DB file on persistent disk.
   - Ensure file permissions are correct for the PHP-FPM user.
 - **MySQL/Postgres is better** before:
-  - scheduled polling (future),
+  - heavier scheduled polling volume,
   - larger snapshot history,
   - multi-user use,
   - or if you want established backup tooling and monitoring from day one.
@@ -271,3 +308,55 @@ php artisan contextual-console:source-status
 
 - `/sources`
 - `/sources/{source}`
+
+---
+
+## 9) Production scheduler (cron), Wyatt auth, and verification
+
+The app registers schedule entries in `routes/console.php`:
+
+- **06:00** — `contextual-console:run-scheduled-sources` (HTTP source checks for sources that are due)
+- **06:30** — `contextual-console:daily-summary --email` (daily monitoring summary by email)
+
+Laravel only runs the schedule when invoked; on the server, install a **single cron** entry as the user that owns the app files (adjust the path):
+
+```cron
+* * * * * cd /path/to/contextual-console && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### `WYATT_CONTEXTUALWP_AUTH` from a WordPress Application Password (no secrets in git)
+
+WordPress Application Passwords authenticate with HTTP Basic auth. The **header value** Laravel sends is the string `Basic ` followed by Base64 of `wordpress_username:application_password` (the password is the full generated string, often with spaces—paste it exactly).
+
+1. Create an Application Password in WordPress for a suitable user (Users → your user → Application Passwords).
+2. On the **server** (SSH), build the value **without** storing it in the repository:
+   - Prefer a one-off command where you substitute placeholders locally in your session, or pipe from a file you delete immediately after editing `.env`.
+   - Example shape only (replace placeholders; do not commit this line):
+
+```bash
+php -r "echo 'Basic ' . base64_encode('YOUR_WP_USERNAME:YOUR_APPLICATION_PASSWORD');"
+```
+
+3. Put the **entire printed string** (starting with `Basic `) into `WYATT_CONTEXTUALWP_AUTH` in the server’s `.env`.
+4. Ensure the monitored source row uses `auth_header_name` `Authorization` and `auth_token_env_key` `WYATT_CONTEXTUALWP_AUTH` (header **name** in the database; **value** only in env).
+
+Never commit real usernames/passwords, command history containing them, or a populated `.env`.
+
+### Manual verification commands
+
+After deploy or config changes, run:
+
+```bash
+php artisan migrate --force
+php artisan contextual-console:run-scheduled-sources
+php artisan contextual-console:daily-summary
+php artisan contextual-console:daily-summary --email
+```
+
+- Use `--email` only when mail is configured and `CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO` is set; the scheduled job runs with `--email` at **06:30**.
+
+To confirm what Laravel would run and when:
+
+```bash
+php artisan schedule:list
+```

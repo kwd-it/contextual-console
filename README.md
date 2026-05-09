@@ -80,7 +80,7 @@ Default local database in `.env.example` is **SQLite**.
 
 ## Deployment (private VPS)
 
-See `docs/DEPLOYMENT.md` for a first private VPS deployment guide (Ubuntu LTS + Nginx + PHP-FPM, HTTPS, environment settings, creating the first admin user, configuring a real HTTP source, and running a manual ingest).
+See `docs/DEPLOYMENT.md` for a first private VPS deployment guide (Ubuntu LTS + Nginx + PHP-FPM, HTTPS, environment settings, Laravel scheduler cron, daily summary email env, creating the first admin user, configuring a real HTTP source, and running a manual ingest).
 
 ## Local development
 
