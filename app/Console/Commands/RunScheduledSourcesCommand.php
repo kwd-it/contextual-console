@@ -2,7 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Core\Models\DatasetComparisonRun;
 use App\Core\Models\DatasetIssue;
+use App\Core\Models\DatasetSnapshot;
 use App\Core\Models\MonitoredSource;
 use App\Core\Services\HttpJsonSourceFetcher;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
@@ -36,6 +38,8 @@ class RunScheduledSourcesCommand extends Command
         $anyFailures = false;
 
         foreach ($sources as $source) {
+            $startedAt = now();
+
             try {
                 $payload = $payloadNormalizer->normalize($source, $fetcher->fetch($source));
                 $run = $service->run($source, $payload);
@@ -67,7 +71,43 @@ class RunScheduledSourcesCommand extends Command
                 }
             } catch (RuntimeException $e) {
                 $anyFailures = true;
-                $this->error(sprintf('source=%s run_id=none status=failed issues=unknown (%s)', (string) $source->key, $e->getMessage()));
+
+                $previousSnapshot = DatasetSnapshot::query()
+                    ->where('source_id', $source->id)
+                    ->latest('id')
+                    ->first();
+
+                $failedRun = DatasetComparisonRun::create([
+                    'source_id' => $source->id,
+                    'current_snapshot_id' => null,
+                    'previous_snapshot_id' => $previousSnapshot?->id,
+                    'status' => 'failed',
+                    'summary' => null,
+                    'started_at' => $startedAt,
+                    'finished_at' => now(),
+                ]);
+
+                DatasetIssue::create([
+                    'monitored_source_id' => $source->id,
+                    'dataset_snapshot_id' => null,
+                    'dataset_comparison_run_id' => $failedRun->id,
+                    'entity_type' => null,
+                    'entity_id' => null,
+                    'field' => null,
+                    'issue_type' => 'source_run_failed',
+                    'severity' => 'error',
+                    'message' => "Scheduled source run failed for {$source->key}.",
+                    'context' => [
+                        'exception_message' => $e->getMessage(),
+                    ],
+                ]);
+
+                $this->error(sprintf(
+                    'source=%s run_id=%d status=failed issues=1 (%s)',
+                    (string) $source->key,
+                    (int) $failedRun->id,
+                    $e->getMessage(),
+                ));
             }
         }
 
