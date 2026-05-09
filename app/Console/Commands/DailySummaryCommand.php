@@ -7,10 +7,13 @@ use App\Core\Models\DatasetIssue;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class DailySummaryCommand extends Command
 {
-    protected $signature = 'contextual-console:daily-summary {--hours=24 : Look back this many hours for runs}';
+    protected $signature = 'contextual-console:daily-summary
+        {--hours=24 : Look back this many hours for runs}
+        {--email : Email the summary to the configured recipient}';
 
     protected $description = 'Summarise recent monitoring results by monitored source (for future notifications).';
 
@@ -45,11 +48,24 @@ class DailySummaryCommand extends Command
         )));
 
         if ($latestRunIds === []) {
-            $this->line(sprintf(
+            $summary = sprintf(
                 'No monitoring runs found in the last %d hour(s) (since %s).',
                 $hours,
                 $this->formatTime($cutoff),
-            ));
+            );
+
+            $this->line($summary);
+
+            if ((bool) $this->option('email')) {
+                $to = (string) config('contextual_console.daily_summary_to', '');
+                if (trim($to) === '') {
+                    $this->error('Daily summary email requested, but no recipient is configured. Set CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO.');
+
+                    return self::FAILURE;
+                }
+
+                Mail::send((new \App\Mail\ContextualConsoleDailySummaryMail($summary))->to($to));
+            }
 
             return self::SUCCESS;
         }
@@ -87,13 +103,14 @@ class DailySummaryCommand extends Command
             $severityCountsByRunId[$runId][$severity] = $total;
         }
 
-        $this->line('Daily monitoring summary');
-        $this->line(sprintf(
+        $lines = [];
+        $lines[] = 'Daily monitoring summary';
+        $lines[] = sprintf(
             'Period: last %d hour(s) (since %s)',
             $hours,
             $this->formatTime($cutoff),
-        ));
-        $this->newLine();
+        );
+        $lines[] = '';
 
         foreach ($runs as $run) {
             $source = $run->source;
@@ -116,28 +133,43 @@ class DailySummaryCommand extends Command
             $issueCount = (int) ($issueCountsByRunId[(int) $run->id] ?? 0);
             $severityCounts = $severityCountsByRunId[(int) $run->id] ?? [];
 
-            $this->line((string) $source->name);
-            $this->line(sprintf('Source key: %s', (string) $source->key));
-            $this->line(sprintf(
+            $lines[] = (string) $source->name;
+            $lines[] = sprintf('Source key: %s', (string) $source->key);
+            $lines[] = sprintf(
                 'Latest run: #%d %s',
                 (int) $run->id,
                 (string) $run->status,
-            ));
-            $this->line(sprintf(
+            );
+            $lines[] = sprintf(
                 'Changes: added=%d removed=%d changed=%d unchanged=%d',
                 $added,
                 $removed,
                 $changed,
                 $unchanged,
-            ));
-            $this->line(sprintf(
+            );
+            $lines[] = sprintf(
                 'Issues: %d errors=%d warnings=%d info=%d',
                 $issueCount,
                 (int) ($severityCounts['error'] ?? 0),
                 (int) ($severityCounts['warning'] ?? 0),
                 (int) ($severityCounts['info'] ?? 0),
-            ));
-            $this->newLine();
+            );
+            $lines[] = '';
+        }
+
+        $summary = implode(PHP_EOL, $lines);
+
+        $this->line($summary);
+
+        if ((bool) $this->option('email')) {
+            $to = (string) config('contextual_console.daily_summary_to', '');
+            if (trim($to) === '') {
+                $this->error('Daily summary email requested, but no recipient is configured. Set CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO.');
+
+                return self::FAILURE;
+            }
+
+            Mail::send((new \App\Mail\ContextualConsoleDailySummaryMail($summary))->to($to));
         }
 
         return self::SUCCESS;
