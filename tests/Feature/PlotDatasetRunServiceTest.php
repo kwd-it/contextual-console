@@ -289,6 +289,66 @@ it('links each runs change logs to its own dataset comparison run id', function 
     expect(ChangeLog::query()->where('dataset_comparison_run_id', $run3->id)->count())->toBe(1);
 });
 
+it('records change logs for newly tracked plot fields without inflating added/removed/unchanged counts or creating new issues', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:newly-tracked-fields',
+        'name' => 'Newly Tracked Fields',
+    ]);
+
+    $baseline = [
+        [
+            'id' => 1,
+            'price' => 100_000,
+            'status' => 'available',
+            'title' => 'Plot 12 - The Oakwood',
+            'bedrooms' => 3,
+            'development' => 'Maple Fields',
+            'house_type' => 'Detached',
+            'url' => 'https://example.test/plots/12',
+        ],
+    ];
+
+    $second = [
+        [
+            'id' => 1,
+            'price' => 100_000, // unchanged
+            'status' => 'available', // unchanged
+            'title' => 'Plot 12 - The Oakwood (Show home)',
+            'bedrooms' => 4,
+            'development' => 'Maple Fields - Phase 2',
+            'house_type' => 'Semi-detached',
+            'url' => 'https://example.test/plots/12-renamed',
+        ],
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+    $run2 = $service->run($source, $second);
+    $run2->refresh();
+
+    // The matched plot now has tracked-field changes, so it counts as `changed` (not `unchanged`).
+    expect($run2->summary)->toBe([
+        'added' => 0,
+        'removed' => 0,
+        'changed' => 1,
+        'unchanged' => 0,
+        'added_ids' => [],
+        'removed_ids' => [],
+    ]);
+
+    foreach (['title', 'bedrooms', 'development', 'house_type', 'url'] as $field) {
+        expect(ChangeLog::query()
+            ->where('entity_type', 'plot')
+            ->where('entity_id', 1)
+            ->where('field', $field)
+            ->where('dataset_comparison_run_id', $run2->id)
+            ->exists())->toBeTrue();
+    }
+
+    // No price/status changes, no presence changes => no change-log-driven issues.
+    expect(DatasetIssue::query()->where('dataset_comparison_run_id', $run2->id)->count())->toBe(0);
+});
+
 it('persists a summary that exactly matches the comparison output fields', function () {
     $source = MonitoredSource::create([
         'key' => 'hb:test-summary',

@@ -41,6 +41,10 @@ class PlotChangeDetector
     /**
      * Keep this list small and explicit; only scalar/null fields.
      *
+     * Issue creation for matched-plot changes is gated separately in
+     * {@see PlotDatasetChangeLogIssueCreator}; adding a field here records
+     * the change passively without creating an issue/warning.
+     *
      * @return array<int, string>
      */
     private function comparableFields(): array
@@ -48,6 +52,11 @@ class PlotChangeDetector
         return [
             'price',
             'status',
+            'title',
+            'bedrooms',
+            'development',
+            'house_type',
+            'url',
         ];
     }
 
