@@ -6,6 +6,34 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
+it('redirects the root path to the sources index route', function () {
+    $this->get('/')
+        ->assertRedirect(route('sources.index'));
+});
+
+it('does not return the default Laravel welcome page for the root path', function () {
+    $response = $this->get('/');
+
+    $response->assertRedirect(route('sources.index'));
+    expect($response->status())->not->toBe(200);
+    expect($response->getContent())->not->toContain("Let's get started");
+});
+
+it('routes unauthenticated visitors from the root path through the login flow', function () {
+    $this->followingRedirects()
+        ->get('/')
+        ->assertOk()
+        ->assertSeeText('Sign in');
+});
+
+it('redirects authenticated users from the root path to the sources index', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get('/')
+        ->assertRedirect(route('sources.index'));
+});
+
 it('redirects unauthenticated users from /sources to /login', function () {
     $this->get('/sources')
         ->assertRedirect(route('login'));

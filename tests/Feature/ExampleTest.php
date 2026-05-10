@@ -1,7 +1,6 @@
 <?php
 
-test('the application returns a successful response', function () {
-    $response = $this->get('/');
-
-    $response->assertStatus(200);
+test('the root path redirects to the sources index route', function () {
+    $this->get('/')
+        ->assertRedirect(route('sources.index'));
 });
