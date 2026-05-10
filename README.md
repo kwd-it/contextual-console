@@ -12,7 +12,7 @@ The long-term focus is operational visibility across many properties: change his
 
 This project is early-stage but usable for manually ingesting and reviewing changes in Housebuilder plot datasets:
 
-As of **v0.4.0**, this is the **first deployment-ready monitoring release**.
+The **first deployment-ready monitoring release** was **v0.4.0**; **v0.5.0** builds on that baseline with dashboard and navigation polish, explicit scheduler timezone defaults, and broader passive plot field tracking—see `CHANGELOG.md`.
 
 - **Monitored sources** (`MonitoredSource`): identify feeds by stable `key`, with a configured endpoint and optional HTTP ingest settings.
 - **HTTP JSON plot ingest**: read-only GET via `php artisan contextual-console:run-http-plot-source`.
@@ -24,7 +24,7 @@ As of **v0.4.0**, this is the **first deployment-ready monitoring release**.
 - **Comparison runs** (`DatasetComparisonRun`): baseline then compare-to-previous summaries (`added`, `removed`, `changed`, `unchanged`) and change logs.
 - **Issue detection**: dataset-level validation (invalid/missing ids, duplicates, missing/invalid `status`, and status-aware `price` rules). See `PlotDatasetIssueDetector`.
 - **Source status**: CLI summary via `php artisan contextual-console:source-status`.
-- **Read-only dashboard pages**: `/sources` and `/sources/{source}` (login required).
+- **Read-only dashboard pages**: `/sources` and `/sources/{source}` (login required); `/` redirects to `/sources`.
 - **Admin login**: session login, bootstrap with `php artisan contextual-console:create-admin-user`.
 
 For release history, see `CHANGELOG.md`.

@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-05-10
+
+Incremental refinements on the v0.4.0 monitoring baseline: clearer navigation, predictable scheduler timezones, and richer passive plot change visibility.
+
+### Dashboard and navigation
+
+- Redirect the site root (`/`) to the sources dashboard (`/sources`).
+- Polish source list and source detail dashboard presentation.
+
+### Scheduling
+
+- Run the Laravel scheduler in an explicit timezone (default **Europe/London**), while keeping stored application timestamps in **UTC**.
+
+### Change tracking
+
+- Log matched-plot changes for **title**, **bedrooms**, **development**, **house type** (`house_type`), and **url** in addition to **price** and **status**; dataset issues for matched plots still derive only from presence, price, and status change logs (other fields are recorded without raising plot-level issues).
+
 ## [0.4.0] - 2026-05-09
 
 This is the **first deployment-ready monitoring release**.
