@@ -3,83 +3,112 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console</title>
-        <style>
-            body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; margin: 24px; color: #111827; }
-            h1 { margin: 0 0 16px; font-size: 22px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
-            th { font-weight: 600; color: #374151; font-size: 13px; }
-            td { font-size: 14px; }
-            .muted { color: #6b7280; }
-            .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; }
-            .details { padding-top: 2px; }
-        </style>
+        <title>Contextual Console — Sources</title>
+        @include('sources._dashboard-styles')
     </head>
     <body>
-        <h1>Monitored Sources</h1>
+        <div class="cc-page">
+            <header class="cc-page-header">
+                <h1 class="cc-page-title">Sources</h1>
+                <p class="cc-page-sub">Latest run status, change counts, and issues for each monitored source.</p>
+            </header>
 
-        @if (empty($summaries))
-            <p class="muted">No monitored sources found.</p>
-        @else
-            <table>
-                <thead>
-                    <tr>
-                        <th>Source</th>
-                        <th>Key</th>
-                        <th>Latest run</th>
-                        <th>Finished</th>
-                        <th>Changes</th>
-                        <th>Issues</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($summaries as $s)
-                        @php
-                            $latestStatus = $s['latest_run_status'] ?? null;
-                            $latestStatusLabel = $latestStatus ?? 'none';
+            @if (empty($summaries))
+                <div class="cc-card">
+                    <div class="cc-card-body--padded cc-empty">
+                        <p class="cc-empty-title">No sources configured</p>
+                        <p class="muted">No monitored sources found.</p>
+                    </div>
+                </div>
+            @else
+                <div class="cc-card">
+                    <div class="cc-card-header">
+                        <h2 class="cc-card-title">Monitored sources</h2>
+                        <p class="cc-card-desc">{{ count($summaries) }} source{{ count($summaries) === 1 ? '' : 's' }}</p>
+                    </div>
+                    <div class="cc-card-body">
+                        <table class="cc-table">
+                            <thead>
+                                <tr>
+                                    <th>Source</th>
+                                    <th>Key</th>
+                                    <th>Latest run</th>
+                                    <th>Finished</th>
+                                    <th>Changes</th>
+                                    <th>Issues</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($summaries as $s)
+                                    @php
+                                        $latestStatus = $s['latest_run_status'] ?? null;
+                                        $latestStatusLabel = $latestStatus ?? 'none';
 
-                            $finishedAt = $s['latest_run_finished_at'] ?? null;
-                            $finishedLabel = $finishedAt ? $finishedAt->toDateTimeString() : '-';
+                                        $finishedAt = $s['latest_run_finished_at'] ?? null;
+                                        $finishedLabel = $finishedAt ? $finishedAt->toDateTimeString() : '-';
 
-                            $issuesTotal = (int) ($s['issue_count'] ?? 0);
-                            $errors = (int) ($s['error_count'] ?? 0);
-                            $warnings = (int) ($s['warning_count'] ?? 0);
-                            $infos = (int) ($s['info_count'] ?? 0);
+                                        $issuesTotal = (int) ($s['issue_count'] ?? 0);
+                                        $errors = (int) ($s['error_count'] ?? 0);
+                                        $warnings = (int) ($s['warning_count'] ?? 0);
+                                        $infos = (int) ($s['info_count'] ?? 0);
 
-                            $issuesLabel = (string) $issuesTotal;
-                            if ($issuesTotal > 0) {
-                                $parts = [];
-                                if ($errors > 0) $parts[] = "error={$errors}";
-                                if ($warnings > 0) $parts[] = "warning={$warnings}";
-                                if ($infos > 0) $parts[] = "info={$infos}";
-                                if ($parts !== []) $issuesLabel .= ' (' . implode(' ', $parts) . ')';
-                            }
-                        @endphp
+                                        $issuesLabel = (string) $issuesTotal;
+                                        if ($issuesTotal > 0) {
+                                            $parts = [];
+                                            if ($errors > 0) {
+                                                $parts[] = "error={$errors}";
+                                            }
+                                            if ($warnings > 0) {
+                                                $parts[] = "warning={$warnings}";
+                                            }
+                                            if ($infos > 0) {
+                                                $parts[] = "info={$infos}";
+                                            }
+                                            if ($parts !== []) {
+                                                $issuesLabel .= ' (' . implode(' ', $parts) . ')';
+                                            }
+                                        }
 
-                        <tr>
-                            <td>
-                                <a href="{{ route('sources.show', $s['source_id']) }}">{{ $s['source_name'] ?? '' }}</a>
-                                <div class="details muted mono">
-                                    Run ID: {{ $s['latest_run_id'] ?? '-' }}
-                                    · Current snapshot ID: {{ $s['current_snapshot_id'] ?? '-' }}
-                                    · Previous snapshot ID: {{ $s['previous_snapshot_id'] ?? '-' }}
-                                </div>
-                            </td>
-                            <td class="mono">{{ $s['source_key'] ?? '' }}</td>
-                            <td>{{ $latestStatusLabel }}</td>
-                            <td class="mono">{{ $finishedLabel }}</td>
-                            <td class="mono">
-                                added={{ (int) ($s['added'] ?? 0) }}
-                                removed={{ (int) ($s['removed'] ?? 0) }}
-                                changed={{ (int) ($s['changed'] ?? 0) }}
-                                unchanged={{ (int) ($s['unchanged'] ?? 0) }}
-                            </td>
-                            <td class="mono">{{ $issuesLabel }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @endif
+                                        $statusClass = 'cc-badge--neutral';
+                                        if ($latestStatus === 'completed') {
+                                            $statusClass = 'cc-badge--ok';
+                                        } elseif ($latestStatus === 'failed') {
+                                            $statusClass = 'cc-badge--fail';
+                                        } elseif (in_array($latestStatus, ['running', 'pending'], true)) {
+                                            $statusClass = 'cc-badge--info';
+                                        }
+                                    @endphp
+
+                                    <tr>
+                                        <td>
+                                            <a href="{{ route('sources.show', $s['source_id']) }}">{{ $s['source_name'] ?? '' }}</a>
+                                            <div class="cc-details muted mono">
+                                                Run ID: {{ $s['latest_run_id'] ?? '-' }}
+                                                · Current snapshot ID: {{ $s['current_snapshot_id'] ?? '-' }}
+                                                · Previous snapshot ID: {{ $s['previous_snapshot_id'] ?? '-' }}
+                                            </div>
+                                        </td>
+                                        <td class="mono">{{ $s['source_key'] ?? '' }}</td>
+                                        <td>
+                                            <span class="cc-badge {{ $statusClass }}">{{ $latestStatusLabel }}</span>
+                                        </td>
+                                        <td class="mono cc-time">{{ $finishedLabel }}</td>
+                                        <td>
+                                            <div class="cc-stat-row mono">
+                                                <span class="cc-count-pill" title="Added">added={{ (int) ($s['added'] ?? 0) }}</span>
+                                                <span class="cc-count-pill" title="Removed">removed={{ (int) ($s['removed'] ?? 0) }}</span>
+                                                <span class="cc-count-pill" title="Changed">changed={{ (int) ($s['changed'] ?? 0) }}</span>
+                                                <span class="cc-count-pill" title="Unchanged">unchanged={{ (int) ($s['unchanged'] ?? 0) }}</span>
+                                            </div>
+                                        </td>
+                                        <td class="mono">{{ $issuesLabel }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+        </div>
     </body>
 </html>
