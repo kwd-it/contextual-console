@@ -108,6 +108,7 @@ CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO=ops@example.com
 | `DB_*` | SQLite **or** MySQL/Postgres (see Database above) |
 | `MAIL_*` | Provider-specific; required for emailed daily summary |
 | `CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO` | Inbox for the daily summary email |
+| `APP_SCHEDULE_TIMEZONE` | Optional; IANA zone for `routes/console.php` times (defaults to `Europe/London`) |
 | `WYATT_CONTEXTUALWP_AUTH` | Only if a source uses that env key; header **value** only |
 
 ---
@@ -317,6 +318,8 @@ The app registers schedule entries in `routes/console.php`:
 
 - **06:00** — `contextual-console:run-scheduled-sources` (HTTP source checks for sources that are due)
 - **06:30** — `contextual-console:daily-summary --email` (daily monitoring summary by email)
+
+Those clock times use the **scheduler timezone** (`APP_SCHEDULE_TIMEZONE`, default `Europe/London`), not the PHP app timezone (`timezone` in `config/app.php`, which remains **UTC** for timestamps). This keeps stored times in UTC while running cron windows at the intended UK local time across GMT and BST. For a deployment aimed at another region, set `APP_SCHEDULE_TIMEZONE` to the appropriate IANA zone.
 
 Laravel only runs the schedule when invoked; on the server, install a **single cron** entry as the user that owns the app files (adjust the path):
 

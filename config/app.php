@@ -69,6 +69,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Scheduler timezone
+    |--------------------------------------------------------------------------
+    |
+    | Times in routes/console.php (for example dailyAt) are interpreted in this
+    | timezone. Application date storage and display still use "timezone" above
+    | unless you change those separately. Use an IANA zone (e.g. Europe/London)
+    | so daylight saving is handled correctly.
+    |
+    */
+
+    'schedule_timezone' => env('APP_SCHEDULE_TIMEZONE', 'Europe/London'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |
