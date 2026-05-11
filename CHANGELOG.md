@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-05-11
+
+### Added
+
+- **`contextual-console:backup-database`**: daily SQLite database backups for production-style file databases (not `:memory:`).
+  - Uses SQLite **`VACUUM INTO`** for a consistent snapshot, then compresses the result to **`.sqlite.gz`**.
+  - Uploads the archive to a configured **S3-compatible** Laravel filesystem disk (`CONTEXTUAL_CONSOLE_BACKUP_DISK`, plus path/retention env documented in `docs/DEPLOYMENT.md`).
+  - Registers a **daily scheduler entry at 06:45** (after the existing 06:00 source run and 06:30 email summary), using the same scheduler timezone as other scheduled commands.
+
 ## [0.5.0] - 2026-05-10
 
 Incremental refinements on the v0.4.0 monitoring baseline: clearer navigation, predictable scheduler timezones, and richer passive plot change visibility.

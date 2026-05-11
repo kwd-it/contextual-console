@@ -12,7 +12,7 @@ The long-term focus is operational visibility across many properties: change his
 
 This project is early-stage but usable for manually ingesting and reviewing changes in Housebuilder plot datasets:
 
-The **first deployment-ready monitoring release** was **v0.4.0**; **v0.5.0** builds on that baseline with dashboard and navigation polish, explicit scheduler timezone defaults, and broader passive plot field tracking—see `CHANGELOG.md`.
+The **first deployment-ready monitoring release** was **v0.4.0**; **v0.5.0** builds on that baseline with dashboard and navigation polish, explicit scheduler timezone defaults, and broader passive plot field tracking. **v0.6.0** adds optional daily SQLite backups to S3-compatible object storage—see `CHANGELOG.md`.
 
 - **Monitored sources** (`MonitoredSource`): identify feeds by stable `key`, with a configured endpoint and optional HTTP ingest settings.
 - **HTTP JSON plot ingest**: read-only GET via `php artisan contextual-console:run-http-plot-source`.
