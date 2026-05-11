@@ -13,3 +13,6 @@ Schedule::command('contextual-console:run-scheduled-sources')
 
 Schedule::command('contextual-console:daily-summary --email')
     ->dailyAt('06:30');
+
+Schedule::command('contextual-console:backup-database')
+    ->dailyAt('06:45');

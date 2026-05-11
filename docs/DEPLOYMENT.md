@@ -77,6 +77,27 @@ Align values with your provider’s documentation. Do not commit real credential
 
 - **`CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO`**: recipient email address for the scheduled daily summary (used when the scheduler runs `contextual-console:daily-summary --email`).
 
+### SQLite database backups (S3 / DigitalOcean Spaces)
+
+When the default connection is **SQLite** (file-based, not `:memory:`), the scheduled command `contextual-console:backup-database` creates a consistent copy using SQLite **`VACUUM INTO`**, gzip-compresses it, uploads it to a Laravel **filesystem disk**, then deletes local temp files. Old objects under the configured prefix can be pruned using a retention window.
+
+**Contextual Console–specific env (no secrets in these names):**
+
+- **`CONTEXTUAL_CONSOLE_BACKUP_DISK`**: name of a disk in `config/filesystems.php` (default `s3`). Point this at any S3-compatible disk you define.
+- **`CONTEXTUAL_CONSOLE_BACKUP_PATH`**: object key prefix inside the bucket (default `database`). Leading/trailing slashes are trimmed.
+- **`CONTEXTUAL_CONSOLE_BACKUP_RETENTION_DAYS`**: delete remote backup files whose timestamp in the filename is older than this many days (default `30`). Set to `0` to skip pruning.
+
+**Standard Laravel / Flysystem S3 driver env** (set on the server; do not commit real values). For **DigitalOcean Spaces**, treat the space as a bucket and set the Spaces endpoint and region as your provider documents—for example:
+
+- **`AWS_ACCESS_KEY_ID`**, **`AWS_SECRET_ACCESS_KEY`**: Spaces access key and secret.
+- **`AWS_DEFAULT_REGION`**: often a region slug such as `lon1` (follow DO’s Spaces docs for your region).
+- **`AWS_BUCKET`**: Space name.
+- **`AWS_ENDPOINT`**: regional endpoint URL, e.g. `https://lon1.digitaloceanspaces.com` (see [DigitalOcean Spaces documentation](https://docs.digitalocean.com/products/spaces/)).
+- **`AWS_URL`**: optional public CDN/base URL if you use one.
+- **`FILESYSTEM_DISK`**: leave as your app’s primary disk (`local` is fine); backups use **`CONTEXTUAL_CONSOLE_BACKUP_DISK`** only.
+
+Ensure the PHP process user can read the live SQLite file and write under `storage/app/tmp/backups` during the run.
+
 ### ContextualWP / HTTP ingest auth (env only)
 
 For HTTP sources, `monitored_sources` stores only `auth_header_name` and `auth_token_env_key`. The environment variable named by `auth_token_env_key` must hold the **header value only** (for example a raw bearer token, or `Basic …` for Application Passwords). The header **name** (for example `Authorization`) is stored in `auth_header_name`; do not prefix the env value with `Authorization:`.
@@ -109,6 +130,7 @@ CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO=ops@example.com
 | `MAIL_*` | Provider-specific; required for emailed daily summary |
 | `CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO` | Inbox for the daily summary email |
 | `APP_SCHEDULE_TIMEZONE` | Optional; IANA zone for `routes/console.php` times (defaults to `Europe/London`) |
+| `CONTEXTUAL_CONSOLE_BACKUP_*` | Optional; SQLite backup disk, path prefix, retention (see “SQLite database backups” above); requires `AWS_*` (or equivalent) for the chosen S3 disk |
 | `WYATT_CONTEXTUALWP_AUTH` | Only if a source uses that env key; header **value** only |
 
 ---
@@ -318,6 +340,7 @@ The app registers schedule entries in `routes/console.php`:
 
 - **06:00** — `contextual-console:run-scheduled-sources` (HTTP source checks for sources that are due)
 - **06:30** — `contextual-console:daily-summary --email` (daily monitoring summary by email)
+- **06:45** — `contextual-console:backup-database` (SQLite-only: `VACUUM INTO`, gzip, upload to the configured S3-compatible disk, optional retention cleanup)
 
 Those clock times use the **scheduler timezone** (`APP_SCHEDULE_TIMEZONE`, default `Europe/London`), not the PHP app timezone (`timezone` in `config/app.php`, which remains **UTC** for timestamps). This keeps stored times in UTC while running cron windows at the intended UK local time across GMT and BST. For a deployment aimed at another region, set `APP_SCHEDULE_TIMEZONE` to the appropriate IANA zone.
 
@@ -373,12 +396,35 @@ php artisan migrate --force
 php artisan contextual-console:run-scheduled-sources
 php artisan contextual-console:daily-summary
 php artisan contextual-console:daily-summary --email
+php artisan contextual-console:backup-database
 ```
 
 - Use `--email` only when mail is configured and `CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO` is set; the scheduled job runs with `--email` at **06:30**.
+- **`contextual-console:backup-database`** only runs successfully when the default DB driver is SQLite and `DB_DATABASE` points at an existing file; it uploads `contextual-console-{Y-m-d-His}.sqlite.gz` under `CONTEXTUAL_CONSOLE_BACKUP_PATH`. On success the command prints `Backup complete: disk=… path=…`.
 
 To confirm what Laravel would run and when:
 
 ```bash
 php artisan schedule:list
 ```
+
+### SQLite backup: manual run, verify in object storage, restore outline
+
+**Run a backup once (e.g. after configuring Spaces credentials):**
+
+```bash
+cd /var/www/contextual-console
+php artisan contextual-console:backup-database
+```
+
+**Confirm the object exists** (use your provider’s UI, or the AWS CLI against the same endpoint/region/bucket), under the prefix set by `CONTEXTUAL_CONSOLE_BACKUP_PATH` (default `database`). Filenames look like `contextual-console-2026-05-11-064512.sqlite.gz`.
+
+**Restore (high level):**
+
+1. Put the app in maintenance mode (or stop PHP-FPM / queue workers) so nothing writes to the database during replacement.
+2. Download the chosen `.sqlite.gz` from object storage to the server.
+3. Decompress, e.g. `gunzip -c contextual-console-….sqlite.gz > /path/to/restored.sqlite` (adjust paths).
+4. Point **`DB_DATABASE`** at the restored file (or replace the existing file with the decompressed file, preserving ownership/permissions for the PHP user).
+5. Clear config cache if you changed `.env`: `php artisan config:clear`, then bring the app back up.
+
+Always test a restore on a copy before relying on it in an incident.

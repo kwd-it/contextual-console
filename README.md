@@ -26,6 +26,7 @@ The **first deployment-ready monitoring release** was **v0.4.0**; **v0.5.0** bui
 - **Source status**: CLI summary via `php artisan contextual-console:source-status`.
 - **Read-only dashboard pages**: `/sources` and `/sources/{source}` (login required); `/` redirects to `/sources`.
 - **Admin login**: session login, bootstrap with `php artisan contextual-console:create-admin-user`.
+- **SQLite backups** (optional): `php artisan contextual-console:backup-database` — scheduled daily; configure S3-compatible storage and env vars per `docs/DEPLOYMENT.md`.
 
 For release history, see `CHANGELOG.md`.
 

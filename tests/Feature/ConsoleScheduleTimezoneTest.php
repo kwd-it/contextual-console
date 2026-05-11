@@ -10,10 +10,13 @@ it('registers scheduled commands using the configured schedule timezone', functi
 
     $runSources = $events->first(fn ($e) => str_contains((string) $e->command, 'run-scheduled-sources'));
     $dailySummary = $events->first(fn ($e) => str_contains((string) $e->command, 'daily-summary'));
+    $databaseBackup = $events->first(fn ($e) => str_contains((string) $e->command, 'backup-database'));
 
     expect($tz)->toBe('Europe/London')
         ->and($runSources)->not->toBeNull()
         ->and($dailySummary)->not->toBeNull()
+        ->and($databaseBackup)->not->toBeNull()
         ->and($runSources->timezone)->toBe($tz)
-        ->and($dailySummary->timezone)->toBe($tz);
+        ->and($dailySummary->timezone)->toBe($tz)
+        ->and($databaseBackup->timezone)->toBe($tz);
 });
