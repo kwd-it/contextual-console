@@ -22,11 +22,17 @@
                     <p class="cc-stat-card__label">Monitored sources</p>
                     <p class="cc-stat-card__value" data-test="dashboard-total-sources">{{ $totalSources }}</p>
                     <p class="cc-stat-card__hint muted">Total configured data sources</p>
+                    <p class="cc-stat-card__action">
+                        <a href="{{ route('sources.index') }}" data-test="dashboard-drill-sources-total">View</a>
+                    </p>
                 </article>
                 <article class="cc-stat-card">
                     <p class="cc-stat-card__label">Sources with runs</p>
                     <p class="cc-stat-card__value" data-test="dashboard-sources-with-runs">{{ $sourcesWithAtLeastOneRun }}</p>
                     <p class="cc-stat-card__hint muted">At least one comparison run recorded</p>
+                    <p class="cc-stat-card__action">
+                        <a href="{{ route('sources.index') }}" data-test="dashboard-drill-sources-with-runs">View</a>
+                    </p>
                 </article>
                 <article class="cc-stat-card">
                     <p class="cc-stat-card__label">Latest completed run</p>
@@ -48,21 +54,33 @@
                     <p class="cc-stat-card__label">Issues (7 days)</p>
                     <p class="cc-stat-card__value" data-test="dashboard-issues-7d">{{ $issuesLast7Days }}</p>
                     <p class="cc-stat-card__hint muted">All severities</p>
+                    <p class="cc-stat-card__action">
+                        <a href="{{ route('issues.index', ['date_from' => $summaryDateFrom]) }}" data-test="dashboard-drill-issues-7d">View</a>
+                    </p>
                 </article>
                 <article class="cc-stat-card">
                     <p class="cc-stat-card__label">Warnings (7 days)</p>
                     <p class="cc-stat-card__value" data-test="dashboard-warnings-7d">{{ $warningsLast7Days }}</p>
                     <p class="cc-stat-card__hint muted">Dataset validation warnings</p>
+                    <p class="cc-stat-card__action">
+                        <a href="{{ route('issues.index', ['date_from' => $summaryDateFrom, 'severity' => 'warning']) }}" data-test="dashboard-drill-warnings-7d">View</a>
+                    </p>
                 </article>
                 <article class="cc-stat-card">
                     <p class="cc-stat-card__label">Errors (7 days)</p>
                     <p class="cc-stat-card__value" data-test="dashboard-errors-7d">{{ $errorsLast7Days }}</p>
                     <p class="cc-stat-card__hint muted">Dataset validation errors</p>
+                    <p class="cc-stat-card__action">
+                        <a href="{{ route('issues.index', ['date_from' => $summaryDateFrom, 'severity' => 'error']) }}" data-test="dashboard-drill-errors-7d">View</a>
+                    </p>
                 </article>
                 <article class="cc-stat-card">
                     <p class="cc-stat-card__label">Plot data changes (7 days)</p>
                     <p class="cc-stat-card__value" data-test="dashboard-changes-7d">{{ $changesLast7Days }}</p>
                     <p class="cc-stat-card__hint muted">Field-level changes logged</p>
+                    <p class="cc-stat-card__action">
+                        <a href="{{ route('changes.index', ['date_from' => $summaryDateFrom]) }}" data-test="dashboard-drill-changes-7d">View</a>
+                    </p>
                 </article>
             </section>
 

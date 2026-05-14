@@ -73,6 +73,7 @@ class DashboardController extends Controller
             ->get();
 
         return view('dashboard.index', [
+            'summaryDateFrom' => $since->toDateString(),
             'totalSources' => $totalSources,
             'sourcesWithAtLeastOneRun' => $sourcesWithAtLeastOneRun,
             'latestCompletedRunFinishedAt' => $latestCompletedRunFinishedAt !== null

@@ -478,6 +478,11 @@
         font-size: 0.75rem;
         line-height: 1.45;
     }
+    .cc-stat-card__action {
+        margin: 10px 0 0;
+        font-size: 0.8125rem;
+        font-weight: 500;
+    }
 
     @media (max-width: 720px) {
         body {

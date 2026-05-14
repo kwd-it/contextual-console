@@ -5,6 +5,7 @@ use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -19,7 +20,43 @@ it('allows authenticated users to load /dashboard', function () {
         ->get('/dashboard')
         ->assertOk()
         ->assertSeeText('Dashboard')
-        ->assertSeeText('Summary of monitored website datasets');
+        ->assertSeeText('Summary of monitored website datasets')
+        ->assertSeeText('View');
+});
+
+it('links dashboard summary drilldowns to issues, changes, and sources using the same 7-day date anchor as counts', function () {
+    Carbon::setTestNow(Carbon::parse('2026-05-14 12:00:00', 'UTC'));
+    try {
+        $expectedDateFrom = Carbon::now()->subDays(7)->toDateString();
+
+        $html = $this->actingAs(User::factory()->create())
+            ->get('/dashboard')
+            ->assertOk()
+            ->getContent();
+
+        $dom = new \DOMDocument;
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="UTF-8">'.$html);
+        libxml_clear_errors();
+
+        $xpath = new \DOMXPath($dom);
+        $href = static fn (string $dataTest): string => (string) $xpath->evaluate("string(//a[@data-test='{$dataTest}']/@href)");
+
+        expect($href('dashboard-drill-issues-7d'))->toBe(route('issues.index', ['date_from' => $expectedDateFrom]));
+        expect($href('dashboard-drill-warnings-7d'))->toBe(route('issues.index', [
+            'date_from' => $expectedDateFrom,
+            'severity' => 'warning',
+        ]));
+        expect($href('dashboard-drill-errors-7d'))->toBe(route('issues.index', [
+            'date_from' => $expectedDateFrom,
+            'severity' => 'error',
+        ]));
+        expect($href('dashboard-drill-changes-7d'))->toBe(route('changes.index', ['date_from' => $expectedDateFrom]));
+        expect($href('dashboard-drill-sources-total'))->toBe(route('sources.index'));
+        expect($href('dashboard-drill-sources-with-runs'))->toBe(route('sources.index'));
+    } finally {
+        Carbon::setTestNow();
+    }
 });
 
 it('shows the dashboard link in navigation with the correct href', function () {
