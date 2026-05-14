@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\ChangesController;
 use App\Http\Controllers\IssuesController;
 use App\Http\Controllers\SourceStatusController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,9 @@ Route::post('/logout', [LoginController::class, 'destroy'])
     ->name('logout');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/changes', [ChangesController::class, 'index'])
+        ->name('changes.index');
+
     Route::get('/issues', [IssuesController::class, 'index'])
         ->name('issues.index');
 
