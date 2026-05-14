@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\SourceStatusController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\SourceStatusController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -24,4 +24,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/sources/{source}', [SourceStatusController::class, 'show'])
         ->name('sources.show');
+
+    Route::get('/sources/{source}/runs/{run}', [SourceStatusController::class, 'showRun'])
+        ->name('sources.runs.show')
+        ->scopeBindings();
 });

@@ -37,5 +37,14 @@ class MonitoredSource extends Model
     {
         return $this->hasMany(DatasetComparisonRun::class, 'source_id');
     }
-}
 
+    /**
+     * Alias for {@see self::datasetComparisonRuns()} used by nested route model binding (`{run}`).
+     *
+     * @return HasMany<DatasetComparisonRun, $this>
+     */
+    public function runs(): HasMany
+    {
+        return $this->hasMany(DatasetComparisonRun::class, 'source_id');
+    }
+}

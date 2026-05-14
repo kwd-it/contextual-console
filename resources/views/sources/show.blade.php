@@ -318,7 +318,9 @@
                                     @endphp
 
                                     <tr>
-                                        <td class="mono">{{ $run->id }}</td>
+                                        <td class="mono">
+                                            <a href="{{ route('sources.runs.show', [$source, $run]) }}">{{ $run->id }}</a>
+                                        </td>
                                         <td>
                                             <span class="cc-badge {{ $rowStatusClass }}">{{ $run->status }}</span>
                                         </td>

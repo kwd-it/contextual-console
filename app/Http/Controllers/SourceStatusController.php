@@ -124,4 +124,63 @@ class SourceStatusController extends Controller
             'plotDisplayLookup' => $plotDisplayLookup,
         ]);
     }
+
+    public function showRun(MonitoredSource $source, DatasetComparisonRun $run): View
+    {
+        abort_unless($run->source_id === $source->id, 404);
+
+        $runIssues = DatasetIssue::query()
+            ->where('dataset_comparison_run_id', $run->id)
+            ->orderByDesc('id')
+            ->get();
+
+        $runChanges = ChangeLog::query()
+            ->where('dataset_comparison_run_id', $run->id)
+            ->orderBy('entity_id')
+            ->orderBy('field')
+            ->orderBy('id')
+            ->get();
+
+        $severityCounts = [];
+        foreach ($runIssues as $issue) {
+            $sev = strtolower((string) $issue->severity);
+            $severityCounts[$sev] = ($severityCounts[$sev] ?? 0) + 1;
+        }
+
+        $plotDisplayLookup = PlotSnapshotDisplayLookup::empty();
+        $snapshotIds = array_values(array_unique(array_filter([
+            $run->current_snapshot_id,
+            $run->previous_snapshot_id,
+        ])));
+
+        if ($snapshotIds !== []) {
+            /** @var array<int, DatasetSnapshot> $snapshotsById */
+            $snapshotsById = DatasetSnapshot::query()
+                ->whereIn('id', $snapshotIds)
+                ->get()
+                ->keyBy('id')
+                ->all();
+
+            $currentSnap = $run->current_snapshot_id !== null
+                ? ($snapshotsById[$run->current_snapshot_id] ?? null)
+                : null;
+            $previousSnap = $run->previous_snapshot_id !== null
+                ? ($snapshotsById[$run->previous_snapshot_id] ?? null)
+                : null;
+
+            $plotDisplayLookup = PlotSnapshotDisplayLookup::fromPayloads(
+                is_array($currentSnap?->payload) ? $currentSnap->payload : null,
+                is_array($previousSnap?->payload) ? $previousSnap->payload : null,
+            );
+        }
+
+        return view('sources.run-show', [
+            'source' => $source,
+            'run' => $run,
+            'runIssues' => $runIssues,
+            'runChanges' => $runChanges,
+            'severityCounts' => $severityCounts,
+            'plotDisplayLookup' => $plotDisplayLookup,
+        ]);
+    }
 }
