@@ -255,3 +255,214 @@ it('shows snapshot-derived plot labels and keeps technical ids visible', functio
         ->assertSeeText('Technical ID: plot:14')
         ->assertSeeText('Change log id: '.(string) $priceLog->id);
 });
+
+it('filters changes by source via GET query', function () {
+    $user = User::factory()->create();
+
+    $sourceA = MonitoredSource::create([
+        'key' => 'hb:changes-filter-src-a',
+        'name' => 'Changes Filter Source A',
+    ]);
+    $sourceB = MonitoredSource::create([
+        'key' => 'hb:changes-filter-src-b',
+        'name' => 'Changes Filter Source B',
+    ]);
+
+    $runA = DatasetComparisonRun::create([
+        'source_id' => $sourceA->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+    $runB = DatasetComparisonRun::create([
+        'source_id' => $sourceB->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    ChangeLog::create([
+        'entity_type' => 'plot',
+        'entity_id' => 1,
+        'dataset_comparison_run_id' => $runA->id,
+        'field' => 'price',
+        'old_value' => 'CHANGES_FILTER_SRC_A_MARKER',
+        'new_value' => '1',
+        'changed_at' => now()->subHour(),
+    ]);
+    ChangeLog::create([
+        'entity_type' => 'plot',
+        'entity_id' => 2,
+        'dataset_comparison_run_id' => $runB->id,
+        'field' => 'price',
+        'old_value' => 'CHANGES_FILTER_SRC_B_MARKER',
+        'new_value' => '2',
+        'changed_at' => now()->subHour(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('changes.index', ['source' => $sourceA->id]))
+        ->assertOk()
+        ->assertSeeText('CHANGES_FILTER_SRC_A_MARKER')
+        ->assertDontSeeText('CHANGES_FILTER_SRC_B_MARKER');
+});
+
+it('filters changes by field via GET query', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-filter-field',
+        'name' => 'Changes Filter Field Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    ChangeLog::create([
+        'entity_type' => 'plot',
+        'entity_id' => 1,
+        'dataset_comparison_run_id' => $run->id,
+        'field' => 'price',
+        'old_value' => 'CHANGES_FILTER_FIELD_PRICE',
+        'new_value' => '1',
+        'changed_at' => now()->subHour(),
+    ]);
+    ChangeLog::create([
+        'entity_type' => 'plot',
+        'entity_id' => 1,
+        'dataset_comparison_run_id' => $run->id,
+        'field' => 'status',
+        'old_value' => 'CHANGES_FILTER_FIELD_STATUS',
+        'new_value' => '2',
+        'changed_at' => now()->subHour(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('changes.index', ['field' => 'price']))
+        ->assertOk()
+        ->assertSeeText('CHANGES_FILTER_FIELD_PRICE')
+        ->assertDontSeeText('CHANGES_FILTER_FIELD_STATUS');
+});
+
+it('filters changes by changed_at date range via GET query', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-filter-dates',
+        'name' => 'Changes Filter Dates Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    ChangeLog::create([
+        'entity_type' => 'plot',
+        'entity_id' => 1,
+        'dataset_comparison_run_id' => $run->id,
+        'field' => 'price',
+        'old_value' => 'CHANGES_FILTER_DATE_EARLY',
+        'new_value' => '1',
+        'changed_at' => Carbon\Carbon::parse('2026-05-01 12:00:00'),
+    ]);
+    ChangeLog::create([
+        'entity_type' => 'plot',
+        'entity_id' => 2,
+        'dataset_comparison_run_id' => $run->id,
+        'field' => 'price',
+        'old_value' => 'CHANGES_FILTER_DATE_MID',
+        'new_value' => '2',
+        'changed_at' => Carbon\Carbon::parse('2026-05-10 12:00:00'),
+    ]);
+    ChangeLog::create([
+        'entity_type' => 'plot',
+        'entity_id' => 3,
+        'dataset_comparison_run_id' => $run->id,
+        'field' => 'price',
+        'old_value' => 'CHANGES_FILTER_DATE_LATE',
+        'new_value' => '3',
+        'changed_at' => Carbon\Carbon::parse('2026-05-20 12:00:00'),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('changes.index', [
+            'date_from' => '2026-05-05',
+            'date_to' => '2026-05-15',
+        ]))
+        ->assertOk()
+        ->assertDontSeeText('CHANGES_FILTER_DATE_EARLY')
+        ->assertSeeText('CHANGES_FILTER_DATE_MID')
+        ->assertDontSeeText('CHANGES_FILTER_DATE_LATE');
+});
+
+it('retains selected change filters in the filter form and shows a clear link', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-filter-retain',
+        'name' => 'Changes Retain Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    ChangeLog::create([
+        'entity_type' => 'plot',
+        'entity_id' => 1,
+        'dataset_comparison_run_id' => $run->id,
+        'field' => 'price',
+        'old_value' => 'CHANGES_RETAIN_BODY',
+        'new_value' => '1',
+        'changed_at' => Carbon\Carbon::parse('2026-05-10 10:00:00'),
+    ]);
+
+    $html = $this->actingAs($user)
+        ->get(route('changes.index', [
+            'source' => $source->id,
+            'field' => 'price',
+            'date_from' => '2026-05-01',
+            'date_to' => '2026-05-31',
+        ]))
+        ->assertOk()
+        ->assertSee('href="'.route('changes.index').'"', false)
+        ->assertSeeText('Clear filters')
+        ->getContent();
+
+    expect($html)->toMatch('/<option value="'.$source->id.'"[^>]*\bselected\b/');
+    expect($html)->toMatch('/<option value="price"[^>]*\bselected\b/');
+    expect($html)->toContain('name="date_from" value="2026-05-01"');
+    expect($html)->toContain('name="date_to" value="2026-05-31"');
+});
+
+it('redirects unauthenticated users from filtered /changes to /login', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-filter-auth',
+        'name' => 'Changes Auth Source',
+    ]);
+
+    $this->get(route('changes.index', ['source' => $source->id]))
+        ->assertRedirect(route('login'));
+});

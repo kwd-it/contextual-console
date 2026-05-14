@@ -181,3 +181,263 @@ it('shows snapshot-derived plot labels and keeps technical ids visible', functio
         ->assertSeeText('Issue id: '.(string) $plotIssue->id)
         ->assertSeeText('Plot status is invalid.');
 });
+
+it('filters issues by source via GET query', function () {
+    $user = User::factory()->create();
+
+    $sourceA = MonitoredSource::create([
+        'key' => 'hb:issues-filter-src-a',
+        'name' => 'Issues Filter Source A',
+    ]);
+    $sourceB = MonitoredSource::create([
+        'key' => 'hb:issues-filter-src-b',
+        'name' => 'Issues Filter Source B',
+    ]);
+
+    $runA = DatasetComparisonRun::create([
+        'source_id' => $sourceA->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+    $runB = DatasetComparisonRun::create([
+        'source_id' => $sourceB->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $sourceA->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $runA->id,
+        'issue_type' => 'issues_filter_src',
+        'severity' => 'info',
+        'message' => 'ISSUES_FILTER_SRC_A_MARKER',
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $sourceB->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $runB->id,
+        'issue_type' => 'issues_filter_src',
+        'severity' => 'info',
+        'message' => 'ISSUES_FILTER_SRC_B_MARKER',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('issues.index', ['source' => $sourceA->id]))
+        ->assertOk()
+        ->assertSeeText('ISSUES_FILTER_SRC_A_MARKER')
+        ->assertDontSeeText('ISSUES_FILTER_SRC_B_MARKER');
+});
+
+it('filters issues by severity via GET query', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-filter-sev',
+        'name' => 'Issues Filter Sev Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_sev',
+        'severity' => 'error',
+        'message' => 'ISSUES_FILTER_SEV_ERROR',
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_sev',
+        'severity' => 'warning',
+        'message' => 'ISSUES_FILTER_SEV_WARNING',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('issues.index', ['severity' => 'error']))
+        ->assertOk()
+        ->assertSeeText('ISSUES_FILTER_SEV_ERROR')
+        ->assertDontSeeText('ISSUES_FILTER_SEV_WARNING');
+});
+
+it('filters issues by issue type via GET query', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-filter-type',
+        'name' => 'Issues Filter Type Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_type_alpha',
+        'severity' => 'info',
+        'message' => 'ISSUES_FILTER_TYPE_ALPHA',
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_type_beta',
+        'severity' => 'info',
+        'message' => 'ISSUES_FILTER_TYPE_BETA',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('issues.index', ['issue_type' => 'issues_filter_type_alpha']))
+        ->assertOk()
+        ->assertSeeText('ISSUES_FILTER_TYPE_ALPHA')
+        ->assertDontSeeText('ISSUES_FILTER_TYPE_BETA');
+});
+
+it('filters issues by created_at date range via GET query', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-filter-dates',
+        'name' => 'Issues Filter Dates Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    $early = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_dates',
+        'severity' => 'info',
+        'message' => 'ISSUES_FILTER_DATE_EARLY',
+    ]);
+    $early->forceFill([
+        'created_at' => \Carbon\Carbon::parse('2026-05-01 12:00:00'),
+        'updated_at' => \Carbon\Carbon::parse('2026-05-01 12:00:00'),
+    ])->save();
+
+    $mid = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_dates',
+        'severity' => 'info',
+        'message' => 'ISSUES_FILTER_DATE_MID',
+    ]);
+    $mid->forceFill([
+        'created_at' => \Carbon\Carbon::parse('2026-05-10 12:00:00'),
+        'updated_at' => \Carbon\Carbon::parse('2026-05-10 12:00:00'),
+    ])->save();
+
+    $late = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_dates',
+        'severity' => 'info',
+        'message' => 'ISSUES_FILTER_DATE_LATE',
+    ]);
+    $late->forceFill([
+        'created_at' => \Carbon\Carbon::parse('2026-05-20 12:00:00'),
+        'updated_at' => \Carbon\Carbon::parse('2026-05-20 12:00:00'),
+    ])->save();
+
+    $this->actingAs($user)
+        ->get(route('issues.index', [
+            'date_from' => '2026-05-05',
+            'date_to' => '2026-05-15',
+        ]))
+        ->assertOk()
+        ->assertDontSeeText('ISSUES_FILTER_DATE_EARLY')
+        ->assertSeeText('ISSUES_FILTER_DATE_MID')
+        ->assertDontSeeText('ISSUES_FILTER_DATE_LATE');
+});
+
+it('retains selected issue filters in the filter form and shows a clear link', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-filter-retain',
+        'name' => 'Issues Retain Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_retain_type',
+        'severity' => 'warning',
+        'message' => 'ISSUES_RETAIN_BODY',
+    ]);
+
+    $html = $this->actingAs($user)
+        ->get(route('issues.index', [
+            'source' => $source->id,
+            'severity' => 'warning',
+            'issue_type' => 'issues_retain_type',
+            'date_from' => '2026-05-01',
+            'date_to' => '2026-05-31',
+        ]))
+        ->assertOk()
+        ->assertSee('href="'.route('issues.index').'"', false)
+        ->assertSeeText('Clear filters')
+        ->getContent();
+
+    expect($html)->toMatch('/<option value="'.$source->id.'"[^>]*\bselected\b/');
+    expect($html)->toMatch('/<option value="warning"[^>]*\bselected\b/');
+    expect($html)->toMatch('/<option value="issues_retain_type"[^>]*\bselected\b/');
+    expect($html)->toContain('name="date_from" value="2026-05-01"');
+    expect($html)->toContain('name="date_to" value="2026-05-31"');
+});
+
+it('redirects unauthenticated users from filtered /issues to /login', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-filter-auth',
+        'name' => 'Issues Auth Source',
+    ]);
+
+    $this->get(route('issues.index', ['source' => $source->id]))
+        ->assertRedirect(route('login'));
+});

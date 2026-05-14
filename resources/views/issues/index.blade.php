@@ -20,9 +20,58 @@
                     <h2 class="cc-card-title" id="hdr-all-issues">Issue list</h2>
                     <p class="cc-card-desc">Validation and ingest messages recorded when comparison runs finish.</p>
                 </div>
+                <form class="cc-filter-form" method="get" action="{{ route('issues.index') }}" aria-label="Filter issues">
+                    <div class="cc-filter-form__fields">
+                        <label>
+                            Source
+                            <select name="source">
+                                <option value="">All sources</option>
+                                @foreach ($sources as $s)
+                                    <option value="{{ $s->id }}" @selected($filters['source_id'] === $s->id)>{{ $s->name }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label>
+                            Severity
+                            <select name="severity">
+                                <option value="">All severities</option>
+                                @foreach ($severityOptions as $opt)
+                                    <option value="{{ $opt }}" @selected($filters['severity'] === $opt)>{{ $opt }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label>
+                            Issue type
+                            <select name="issue_type">
+                                <option value="">All types</option>
+                                @foreach ($issueTypeOptions as $opt)
+                                    <option value="{{ $opt }}" @selected($filters['issue_type'] === $opt)>{{ $opt }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label>
+                            Date from
+                            <input type="date" name="date_from" value="{{ $filters['date_from_input'] ?? '' }}">
+                        </label>
+                        <label>
+                            Date to
+                            <input type="date" name="date_to" value="{{ $filters['date_to_input'] ?? '' }}">
+                        </label>
+                    </div>
+                    <div class="cc-filter-form__actions">
+                        <button type="submit">Apply filters</button>
+                        <a class="cc-filter-form__clear" href="{{ route('issues.index') }}">Clear filters</a>
+                    </div>
+                </form>
                 <div class="cc-card-body">
                     @if ($issues->isEmpty())
-                        <p class="muted cc-empty">No issues recorded yet.</p>
+                        <p class="muted cc-empty">
+                            @if ($filtersActive)
+                                No issues match the current filters.
+                            @else
+                                No issues recorded yet.
+                            @endif
+                        </p>
                     @else
                         <table class="cc-table">
                             <thead>

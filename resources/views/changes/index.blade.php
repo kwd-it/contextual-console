@@ -20,9 +20,49 @@
                     <h2 class="cc-card-title" id="hdr-all-changes">Change list</h2>
                     <p class="cc-card-desc">Differences between snapshots produced by comparison runs.</p>
                 </div>
+                <form class="cc-filter-form" method="get" action="{{ route('changes.index') }}" aria-label="Filter changes">
+                    <div class="cc-filter-form__fields">
+                        <label>
+                            Source
+                            <select name="source">
+                                <option value="">All sources</option>
+                                @foreach ($sources as $s)
+                                    <option value="{{ $s->id }}" @selected($filters['source_id'] === $s->id)>{{ $s->name }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label>
+                            Field
+                            <select name="field">
+                                <option value="">All fields</option>
+                                @foreach ($fieldOptions as $opt)
+                                    <option value="{{ $opt }}" @selected($filters['field'] === $opt)>{{ $opt }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label>
+                            Date from
+                            <input type="date" name="date_from" value="{{ $filters['date_from_input'] ?? '' }}">
+                        </label>
+                        <label>
+                            Date to
+                            <input type="date" name="date_to" value="{{ $filters['date_to_input'] ?? '' }}">
+                        </label>
+                    </div>
+                    <div class="cc-filter-form__actions">
+                        <button type="submit">Apply filters</button>
+                        <a class="cc-filter-form__clear" href="{{ route('changes.index') }}">Clear filters</a>
+                    </div>
+                </form>
                 <div class="cc-card-body">
                     @if ($changes->isEmpty())
-                        <p class="muted cc-empty">No changes recorded yet.</p>
+                        <p class="muted cc-empty">
+                            @if ($filtersActive)
+                                No changes match the current filters.
+                            @else
+                                No changes recorded yet.
+                            @endif
+                        </p>
                     @else
                         <table class="cc-table">
                             <thead>

@@ -379,6 +379,65 @@
     .cc-entity-display__tech.muted {
         color: var(--cc-tech);
     }
+    .cc-filter-form {
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--cc-border);
+        background: #fafbfc;
+    }
+    .cc-filter-form__fields {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 18px;
+        align-items: flex-end;
+    }
+    .cc-filter-form label {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--cc-muted);
+    }
+    .cc-filter-form select,
+    .cc-filter-form input[type="date"] {
+        min-width: 11rem;
+        padding: 7px 10px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--cc-text);
+        background: var(--cc-surface);
+        border: 1px solid var(--cc-border-strong);
+        border-radius: var(--cc-radius-sm);
+        box-sizing: border-box;
+    }
+    .cc-filter-form__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 14px;
+        margin-top: 14px;
+    }
+    .cc-filter-form button {
+        padding: 8px 16px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #fff;
+        background: var(--cc-accent);
+        border: 1px solid var(--cc-accent);
+        border-radius: var(--cc-radius-sm);
+        cursor: pointer;
+    }
+    .cc-filter-form button:hover {
+        background: var(--cc-link-hover);
+        border-color: var(--cc-link-hover);
+    }
+    .cc-filter-form__clear {
+        font-size: 0.8125rem;
+        font-weight: 500;
+    }
+
     @media (max-width: 720px) {
         body {
             padding: 16px 14px 40px;
