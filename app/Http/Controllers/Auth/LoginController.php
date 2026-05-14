@@ -13,7 +13,7 @@ class LoginController extends Controller
     public function show(): View|RedirectResponse
     {
         if (Auth::check()) {
-            return redirect()->route('sources.index');
+            return redirect()->route('dashboard.index');
         }
 
         return view('auth.login');
@@ -37,7 +37,7 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('sources.index'));
+        return redirect()->intended(route('dashboard.index'));
     }
 
     public function destroy(Request $request): RedirectResponse

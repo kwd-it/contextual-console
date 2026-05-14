@@ -1,6 +1,6 @@
 <?php
 
-test('the root path redirects to the sources index route', function () {
+test('the root path redirects to the dashboard route', function () {
     $this->get('/')
-        ->assertRedirect(route('sources.index'));
+        ->assertRedirect(route('dashboard.index'));
 });

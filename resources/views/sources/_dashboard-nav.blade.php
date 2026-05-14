@@ -1,15 +1,21 @@
 @php
     $routeName = request()->route()?->getName();
+    $dashboardActive = $routeName === 'dashboard.index';
     $sourcesActive = in_array($routeName, ['sources.index', 'sources.show', 'sources.runs.show'], true);
     $changesActive = $routeName === 'changes.index';
     $issuesActive = $routeName === 'issues.index';
 @endphp
 <div class="cc-app-bar">
     <div class="cc-brand">
-        <a href="{{ route('sources.index') }}" class="cc-brand__link">Contextual Console</a>
+        <a href="{{ route('dashboard.index') }}" class="cc-brand__link">Contextual Console</a>
         <span class="cc-brand__tagline muted">Website data monitoring</span>
     </div>
     <nav class="cc-nav" aria-label="Primary">
+        <a
+            href="{{ route('dashboard.index') }}"
+            class="cc-nav__link {{ $dashboardActive ? 'cc-nav__link--current' : '' }}"
+            @if ($dashboardActive) aria-current="page" @endif
+        >Dashboard</a>
         <a
             href="{{ route('sources.index') }}"
             class="cc-nav__link {{ $sourcesActive ? 'cc-nav__link--current' : '' }}"

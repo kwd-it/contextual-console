@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Contextual Console — Dashboard</title>
+        @include('sources._dashboard-styles')
+    </head>
+    <body>
+        <div class="cc-page">
+            @include('sources._dashboard-nav')
+
+            <header class="cc-page-header">
+                <h1 class="cc-page-title">Dashboard</h1>
+                <p class="cc-page-sub">
+                    Summary of monitored website datasets: comparison runs, detected plot data changes, and validation issues from daily snapshots.
+                </p>
+            </header>
+
+            <section class="cc-stat-grid" aria-label="Monitoring summary">
+                <article class="cc-stat-card">
+                    <p class="cc-stat-card__label">Monitored sources</p>
+                    <p class="cc-stat-card__value" data-test="dashboard-total-sources">{{ $totalSources }}</p>
+                    <p class="cc-stat-card__hint muted">Total configured data sources</p>
+                </article>
+                <article class="cc-stat-card">
+                    <p class="cc-stat-card__label">Sources with runs</p>
+                    <p class="cc-stat-card__value" data-test="dashboard-sources-with-runs">{{ $sourcesWithAtLeastOneRun }}</p>
+                    <p class="cc-stat-card__hint muted">At least one comparison run recorded</p>
+                </article>
+                <article class="cc-stat-card">
+                    <p class="cc-stat-card__label">Latest completed run</p>
+                    <p class="cc-stat-card__value cc-stat-card__value--text" data-test="dashboard-latest-completed">
+                        @if ($latestCompletedRunFinishedAt !== null)
+                            <span class="mono cc-time">{{ $latestCompletedRunFinishedAt->toDateTimeString() }}</span>
+                        @else
+                            <span class="muted">—</span>
+                        @endif
+                    </p>
+                    <p class="cc-stat-card__hint muted">Finished time (completed runs only)</p>
+                </article>
+                <article class="cc-stat-card">
+                    <p class="cc-stat-card__label">Failed runs (7 days)</p>
+                    <p class="cc-stat-card__value" data-test="dashboard-failed-runs-7d">{{ $failedRunsLast7Days }}</p>
+                    <p class="cc-stat-card__hint muted">Comparison or ingest failures</p>
+                </article>
+                <article class="cc-stat-card">
+                    <p class="cc-stat-card__label">Issues (7 days)</p>
+                    <p class="cc-stat-card__value" data-test="dashboard-issues-7d">{{ $issuesLast7Days }}</p>
+                    <p class="cc-stat-card__hint muted">All severities</p>
+                </article>
+                <article class="cc-stat-card">
+                    <p class="cc-stat-card__label">Warnings (7 days)</p>
+                    <p class="cc-stat-card__value" data-test="dashboard-warnings-7d">{{ $warningsLast7Days }}</p>
+                    <p class="cc-stat-card__hint muted">Dataset validation warnings</p>
+                </article>
+                <article class="cc-stat-card">
+                    <p class="cc-stat-card__label">Errors (7 days)</p>
+                    <p class="cc-stat-card__value" data-test="dashboard-errors-7d">{{ $errorsLast7Days }}</p>
+                    <p class="cc-stat-card__hint muted">Dataset validation errors</p>
+                </article>
+                <article class="cc-stat-card">
+                    <p class="cc-stat-card__label">Plot data changes (7 days)</p>
+                    <p class="cc-stat-card__value" data-test="dashboard-changes-7d">{{ $changesLast7Days }}</p>
+                    <p class="cc-stat-card__hint muted">Field-level changes logged</p>
+                </article>
+            </section>
+
+            <section class="cc-card" aria-labelledby="hdr-recent-runs">
+                <div class="cc-card-header">
+                    <h2 id="hdr-recent-runs" class="cc-card-title">Recent activity</h2>
+                    <p class="cc-card-desc">Latest dataset comparison runs (newest first).</p>
+                </div>
+                <div class="cc-card-body">
+                    @if ($recentRuns->isEmpty())
+                        <div class="cc-empty">
+                            <p class="cc-empty-title">No runs yet</p>
+                            <p class="muted">Comparison runs will appear here after snapshots are ingested and compared.</p>
+                        </div>
+                    @else
+                        <table class="cc-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Run</th>
+                                    <th scope="col">Source</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Finished</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($recentRuns as $run)
+                                    @php
+                                        $src = $run->source;
+                                    @endphp
+                                    <tr>
+                                        <td class="mono">
+                                            @if ($src !== null)
+                                                <a href="{{ route('sources.runs.show', [$src, $run]) }}">{{ $run->id }}</a>
+                                            @else
+                                                {{ $run->id }}
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($src !== null)
+                                                <a href="{{ route('sources.show', $src) }}">{{ $src->name }}</a>
+                                            @else
+                                                <span class="muted">—</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($run->status === 'completed')
+                                                <span class="cc-badge cc-badge--ok">Completed</span>
+                                            @elseif ($run->status === 'failed')
+                                                <span class="cc-badge cc-badge--fail">Failed</span>
+                                            @else
+                                                <span class="cc-badge cc-badge--neutral">{{ $run->status }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="mono cc-time">{{ $run->finished_at?->toDateTimeString() ?? '—' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
+                </div>
+            </section>
+
+            <section class="cc-card" aria-labelledby="hdr-recent-issues">
+                <div class="cc-card-header">
+                    <h2 id="hdr-recent-issues" class="cc-card-title">Recent issues</h2>
+                    <p class="cc-card-desc">Latest validation and comparison issues (newest first).</p>
+                </div>
+                <div class="cc-card-body">
+                    @if ($recentIssues->isEmpty())
+                        <div class="cc-empty">
+                            <p class="cc-empty-title">No issues recorded</p>
+                            <p class="muted">Issues from dataset checks and comparisons will appear here when detected.</p>
+                        </div>
+                    @else
+                        <table class="cc-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Severity</th>
+                                    <th scope="col">Message</th>
+                                    <th scope="col">Source</th>
+                                    <th scope="col">Run</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($recentIssues as $issue)
+                                    @php
+                                        $issueSource = $issue->monitoredSource;
+                                        $issueRun = $issue->datasetComparisonRun;
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            @if ($issue->severity === 'error')
+                                                <span class="cc-sev cc-sev--error">Error</span>
+                                            @elseif ($issue->severity === 'warning')
+                                                <span class="cc-sev cc-sev--warning">Warning</span>
+                                            @elseif ($issue->severity === 'info')
+                                                <span class="cc-sev cc-sev--info">Info</span>
+                                            @else
+                                                <span class="cc-sev cc-sev--default">{{ $issue->severity }}</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $issue->message }}</td>
+                                        <td>
+                                            @if ($issueSource !== null)
+                                                <a href="{{ route('sources.show', $issueSource) }}">{{ $issueSource->name }}</a>
+                                            @else
+                                                <span class="muted">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="mono">
+                                            @if ($issueRun !== null && $issueSource !== null)
+                                                <a href="{{ route('sources.runs.show', [$issueSource, $issueRun]) }}">{{ $issueRun->id }}</a>
+                                            @elseif ($issueRun !== null)
+                                                {{ $issueRun->id }}
+                                            @else
+                                                <span class="muted">—</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
+                </div>
+            </section>
+        </div>
+    </body>
+</html>

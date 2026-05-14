@@ -6,15 +6,15 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('redirects the root path to the sources index route', function () {
+it('redirects the root path to the dashboard route', function () {
     $this->get('/')
-        ->assertRedirect(route('sources.index'));
+        ->assertRedirect(route('dashboard.index'));
 });
 
 it('does not return the default Laravel welcome page for the root path', function () {
     $response = $this->get('/');
 
-    $response->assertRedirect(route('sources.index'));
+    $response->assertRedirect(route('dashboard.index'));
     expect($response->status())->not->toBe(200);
     expect($response->getContent())->not->toContain("Let's get started");
 });
@@ -26,12 +26,12 @@ it('routes unauthenticated visitors from the root path through the login flow', 
         ->assertSeeText('Sign in');
 });
 
-it('redirects authenticated users from the root path to the sources index', function () {
+it('redirects authenticated users from the root path to the dashboard', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get('/')
-        ->assertRedirect(route('sources.index'));
+        ->assertRedirect(route('dashboard.index'));
 });
 
 it('redirects unauthenticated users from /sources to /login', function () {
@@ -65,7 +65,7 @@ it('allows a valid user to log in and access /sources', function () {
     $this->post(route('login.store'), [
         'email' => $user->email,
         'password' => $password,
-    ])->assertRedirect(route('sources.index'));
+    ])->assertRedirect(route('dashboard.index'));
 
     $this->assertAuthenticatedAs($user);
 
@@ -97,10 +97,10 @@ it('allows an authenticated user to log out', function () {
     $this->assertGuest();
 });
 
-it('redirects authenticated users visiting /login to /sources', function () {
+it('redirects authenticated users visiting /login to the dashboard', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('login'))
-        ->assertRedirect(route('sources.index'));
+        ->assertRedirect(route('dashboard.index'));
 });

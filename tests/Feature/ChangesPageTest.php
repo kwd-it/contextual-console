@@ -29,6 +29,7 @@ it('shows sources, changes, and issues links in the dashboard navigation', funct
         'name' => 'Nav Active Source',
     ]);
 
+    $dashboardHref = route('dashboard.index');
     $sourcesHref = route('sources.index');
     $changesHref = route('changes.index');
     $issuesHref = route('issues.index');
@@ -36,9 +37,11 @@ it('shows sources, changes, and issues links in the dashboard navigation', funct
     $sourcesIndex = $this->actingAs($user)
         ->get('/sources')
         ->assertOk()
+        ->assertSee('href="'.$dashboardHref.'"', false)
         ->assertSee('href="'.$sourcesHref.'"', false)
         ->assertSee('href="'.$changesHref.'"', false)
         ->assertSee('href="'.$issuesHref.'"', false)
+        ->assertSeeText('Dashboard')
         ->assertSeeText('Changes')
         ->assertSeeText('Contextual Console')
         ->assertSee('Website data monitoring', false);
@@ -48,6 +51,7 @@ it('shows sources, changes, and issues links in the dashboard navigation', funct
     $changesIndex = $this->actingAs($user)
         ->get('/changes')
         ->assertOk()
+        ->assertSee('href="'.$dashboardHref.'"', false)
         ->assertSee('href="'.$sourcesHref.'"', false)
         ->assertSee('href="'.$changesHref.'"', false)
         ->assertSee('href="'.$issuesHref.'"', false);
@@ -57,6 +61,7 @@ it('shows sources, changes, and issues links in the dashboard navigation', funct
     $issuesIndex = $this->actingAs($user)
         ->get('/issues')
         ->assertOk()
+        ->assertSee('href="'.$dashboardHref.'"', false)
         ->assertSee('href="'.$changesHref.'"', false);
 
     expect(substr_count($issuesIndex->getContent(), 'aria-current="page"'))->toBe(1);

@@ -438,6 +438,47 @@
         font-weight: 500;
     }
 
+    .cc-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+    .cc-stat-card {
+        background: var(--cc-surface);
+        border: 1px solid var(--cc-border);
+        border-radius: var(--cc-radius);
+        box-shadow: var(--cc-shadow), var(--cc-shadow-inset);
+        padding: 16px 18px;
+    }
+    .cc-stat-card__label {
+        margin: 0 0 10px;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--cc-muted);
+    }
+    .cc-stat-card__value {
+        margin: 0 0 8px;
+        font-size: 1.625rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: var(--cc-text);
+        font-variant-numeric: tabular-nums;
+        line-height: 1.15;
+    }
+    .cc-stat-card__value--text {
+        font-size: 0.9375rem;
+        font-weight: 500;
+        letter-spacing: normal;
+    }
+    .cc-stat-card__hint {
+        margin: 0;
+        font-size: 0.75rem;
+        line-height: 1.45;
+    }
+
     @media (max-width: 720px) {
         body {
             padding: 16px 14px 40px;
