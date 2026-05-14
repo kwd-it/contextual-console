@@ -5,6 +5,31 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-05-14
+
+Incremental improvements to the internal monitoring UI: a first cross-source dashboard summary, broader navigation, and light reporting pages for daily monitoring support.
+
+### Dashboard and navigation
+
+- Added a **dashboard** summary page (`/dashboard`) with counts for sources, recent failures, issues, and plot data changes over a rolling window.
+- Added **initial drilldown links** from the dashboard into filtered **Issues**, **Changes**, and **Sources** views (query parameters only; no saved views).
+- Site **root (`/`)** and **post-login** redirect now go to the dashboard instead of the sources list.
+- Polished shared dashboard navigation and wording.
+
+### Source and run inspection
+
+- **Human-readable plot labels** (title and development where present in snapshots) on source dashboards and comparison run detail tables, alongside stable technical plot ids.
+- Comparison **run detail** pages (`/sources/{source}/runs/{run}`) remain accurate for **older runs**, not only the latest. Useful when reviewing historic issues and change rows for a given day’s comparison.
+
+### Cross-source pages
+
+- Added **Issues** (`/issues`) and **Changes** (`/changes`) listings across all monitored sources.
+- Added **basic filters** on those pages (for example date range and severity on issues).
+
+### Operations note
+
+- Routine deployments can include **additional admin users** for internal testers using the existing bootstrap command; credentials stay in environment and operator channels only. Never in the repository.
+
 ## [0.6.1] - 2026-05-11
 
 ### Fixed

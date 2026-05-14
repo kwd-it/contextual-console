@@ -12,7 +12,7 @@ The long-term focus is operational visibility across many properties: change his
 
 This project is early-stage but usable for manually ingesting and reviewing changes in Housebuilder plot datasets:
 
-The **first deployment-ready monitoring release** was **v0.4.0**; **v0.5.0** builds on that baseline with dashboard and navigation polish, explicit scheduler timezone defaults, and broader passive plot field tracking. **v0.6.0** adds optional daily SQLite backups to S3-compatible object storage; **v0.6.1** adds the S3 filesystem adapter dependency required for those uploads—see `CHANGELOG.md`.
+The **first deployment-ready monitoring release** was **v0.4.0**; **v0.5.0** builds on that baseline with dashboard and navigation polish, explicit scheduler timezone defaults, and broader passive plot field tracking. **v0.6.0** adds optional daily SQLite backups to S3-compatible object storage; **v0.6.1** adds the S3 filesystem adapter dependency required for those uploads. **v0.7.0** adds a first dashboard summary, cross-source Issues and Changes pages with basic filters, comparison run detail for any past run (with human-readable plot labels where snapshot data allows), navigation and styling polish, and initial dashboard drilldown links. See `CHANGELOG.md`.
 
 - **Monitored sources** (`MonitoredSource`): identify feeds by stable `key`, with a configured endpoint and optional HTTP ingest settings.
 - **HTTP JSON plot ingest**: read-only GET via `php artisan contextual-console:run-http-plot-source`.
@@ -24,9 +24,11 @@ The **first deployment-ready monitoring release** was **v0.4.0**; **v0.5.0** bui
 - **Comparison runs** (`DatasetComparisonRun`): baseline then compare-to-previous summaries (`added`, `removed`, `changed`, `unchanged`) and change logs.
 - **Issue detection**: dataset-level validation (invalid/missing ids, duplicates, missing/invalid `status`, and status-aware `price` rules). See `PlotDatasetIssueDetector`.
 - **Source status**: CLI summary via `php artisan contextual-console:source-status`.
-- **Read-only dashboard pages**: `/sources` and `/sources/{source}` (login required); `/` redirects to `/sources`.
-- **Admin login**: session login, bootstrap with `php artisan contextual-console:create-admin-user`.
-- **SQLite backups** (optional): `php artisan contextual-console:backup-database` — scheduled daily; configure S3-compatible storage and env vars per `docs/DEPLOYMENT.md`.
+- **Web UI** (session **login** required for pages below; `/login` and POST `/logout`): first **dashboard** summary at `/dashboard`; monitored **sources** at `/sources` and `/sources/{source}` (`{source}` is the monitored source **database id** in URLs); **comparison run detail** at `/sources/{source}/runs/{run}` (`{run}` is the comparison run id), including **historic** runs; cross-source **Changes** at `/changes` and **Issues** at `/issues` with **basic query filters** (for example date range, severity on issues). The site **root (`/`)** redirects to `/dashboard`; successful login redirects there as well.
+- **Admin users**: bootstrap the first account with `php artisan contextual-console:create-admin-user`; add further internal accounts the same way when testers or operators need access. Do not commit or document real passwords.
+- **Scheduled monitoring** (Laravel scheduler; times use `config/app.php` **schedule timezone**, default **Europe/London**): `contextual-console:run-scheduled-sources` daily at **06:00**; **daily summary email** via `contextual-console:daily-summary --email` at **06:30** (recipient and mail env in `docs/DEPLOYMENT.md`).
+- **SQLite backups** (optional): `php artisan contextual-console:backup-database` — scheduled daily at **06:45**; configure S3-compatible storage and env vars per `docs/DEPLOYMENT.md`.
+- **Production smoke test** (no external HTTP): `php artisan contextual-console:smoke-test` — checks key production configuration and is documented in `docs/DEPLOYMENT.md`.
 
 For release history, see `CHANGELOG.md`.
 
@@ -65,10 +67,10 @@ For Housebuilder plot datasets, the current flow is:
 Planned next steps (not yet implemented):
 
 - Broader use of change recording from real domain models and workflows.
-- Alerting and severity or classification of issues.
+- Richer alerting and classification of issues beyond today’s listings.
 - Checks for completeness and consistency of structured data.
 - Monitoring for sync/feed health.
-- A focused dashboard or reporting layer.
+- Deeper reporting (saved views, exports, or notifications beyond the existing daily email).
 
 Priorities will shift with the first production integrations.
 
@@ -232,15 +234,15 @@ php artisan contextual-console:run-http-plot-source hb:your-source-key
 
 If the env var referenced by `auth_token_env_key` is missing or empty, the command fails with an explicit error before any HTTP request is made.
 
-## Source status (internal/dev)
+## Source status and dashboards (internal/dev)
 
 - **CLI**: `php artisan contextual-console:source-status`
-- **Page**: visit `/sources` for a simple read-only status overview of monitored sources.
-- **Source detail**: visit `/sources/{source}` for a read-only view of recent runs and latest dataset issues for a monitored source.
+- **Dashboard**: `/dashboard` — high-level counts and recent runs; drilldown links apply **basic filters** on Issues, Changes, or Sources where noted on the page.
+- **Sources list**: `/sources` — monitored sources and status-oriented summary.
+- **Source detail**: `/sources/{source}` — recent runs, latest run’s issues and changes, links to each run’s detail page.
+- **Run detail**: `/sources/{source}/runs/{run}` — that run’s issues and plot change rows (works for past runs, not only the latest).
 
-Dashboard pages now require session login (minimal admin auth).
-
-To create an admin user locally (no real credentials):
+To create an admin user locally (example placeholders only):
 
 ```bash
 php artisan contextual-console:create-admin-user --name="Admin" --email="admin@example.com" --password="a-long-secure-password"
