@@ -142,6 +142,13 @@
                                             $entityLabel = (string) $issue->entity_type;
                                         }
 
+                                        $issuePlotMeta = $plotDisplayLookup->forPlotEntity(
+                                            $issue->entity_type !== null && $issue->entity_type !== ''
+                                                ? (string) $issue->entity_type
+                                                : null,
+                                            $issue->entity_id,
+                                        );
+
                                         $context = is_array($issue->context) ? $issue->context : null;
                                         $contextLabel = ($context === null || $context === []) ? '-' : json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
@@ -158,7 +165,23 @@
                                             <span class="cc-sev {{ $sevClass }}">{{ $issue->severity }}</span>
                                         </td>
                                         <td class="mono">{{ $issue->issue_type }}</td>
-                                        <td class="mono">{{ $entityLabel }}</td>
+                                        <td>
+                                            @if (($issue->entity_type ?? null) === 'plot' && $issue->entity_id !== null && $issue->entity_id !== '')
+                                                <div class="cc-entity-display">
+                                                    @if ($issuePlotMeta !== null && $issuePlotMeta['plot_label'] !== null)
+                                                        <div class="cc-entity-display__primary">{{ $issuePlotMeta['plot_label'] }}</div>
+                                                    @endif
+                                                    @if ($issuePlotMeta !== null && $issuePlotMeta['development'] !== null)
+                                                        <div class="cc-entity-display__secondary muted">{{ $issuePlotMeta['development'] }}</div>
+                                                    @endif
+                                                    <div class="cc-entity-display__tech muted mono">
+                                                        Technical ID: {{ $issue->entity_type }}:{{ $issue->entity_id }}
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <span class="mono">{{ $entityLabel }}</span>
+                                            @endif
+                                        </td>
                                         <td class="mono">{{ $issue->field ?? '-' }}</td>
                                         <td>{{ $issue->message }}</td>
                                         <td class="mono">{{ $contextLabel }}</td>
@@ -194,8 +217,32 @@
                             </thead>
                             <tbody>
                                 @foreach ($latestRunChanges as $change)
+                                    @php
+                                        $changePlotMeta = $plotDisplayLookup->forPlotEntity(
+                                            $change->entity_type !== null && $change->entity_type !== ''
+                                                ? (string) $change->entity_type
+                                                : null,
+                                            $change->entity_id,
+                                        );
+                                    @endphp
                                     <tr>
-                                        <td class="mono">{{ $change->entity_id }}</td>
+                                        <td>
+                                            @if (($change->entity_type ?? null) === 'plot')
+                                                <div class="cc-entity-display">
+                                                    @if ($changePlotMeta !== null && $changePlotMeta['plot_label'] !== null)
+                                                        <div class="cc-entity-display__primary">{{ $changePlotMeta['plot_label'] }}</div>
+                                                    @endif
+                                                    @if ($changePlotMeta !== null && $changePlotMeta['development'] !== null)
+                                                        <div class="cc-entity-display__secondary muted">{{ $changePlotMeta['development'] }}</div>
+                                                    @endif
+                                                    <div class="cc-entity-display__tech muted mono">
+                                                        Technical ID: {{ $change->entity_type }}:{{ $change->entity_id }}
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <span class="mono">{{ $change->entity_id }}</span>
+                                            @endif
+                                        </td>
                                         <td class="mono">{{ $change->field }}</td>
                                         <td class="mono">{{ $change->old_value ?? '-' }}</td>
                                         <td class="mono">{{ $change->new_value ?? '-' }}</td>

@@ -1,7 +1,8 @@
 <?php
 
-use App\Core\Models\DatasetIssue;
 use App\Core\Models\ChangeLog;
+use App\Core\Models\DatasetComparisonRun;
+use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
 use App\Models\User;
@@ -48,7 +49,7 @@ it('links a source name to the source detail page', function () {
     $this->actingAs($user)
         ->get('/sources')
         ->assertOk()
-        ->assertSee('href="' . route('sources.show', $source) . '"', false)
+        ->assertSee('href="'.route('sources.show', $source).'"', false)
         ->assertSeeText($source->name);
 });
 
@@ -248,6 +249,39 @@ it('shows linked latest-run changes on the detail page', function () {
     }
 });
 
+it('shows snapshot-derived plot title and development for latest run changes and plot issues', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:page-detail-plot-labels',
+        'name' => 'Page Detail Plot Labels',
+    ]);
+
+    $baseline = [
+        ['id' => 14, 'price' => 100_000, 'status' => 'available', 'title' => 'Plot 14, The Spetisbury', 'development' => 'Charminster Farm'],
+    ];
+
+    $second = [
+        ['id' => 14, 'price' => 110_000, 'status' => 'not_a_status', 'title' => 'Plot 14, The Spetisbury', 'development' => 'Charminster Farm'],
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+    $run2 = $service->run($source, $second);
+    $run2->refresh();
+
+    expect($run2->status)->toBe('completed');
+
+    $this->actingAs($user)
+        ->get(route('sources.show', $source))
+        ->assertOk()
+        ->assertSeeText('Latest run changes')
+        ->assertSeeText('Plot 14, The Spetisbury')
+        ->assertSeeText('Charminster Farm')
+        ->assertSeeText('Technical ID: plot:14')
+        ->assertSeeText('Latest run issues')
+        ->assertSeeText('Plot status is invalid.');
+});
+
 it('does not show old-run changes as latest-run changes', function () {
     $user = User::factory()->create();
     $source = MonitoredSource::create([
@@ -398,7 +432,7 @@ it('shows a failed latest run safely on the source list page', function () {
         'name' => 'Page Failed Run List',
     ]);
 
-    $run = \App\Core\Models\DatasetComparisonRun::create([
+    $run = DatasetComparisonRun::create([
         'source_id' => $source->id,
         'status' => 'failed',
         'current_snapshot_id' => null,
@@ -439,7 +473,7 @@ it('shows a failed latest run and its source_run_failed issue on the source deta
         'name' => 'Page Failed Run Detail',
     ]);
 
-    $run = \App\Core\Models\DatasetComparisonRun::create([
+    $run = DatasetComparisonRun::create([
         'source_id' => $source->id,
         'status' => 'failed',
         'current_snapshot_id' => null,

@@ -243,4 +243,20 @@
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
     }
+    .cc-entity-display {
+        font-size: 0.875rem;
+        line-height: 1.45;
+    }
+    .cc-entity-display__primary {
+        font-weight: 500;
+        color: var(--cc-text);
+    }
+    .cc-entity-display__secondary {
+        margin-top: 2px;
+        font-size: 0.8125rem;
+    }
+    .cc-entity-display__tech {
+        margin-top: 6px;
+        font-size: 0.75rem;
+    }
 </style>

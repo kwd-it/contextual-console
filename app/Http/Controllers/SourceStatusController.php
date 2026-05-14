@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Core\Models\ChangeLog;
 use App\Core\Models\DatasetComparisonRun;
 use App\Core\Models\DatasetIssue;
+use App\Core\Models\DatasetSnapshot;
 use App\Core\Models\MonitoredSource;
 use App\Core\Services\MonitoredSourceStatusService;
+use App\Support\PlotSnapshotDisplayLookup;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -82,6 +84,35 @@ class SourceStatusController extends Controller
                 ->get();
         }
 
+        $plotDisplayLookup = PlotSnapshotDisplayLookup::empty();
+        if ($latestRun !== null) {
+            $snapshotIds = array_values(array_unique(array_filter([
+                $latestRun->current_snapshot_id,
+                $latestRun->previous_snapshot_id,
+            ])));
+
+            if ($snapshotIds !== []) {
+                /** @var array<int, DatasetSnapshot> $snapshotsById */
+                $snapshotsById = DatasetSnapshot::query()
+                    ->whereIn('id', $snapshotIds)
+                    ->get()
+                    ->keyBy('id')
+                    ->all();
+
+                $currentSnap = $latestRun->current_snapshot_id !== null
+                    ? ($snapshotsById[$latestRun->current_snapshot_id] ?? null)
+                    : null;
+                $previousSnap = $latestRun->previous_snapshot_id !== null
+                    ? ($snapshotsById[$latestRun->previous_snapshot_id] ?? null)
+                    : null;
+
+                $plotDisplayLookup = PlotSnapshotDisplayLookup::fromPayloads(
+                    is_array($currentSnap?->payload) ? $currentSnap->payload : null,
+                    is_array($previousSnap?->payload) ? $previousSnap->payload : null,
+                );
+            }
+        }
+
         return view('sources.show', [
             'source' => $source,
             'recentRuns' => $recentRuns,
@@ -90,6 +121,7 @@ class SourceStatusController extends Controller
             'severityCountsByRunId' => $severityCountsByRunId,
             'latestRunIssues' => $latestRunIssues,
             'latestRunChanges' => $latestRunChanges,
+            'plotDisplayLookup' => $plotDisplayLookup,
         ]);
     }
 }
