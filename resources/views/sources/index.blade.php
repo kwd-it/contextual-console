@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — Sources</title>
+        <title>Contextual Console — Data sources</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -11,29 +11,29 @@
             @include('sources._dashboard-nav')
 
             <header class="cc-page-header">
-                <h1 class="cc-page-title">Sources</h1>
-                <p class="cc-page-sub">Latest run status, change counts, and issues for each monitored source.</p>
+                <h1 class="cc-page-title">Data sources</h1>
+                <p class="cc-page-sub">Each source is a tracked website feed. Compare daily snapshots to detect plot data changes and surface issues. This table shows the latest comparison run per source.</p>
             </header>
 
             @if (empty($summaries))
                 <div class="cc-card">
                     <div class="cc-card-body--padded cc-empty">
                         <p class="cc-empty-title">No sources configured</p>
-                        <p class="muted">No monitored sources found.</p>
+                        <p class="muted">No sources are configured yet.</p>
                     </div>
                 </div>
             @else
                 <div class="cc-card">
                     <div class="cc-card-header">
-                        <h2 class="cc-card-title">Monitored sources</h2>
-                        <p class="cc-card-desc">{{ count($summaries) }} source{{ count($summaries) === 1 ? '' : 's' }}</p>
+                        <h2 class="cc-card-title">Sources</h2>
+                        <p class="cc-card-desc">{{ count($summaries) }} configured source{{ count($summaries) === 1 ? '' : 's' }}</p>
                     </div>
                     <div class="cc-card-body">
                         <table class="cc-table">
                             <thead>
                                 <tr>
                                     <th>Source</th>
-                                    <th>Key</th>
+                                    <th>Source key</th>
                                     <th>Latest run</th>
                                     <th>Finished</th>
                                     <th>Changes</th>

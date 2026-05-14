@@ -18,7 +18,8 @@ it('allows authenticated users to load /issues', function () {
     $this->actingAs(User::factory()->create())
         ->get('/issues')
         ->assertOk()
-        ->assertSeeText('All issues');
+        ->assertSeeText('Issues')
+        ->assertSeeText('Recent issues from daily dataset comparisons across all sources');
 });
 
 it('links to the issues page from the sources index navigation', function () {

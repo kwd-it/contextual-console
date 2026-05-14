@@ -60,7 +60,7 @@ it('loads the run detail page for an authenticated user', function () {
         ->assertOk()
         ->assertSeeText($source->name)
         ->assertSeeText($source->key)
-        ->assertSeeText('Run summary')
+        ->assertSeeText('Run overview')
         ->assertSeeText((string) $run->id)
         ->assertSeeText('failed');
 });
@@ -115,7 +115,7 @@ it('shows issues linked to that run on the run detail page', function () {
     $this->actingAs($user)
         ->get(route('sources.runs.show', [$source, $run]))
         ->assertOk()
-        ->assertSeeText('Issues for this run')
+        ->assertSeeText('Issues on this run')
         ->assertSeeText((string) $issue->severity)
         ->assertSeeText((string) $issue->issue_type)
         ->assertSeeText((string) $issue->message);
@@ -152,7 +152,7 @@ it('shows change logs linked to that run on the run detail page', function () {
     $resp = $this->actingAs($user)
         ->get(route('sources.runs.show', [$source, $run2]))
         ->assertOk()
-        ->assertSeeText('Changes for this run')
+        ->assertSeeText('Plot data changes on this run')
         ->assertSeeText((string) $sample->entity_id)
         ->assertSeeText((string) $sample->field);
 
@@ -206,7 +206,7 @@ it('shows issues and changes for an older run when that run is not the latest', 
     $this->actingAs($user)
         ->get(route('sources.runs.show', [$source, $runIssuesOnly]))
         ->assertOk()
-        ->assertSeeText('Issues for this run')
+        ->assertSeeText('Issues on this run')
         ->assertSeeText((string) $oldIssueMessage);
 
     // Older run change logs: run2 introduces a status change; run3 is latest and does not surface that value on the source page.
@@ -244,13 +244,13 @@ it('shows issues and changes for an older run when that run is not the latest', 
     $this->actingAs($user)
         ->get(route('sources.show', $sourceB))
         ->assertOk()
-        ->assertSeeText('Latest run changes')
+        ->assertSeeText('Plot data changes on this run')
         ->assertDontSeeText((string) $oldRunChangeNewValue);
 
     $this->actingAs($user)
         ->get(route('sources.runs.show', [$sourceB, $runWithStatusChange]))
         ->assertOk()
-        ->assertSeeText('Changes for this run')
+        ->assertSeeText('Plot data changes on this run')
         ->assertSeeText((string) $oldRunChangeNewValue);
 });
 
@@ -279,11 +279,11 @@ it('shows snapshot-derived plot title and development on the run detail page whe
     $this->actingAs($user)
         ->get(route('sources.runs.show', [$source, $run2]))
         ->assertOk()
-        ->assertSeeText('Changes for this run')
+        ->assertSeeText('Plot data changes on this run')
         ->assertSeeText('Plot 14, The Spetisbury')
         ->assertSeeText('Charminster Farm')
         ->assertSeeText('Technical ID: plot:14')
-        ->assertSeeText('Issues for this run')
+        ->assertSeeText('Issues on this run')
         ->assertSeeText('Plot status is invalid.');
 });
 

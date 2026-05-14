@@ -13,14 +13,15 @@ uses(RefreshDatabase::class);
 it('loads the source status page', function () {
     $this->actingAs(User::factory()->create())
         ->get('/sources')
-        ->assertOk();
+        ->assertOk()
+        ->assertSeeText('Data sources');
 });
 
 it('shows an empty state when no monitored sources exist', function () {
     $this->actingAs(User::factory()->create())
         ->get('/sources')
         ->assertOk()
-        ->assertSeeText('No monitored sources found.');
+        ->assertSeeText('No sources are configured yet.');
 });
 
 it('shows a source with no runs', function () {
@@ -111,8 +112,8 @@ it('shows latest run summary and recent runs on the detail page', function () {
     $this->actingAs($user)
         ->get(route('sources.show', $source))
         ->assertOk()
-        ->assertSeeText('Latest run summary')
-        ->assertSeeText('Recent runs')
+        ->assertSeeText('Latest comparison run')
+        ->assertSeeText('Recent comparison runs')
         ->assertSeeText('completed')
         ->assertSeeText((string) $run2->id)
         ->assertSeeText("added={$added}")
@@ -153,7 +154,7 @@ it('shows latest run issues on the detail page', function () {
     $this->actingAs($user)
         ->get(route('sources.show', $source))
         ->assertOk()
-        ->assertSeeText('Latest run issues')
+        ->assertSeeText('Issues on this run')
         ->assertSeeText((string) $issue->severity)
         ->assertSeeText((string) $issue->issue_type)
         ->assertSeeText((string) $issue->message);
@@ -236,7 +237,7 @@ it('shows linked latest-run changes on the detail page', function () {
 
     $resp = $this->actingAs($user)->get(route('sources.show', $source))
         ->assertOk()
-        ->assertSeeText('Latest run changes')
+        ->assertSeeText('Plot data changes on this run')
         ->assertSeeText((string) $sample->entity_id)
         ->assertSeeText((string) $sample->field);
 
@@ -274,11 +275,11 @@ it('shows snapshot-derived plot title and development for latest run changes and
     $this->actingAs($user)
         ->get(route('sources.show', $source))
         ->assertOk()
-        ->assertSeeText('Latest run changes')
+        ->assertSeeText('Plot data changes on this run')
         ->assertSeeText('Plot 14, The Spetisbury')
         ->assertSeeText('Charminster Farm')
         ->assertSeeText('Technical ID: plot:14')
-        ->assertSeeText('Latest run issues')
+        ->assertSeeText('Issues on this run')
         ->assertSeeText('Plot status is invalid.');
 });
 
@@ -325,7 +326,7 @@ it('does not show old-run changes as latest-run changes', function () {
     $this->actingAs($user)
         ->get(route('sources.show', $source))
         ->assertOk()
-        ->assertSeeText('Latest run changes')
+        ->assertSeeText('Plot data changes on this run')
         ->assertDontSeeText((string) $oldRunChangeNewValue);
 });
 
@@ -369,7 +370,7 @@ it('shows an empty state when latest run has no linked changes', function () {
     $this->actingAs($user)
         ->get(route('sources.show', $source))
         ->assertOk()
-        ->assertSeeText('Latest run changes')
+        ->assertSeeText('Plot data changes on this run')
         ->assertSeeText('No changes found for the latest run.');
 });
 
@@ -496,7 +497,7 @@ it('shows a failed latest run and its source_run_failed issue on the source deta
     $this->actingAs($user)
         ->get(route('sources.show', $source))
         ->assertOk()
-        ->assertSeeText('Latest run summary')
+        ->assertSeeText('Latest comparison run')
         ->assertSeeText('failed')
         ->assertSeeText((string) $run->id)
         ->assertSeeText('Current snapshot id')
@@ -505,7 +506,7 @@ it('shows a failed latest run and its source_run_failed issue on the source deta
         ->assertSeeText('removed=0')
         ->assertSeeText('changed=0')
         ->assertSeeText('unchanged=0')
-        ->assertSeeText('Latest run issues')
+        ->assertSeeText('Issues on this run')
         ->assertSeeText((string) $issue->severity)
         ->assertSeeText((string) $issue->issue_type)
         ->assertSeeText((string) $issue->message);

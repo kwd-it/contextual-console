@@ -11,19 +11,20 @@
             @include('sources._dashboard-nav')
 
             <div class="muted cc-back">
-                <a href="{{ route('sources.index') }}">← Back to sources</a>
+                <a href="{{ route('sources.index') }}">← All sources</a>
             </div>
 
             <header class="cc-page-header">
                 <h1 class="cc-page-title">{{ $source->name }}</h1>
+                <p class="cc-page-sub">Comparison runs, detected plot data changes, and issues for this source (from daily dataset snapshots).</p>
                 <p class="cc-source-meta muted mono">Source key: {{ $source->key }}</p>
             </header>
 
             {{-- Latest run summary --}}
             <section class="cc-card" aria-labelledby="hdr-latest-summary">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-latest-summary">Latest run summary</h2>
-                    <p class="cc-card-desc">Most recent comparison run for this source.</p>
+                    <h2 class="cc-card-title" id="hdr-latest-summary">Latest comparison run</h2>
+                    <p class="cc-card-desc">Most recent daily snapshot comparison for this source.</p>
                 </div>
                 <div class="cc-card-body">
                     @if ($latestRun === null)
@@ -114,8 +115,8 @@
             {{-- Latest run issues (before changes and history for scan flow) --}}
             <section class="cc-card" aria-labelledby="hdr-latest-issues">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-latest-issues">Latest run issues</h2>
-                    <p class="cc-card-desc">Validation and ingest problems recorded on the latest run.</p>
+                    <h2 class="cc-card-title" id="hdr-latest-issues">Issues on this run</h2>
+                    <p class="cc-card-desc">Data checks and ingest messages from the latest comparison run.</p>
                 </div>
                 <div class="cc-card-body">
                     @if ($latestRun === null)
@@ -198,8 +199,8 @@
             {{-- Latest run changes --}}
             <section class="cc-card" aria-labelledby="hdr-latest-changes">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-latest-changes">Latest run changes</h2>
-                    <p class="cc-card-desc">Field-level diffs linked to the latest run.</p>
+                    <h2 class="cc-card-title" id="hdr-latest-changes">Plot data changes on this run</h2>
+                    <p class="cc-card-desc">Field-level differences detected between compared snapshots for this run.</p>
                 </div>
                 <div class="cc-card-body">
                     @if ($latestRun === null)
@@ -260,8 +261,8 @@
             {{-- Recent runs --}}
             <section class="cc-card" aria-labelledby="hdr-recent-runs">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-recent-runs">Recent runs</h2>
-                    <p class="cc-card-desc">Up to ten most recent runs, newest first.</p>
+                    <h2 class="cc-card-title" id="hdr-recent-runs">Recent comparison runs</h2>
+                    <p class="cc-card-desc">Up to ten runs, newest first. Open a run for full detail.</p>
                 </div>
                 <div class="cc-card-body">
                     @if ($recentRuns->isEmpty())

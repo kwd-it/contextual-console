@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — Run #{{ $run->id }} — {{ $source->name }}</title>
+        <title>Contextual Console — Comparison run #{{ $run->id }} — {{ $source->name }}</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -11,19 +11,19 @@
             @include('sources._dashboard-nav')
 
             <div class="muted cc-back">
-                <a href="{{ route('sources.show', $source) }}">← Back to {{ $source->name }}</a>
+                <a href="{{ route('sources.show', $source) }}">← {{ $source->name }}</a>
             </div>
 
             <header class="cc-page-header">
                 <h1 class="cc-page-title">Comparison run #{{ $run->id }}</h1>
-                <p class="cc-page-sub muted">{{ $source->name }}</p>
+                <p class="cc-page-sub">Daily snapshot comparison for {{ $source->name }}. Counts and rows below reflect differences between that run's captured dataset and the previous snapshot.</p>
                 <p class="cc-source-meta muted mono">Source key: {{ $source->key }}</p>
             </header>
 
             <section class="cc-card" aria-labelledby="hdr-run-summary">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-run-summary">Run summary</h2>
-                    <p class="cc-card-desc">Metadata and counts for this comparison run.</p>
+                    <h2 class="cc-card-title" id="hdr-run-summary">Run overview</h2>
+                    <p class="cc-card-desc">Status, timing, snapshot ids, and summary counts for this comparison run.</p>
                 </div>
                 <div class="cc-card-body">
                     @php
@@ -108,8 +108,8 @@
 
             <section class="cc-card" aria-labelledby="hdr-run-issues">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-run-issues">Issues for this run</h2>
-                    <p class="cc-card-desc">Validation and ingest problems recorded on this run.</p>
+                    <h2 class="cc-card-title" id="hdr-run-issues">Issues on this run</h2>
+                    <p class="cc-card-desc">Data checks and ingest messages recorded for this run.</p>
                 </div>
                 <div class="cc-card-body">
                     @if ($runIssues->isEmpty())
@@ -189,8 +189,8 @@
 
             <section class="cc-card" aria-labelledby="hdr-run-changes">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-run-changes">Changes for this run</h2>
-                    <p class="cc-card-desc">Field-level diffs linked to this run.</p>
+                    <h2 class="cc-card-title" id="hdr-run-changes">Plot data changes on this run</h2>
+                    <p class="cc-card-desc">Field-level differences detected between snapshots for this run.</p>
                 </div>
                 <div class="cc-card-body">
                     @if ($runChanges->isEmpty())

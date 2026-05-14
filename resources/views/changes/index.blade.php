@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — All changes</title>
+        <title>Contextual Console — Plot data changes</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -11,14 +11,14 @@
             @include('sources._dashboard-nav')
 
             <header class="cc-page-header">
-                <h1 class="cc-page-title">All changes</h1>
-                <p class="cc-page-sub">Recent field-level change logs across all monitored sources and runs (up to {{ $changeLimit }}, newest first).</p>
+                <h1 class="cc-page-title">Plot data changes</h1>
+                <p class="cc-page-sub">Recent field-level changes detected from daily dataset comparisons across all sources (newest first, up to {{ $changeLimit }} entries).</p>
             </header>
 
             <section class="cc-card" aria-labelledby="hdr-all-changes">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-all-changes">Change logs</h2>
-                    <p class="cc-card-desc">Differences recorded during dataset comparison runs.</p>
+                    <h2 class="cc-card-title" id="hdr-all-changes">Change list</h2>
+                    <p class="cc-card-desc">Differences between snapshots produced by comparison runs.</p>
                 </div>
                 <div class="cc-card-body">
                     @if ($changes->isEmpty())

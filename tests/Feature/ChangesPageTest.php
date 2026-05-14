@@ -18,35 +18,54 @@ it('allows authenticated users to load /changes', function () {
     $this->actingAs(User::factory()->create())
         ->get('/changes')
         ->assertOk()
-        ->assertSeeText('All changes');
+        ->assertSeeText('Plot data changes')
+        ->assertSeeText('Recent field-level changes detected from daily dataset comparisons across all sources');
 });
 
 it('shows sources, changes, and issues links in the dashboard navigation', function () {
     $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:nav-active-source',
+        'name' => 'Nav Active Source',
+    ]);
 
     $sourcesHref = route('sources.index');
     $changesHref = route('changes.index');
     $issuesHref = route('issues.index');
 
-    $this->actingAs($user)
+    $sourcesIndex = $this->actingAs($user)
         ->get('/sources')
         ->assertOk()
         ->assertSee('href="'.$sourcesHref.'"', false)
         ->assertSee('href="'.$changesHref.'"', false)
         ->assertSee('href="'.$issuesHref.'"', false)
-        ->assertSeeText('Changes');
+        ->assertSeeText('Changes')
+        ->assertSeeText('Contextual Console')
+        ->assertSee('Website data monitoring', false);
 
-    $this->actingAs($user)
+    expect(substr_count($sourcesIndex->getContent(), 'aria-current="page"'))->toBe(1);
+
+    $changesIndex = $this->actingAs($user)
         ->get('/changes')
         ->assertOk()
         ->assertSee('href="'.$sourcesHref.'"', false)
         ->assertSee('href="'.$changesHref.'"', false)
         ->assertSee('href="'.$issuesHref.'"', false);
 
-    $this->actingAs($user)
+    expect(substr_count($changesIndex->getContent(), 'aria-current="page"'))->toBe(1);
+
+    $issuesIndex = $this->actingAs($user)
         ->get('/issues')
         ->assertOk()
         ->assertSee('href="'.$changesHref.'"', false);
+
+    expect(substr_count($issuesIndex->getContent(), 'aria-current="page"'))->toBe(1);
+
+    $sourceShow = $this->actingAs($user)
+        ->get(route('sources.show', $source))
+        ->assertOk();
+
+    expect(substr_count($sourceShow->getContent(), 'aria-current="page"'))->toBe(1);
 });
 
 it('shows changes from multiple sources with source names and keys', function () {

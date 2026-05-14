@@ -11,14 +11,14 @@
             @include('sources._dashboard-nav')
 
             <header class="cc-page-header">
-                <h1 class="cc-page-title">All issues</h1>
-                <p class="cc-page-sub">Recent dataset issues across all monitored sources and runs (up to {{ $issueLimit }}, newest first).</p>
+                <h1 class="cc-page-title">Issues</h1>
+                <p class="cc-page-sub">Recent issues from daily dataset comparisons across all sources (newest first, up to {{ $issueLimit }} entries).</p>
             </header>
 
             <section class="cc-card" aria-labelledby="hdr-all-issues">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-all-issues">Dataset issues</h2>
-                    <p class="cc-card-desc">Validation and ingest problems from comparison runs.</p>
+                    <h2 class="cc-card-title" id="hdr-all-issues">Issue list</h2>
+                    <p class="cc-card-desc">Validation and ingest messages recorded when comparison runs finish.</p>
                 </div>
                 <div class="cc-card-body">
                     @if ($issues->isEmpty())
