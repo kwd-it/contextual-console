@@ -8,6 +8,8 @@
     </head>
     <body>
         <div class="cc-page">
+            @include('sources._dashboard-nav')
+
             <header class="cc-page-header">
                 <h1 class="cc-page-title">Sources</h1>
                 <p class="cc-page-sub">Latest run status, change counts, and issues for each monitored source.</p>

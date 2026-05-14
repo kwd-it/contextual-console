@@ -8,6 +8,8 @@
     </head>
     <body>
         <div class="cc-page">
+            @include('sources._dashboard-nav')
+
             <div class="muted cc-back">
                 <a href="{{ route('sources.show', $source) }}">← Back to {{ $source->name }}</a>
             </div>

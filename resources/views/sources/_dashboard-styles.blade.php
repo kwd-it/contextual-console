@@ -22,6 +22,14 @@
         max-width: 1120px;
         margin: 0 auto;
     }
+    .cc-nav {
+        font-size: 0.875rem;
+        margin-bottom: 14px;
+    }
+    .cc-nav__sep {
+        color: var(--cc-muted);
+        margin: 0 8px;
+    }
     .cc-page-header {
         margin-bottom: 22px;
     }
