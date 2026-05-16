@@ -349,6 +349,53 @@ it('records change logs for newly tracked plot fields without inflating added/re
     expect(DatasetIssue::query()->where('dataset_comparison_run_id', $run2->id)->count())->toBe(0);
 });
 
+it('preserves last_modified_by on stored snapshot payloads', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:last-modified-by-persist',
+        'name' => 'Last Modified By Persist',
+    ]);
+
+    $payload = [
+        ['id' => 14, 'price' => 100_000, 'status' => 'available', 'last_modified_by' => 'mark'],
+    ];
+
+    app(PlotDatasetRunService::class)->run($source, $payload);
+
+    $snapshot = DatasetSnapshot::query()->where('source_id', $source->id)->latest('id')->firstOrFail();
+
+    expect($snapshot->payload[0]['last_modified_by'])->toBe('mark');
+});
+
+it('does not record changes or issues when only last_modified_by changes between runs', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:last-modified-by-only',
+        'name' => 'Last Modified By Only',
+    ]);
+
+    $baseline = [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available', 'last_modified_by' => 'mark'],
+    ];
+    $second = [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available', 'last_modified_by' => 'kirk'],
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+    $run2 = $service->run($source, $second);
+    $run2->refresh();
+
+    expect($run2->summary)->toBe([
+        'added' => 0,
+        'removed' => 0,
+        'changed' => 0,
+        'unchanged' => 1,
+        'added_ids' => [],
+        'removed_ids' => [],
+    ]);
+    expect(ChangeLog::query()->where('dataset_comparison_run_id', $run2->id)->count())->toBe(0);
+    expect(DatasetIssue::query()->where('dataset_comparison_run_id', $run2->id)->count())->toBe(0);
+});
+
 it('persists a summary that exactly matches the comparison output fields', function () {
     $source = MonitoredSource::create([
         'key' => 'hb:test-summary',

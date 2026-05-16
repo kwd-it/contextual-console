@@ -223,6 +223,56 @@ it('does not emit a run detail link when the change log has no linked run', func
         ->assertDontSee('href="'.$noLinkHref.'"', false);
 });
 
+it('shows last modified by from snapshot payloads when available', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-last-modified-by',
+        'name' => 'Changes Last Modified By Source',
+    ]);
+
+    $baseline = [
+        ['id' => 14, 'price' => 100_000, 'status' => 'available', 'title' => 'Plot 14', 'last_modified_by' => 'mark'],
+    ];
+    $second = [
+        ['id' => 14, 'price' => 110_000, 'status' => 'available', 'title' => 'Plot 14', 'last_modified_by' => 'kirk'],
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+    $service->run($source, $second);
+
+    $this->actingAs($user)
+        ->get('/changes')
+        ->assertOk()
+        ->assertSeeText('Last modified by: kirk')
+        ->assertSeeText('Plot 14');
+});
+
+it('does not show last modified by text when snapshot metadata is missing', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-no-last-modified-by',
+        'name' => 'Changes No Last Modified By Source',
+    ]);
+
+    $baseline = [
+        ['id' => 14, 'price' => 100_000, 'status' => 'available', 'title' => 'Plot 14'],
+    ];
+    $second = [
+        ['id' => 14, 'price' => 110_000, 'status' => 'available', 'title' => 'Plot 14'],
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+    $service->run($source, $second);
+
+    $this->actingAs($user)
+        ->get('/changes')
+        ->assertOk()
+        ->assertSeeText('Plot 14')
+        ->assertDontSee('Last modified by:');
+});
+
 it('shows snapshot-derived plot labels and keeps technical ids visible', function () {
     $user = User::factory()->create();
     $source = MonitoredSource::create([

@@ -177,6 +177,9 @@
                                                     @if ($issuePlotMeta !== null && $issuePlotMeta['development'] !== null)
                                                         <div class="cc-entity-display__secondary muted">{{ $issuePlotMeta['development'] }}</div>
                                                     @endif
+                                                    @if ($issuePlotMeta !== null && $issuePlotMeta['last_modified_by'] !== null)
+                                                        <div class="cc-entity-display__secondary muted">Last modified by: {{ $issuePlotMeta['last_modified_by'] }}</div>
+                                                    @endif
                                                     <div class="cc-entity-display__tech muted mono">
                                                         Technical ID: {{ $issue->entity_type }}:{{ $issue->entity_id }}
                                                     </div>
@@ -237,6 +240,9 @@
                                                     @endif
                                                     @if ($changePlotMeta !== null && $changePlotMeta['development'] !== null)
                                                         <div class="cc-entity-display__secondary muted">{{ $changePlotMeta['development'] }}</div>
+                                                    @endif
+                                                    @if ($changePlotMeta !== null && $changePlotMeta['last_modified_by'] !== null)
+                                                        <div class="cc-entity-display__secondary muted">Last modified by: {{ $changePlotMeta['last_modified_by'] }}</div>
                                                     @endif
                                                     <div class="cc-entity-display__tech muted mono">
                                                         Technical ID: {{ $change->entity_type }}:{{ $change->entity_id }}

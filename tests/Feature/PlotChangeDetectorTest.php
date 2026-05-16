@@ -26,6 +26,18 @@ it('writes a change log when plot price changes', function () {
     expect($log->new_value)->toBe('110000');
 });
 
+it('does not log a change when only last_modified_by changes', function () {
+    $detector = new PlotChangeDetector(new ChangeDetectionService);
+
+    $logged = $detector->detect(
+        ['id' => 1, 'price' => 100_000, 'status' => 'available', 'last_modified_by' => 'mark'],
+        ['id' => 1, 'price' => 100_000, 'status' => 'available', 'last_modified_by' => 'kirk'],
+    );
+
+    expect($logged)->toBe(0);
+    expect(ChangeLog::count())->toBe(0);
+});
+
 it('does nothing when plot price is unchanged', function () {
     $detector = new PlotChangeDetector(new ChangeDetectionService);
 

@@ -7,7 +7,7 @@ namespace App\Support;
  */
 final class PlotSnapshotDisplayLookup
 {
-    /** @param  array<string, array{plot_label: ?string, development: ?string}>  $byCanonicalId */
+    /** @param  array<string, array{plot_label: ?string, development: ?string, last_modified_by: ?string}>  $byCanonicalId */
     private function __construct(
         private array $byCanonicalId,
     ) {}
@@ -45,7 +45,7 @@ final class PlotSnapshotDisplayLookup
     }
 
     /**
-     * @return array{plot_label: ?string, development: ?string}|null
+     * @return array{plot_label: ?string, development: ?string, last_modified_by: ?string}|null
      */
     public function forPlotEntity(?string $entityType, mixed $entityId): ?array
     {
@@ -81,7 +81,7 @@ final class PlotSnapshotDisplayLookup
 
     /**
      * @param  array<string, mixed>  $plot
-     * @return array{plot_label: ?string, development: ?string}
+     * @return array{plot_label: ?string, development: ?string, last_modified_by: ?string}
      */
     private static function extractDisplay(array $plot): array
     {
@@ -90,6 +90,7 @@ final class PlotSnapshotDisplayLookup
                 ?? self::nonEmptyString($plot['name'] ?? null),
             'development' => self::nonEmptyString($plot['development'] ?? null)
                 ?? self::nonEmptyString($plot['development_name'] ?? null),
+            'last_modified_by' => self::nonEmptyString($plot['last_modified_by'] ?? null),
         ];
     }
 

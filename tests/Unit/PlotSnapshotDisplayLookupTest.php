@@ -13,7 +13,38 @@ it('prefers current snapshot labels over previous', function () {
     );
 
     expect($lookup->forPlotEntity('plot', 'plots-1'))
-        ->toMatchArray(['plot_label' => 'New title', 'development' => 'Site A']);
+        ->toMatchArray(['plot_label' => 'New title', 'development' => 'Site A', 'last_modified_by' => null]);
+});
+
+it('extracts last_modified_by from snapshot payloads for display', function () {
+    $lookup = PlotSnapshotDisplayLookup::fromPayloads(
+        [
+            ['id' => 14, 'title' => 'Plot 14', 'last_modified_by' => 'mark'],
+        ],
+        null,
+    );
+
+    expect($lookup->forPlotEntity('plot', 14))
+        ->toMatchArray([
+            'plot_label' => 'Plot 14',
+            'development' => null,
+            'last_modified_by' => 'mark',
+        ]);
+});
+
+it('returns null last_modified_by when the field is absent or empty', function () {
+    $lookup = PlotSnapshotDisplayLookup::fromPayloads(
+        [
+            ['id' => 1, 'title' => 'Plot 1'],
+            ['id' => 2, 'title' => 'Plot 2', 'last_modified_by' => ''],
+            ['id' => 3, 'title' => 'Plot 3', 'last_modified_by' => null],
+        ],
+        null,
+    );
+
+    expect($lookup->forPlotEntity('plot', 1)['last_modified_by'])->toBeNull();
+    expect($lookup->forPlotEntity('plot', 2)['last_modified_by'])->toBeNull();
+    expect($lookup->forPlotEntity('plot', 3)['last_modified_by'])->toBeNull();
 });
 
 it('falls back to previous snapshot when plot is absent from current', function () {
