@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-05-16
+
+Display support for Housebuilder Pack plot **modified-author** labels supplied by the source endpoint.
+
+### Plot display metadata
+
+- When a Housebuilder Pack plots payload includes **`last_modified_by`**, Console **preserves** it on stored **`DatasetSnapshot`** rows (when present) and shows it on plot entity blocks as **Last modified by: {label}** (for example on **Changes**, **Issues**, source detail, and comparison run detail pages).
+- Labels are resolved via **`PlotSnapshotDisplayLookup`** from current or previous snapshot payloads, alongside existing title and development display fields.
+- **`last_modified_by` is display-only snapshot metadata**: it is **not** a tracked business field, **does not** create change logs or dataset issues, and changes to **`last_modified_by` alone** do not affect comparison summaries.
+- Wording uses **“Last modified by”** (not “Changed by”). Console compares snapshots over time; this label is **not** a full audit trail and **does not** imply the named person made the exact field change shown on the same row.
+
+### Notes
+
+- Requires the upstream Housebuilder Pack / ContextualWP endpoint to return **`last_modified_by`** (a safe display label only). No new Console authentication, roles, staff monitoring, or WordPress-side tracking is introduced in this release.
+
 ## [0.7.0] - 2026-05-14
 
 Incremental improvements to the internal monitoring UI: a first cross-source dashboard summary, broader navigation, and light reporting pages for daily monitoring support.
