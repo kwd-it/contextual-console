@@ -87,6 +87,16 @@ it('rejects invalid credentials', function () {
     $this->assertGuest();
 });
 
+it('shows a log out control on authenticated pages', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('dashboard.index'))
+        ->assertOk()
+        ->assertSee('action="'.route('logout').'"', false)
+        ->assertSeeText('Log out');
+});
+
 it('allows an authenticated user to log out', function () {
     $user = User::factory()->create();
 

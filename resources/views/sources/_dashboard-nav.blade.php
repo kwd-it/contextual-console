@@ -31,5 +31,9 @@
             class="cc-nav__link {{ $issuesActive ? 'cc-nav__link--current' : '' }}"
             @if ($issuesActive) aria-current="page" @endif
         >Issues</a>
+        <form method="post" action="{{ route('logout') }}" class="cc-nav__logout-form">
+            @csrf
+            <button type="submit" class="cc-nav__link cc-nav__logout" data-test="logout">Log out</button>
+        </form>
     </nav>
 </div>

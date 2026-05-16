@@ -112,6 +112,14 @@
         background: var(--cc-accent-soft);
         color: #312e81;
     }
+    .cc-nav__logout-form {
+        display: contents;
+    }
+    button.cc-nav__logout {
+        font: inherit;
+        cursor: pointer;
+        background: none;
+    }
     .cc-page-header {
         margin-bottom: 24px;
     }
