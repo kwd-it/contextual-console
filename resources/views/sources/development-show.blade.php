@@ -106,6 +106,168 @@
                     @endif
                 </div>
             </section>
+
+            <section class="cc-card" aria-labelledby="hdr-development-recent-changes" data-test="development-recent-changes-section">
+                <div class="cc-card-header">
+                    <h2 id="hdr-development-recent-changes" class="cc-card-title">Recent changes for this development</h2>
+                    <p class="cc-card-desc">
+                        Latest field-level changes for plots in this development on {{ $source->name }} (newest first).
+                    </p>
+                </div>
+                <div class="cc-card-body">
+                    @if ($recentChanges->isEmpty())
+                        <div class="cc-empty" data-test="development-empty-no-recent-changes">
+                            <p class="cc-empty-title">No recent changes for this development</p>
+                            <p class="muted">Plot field changes from dataset comparisons will appear here when detected for plots in this development.</p>
+                        </div>
+                    @else
+                        <table class="cc-table" data-test="development-recent-changes-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Changed at</th>
+                                    <th scope="col">Plot</th>
+                                    <th scope="col">Field</th>
+                                    <th scope="col">Old value</th>
+                                    <th scope="col">New value</th>
+                                    <th scope="col">Run</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($recentChanges as $change)
+                                    @php
+                                        $runId = $change->dataset_comparison_run_id !== null
+                                            ? (int) $change->dataset_comparison_run_id
+                                            : null;
+                                        $plotLookup = $runId !== null
+                                            ? ($plotDisplayLookupByRunId[$runId] ?? $developmentPlotLookup)
+                                            : $developmentPlotLookup;
+                                        $changePlotMeta = $plotLookup->forPlotEntity(
+                                            $change->entity_type !== null && $change->entity_type !== ''
+                                                ? (string) $change->entity_type
+                                                : null,
+                                            $change->entity_id,
+                                        );
+                                    @endphp
+                                    <tr data-test="development-recent-change-row">
+                                        <td class="mono cc-time">{{ $change->changed_at?->toDateTimeString() ?? '—' }}</td>
+                                        <td>
+                                            @if (($change->entity_type ?? null) === 'plot' && $change->entity_id !== null && $change->entity_id !== '')
+                                                <div class="cc-entity-display">
+                                                    @if ($changePlotMeta !== null && $changePlotMeta['plot_label'] !== null)
+                                                        <div class="cc-entity-display__primary">{{ $changePlotMeta['plot_label'] }}</div>
+                                                    @endif
+                                                    <div class="cc-entity-display__tech muted mono" data-test="development-recent-change-technical-id">
+                                                        plot:{{ $change->entity_id }}
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <span class="mono">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="mono">{{ $change->field }}</td>
+                                        <td class="mono">{{ $change->old_value ?? '—' }}</td>
+                                        <td class="mono">{{ $change->new_value ?? '—' }}</td>
+                                        <td class="mono">
+                                            @if ($change->dataset_comparison_run_id !== null)
+                                                <a href="{{ route('sources.runs.show', [$source, $change->dataset_comparison_run_id]) }}" data-test="development-recent-change-run-link">{{ $change->dataset_comparison_run_id }}</a>
+                                            @else
+                                                <span class="muted">—</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
+                </div>
+            </section>
+
+            <section class="cc-card" aria-labelledby="hdr-development-recent-issues" data-test="development-recent-issues-section">
+                <div class="cc-card-header">
+                    <h2 id="hdr-development-recent-issues" class="cc-card-title">Recent issues for this development</h2>
+                    <p class="cc-card-desc">
+                        Latest validation and comparison issues for plots in this development on {{ $source->name }} (newest first).
+                    </p>
+                </div>
+                <div class="cc-card-body">
+                    @if ($recentIssues->isEmpty())
+                        <div class="cc-empty" data-test="development-empty-no-recent-issues">
+                            <p class="cc-empty-title">No recent issues for this development</p>
+                            <p class="muted">Issues from dataset checks and comparisons will appear here when detected for plots in this development.</p>
+                        </div>
+                    @else
+                        <table class="cc-table" data-test="development-recent-issues-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Created at</th>
+                                    <th scope="col">Plot</th>
+                                    <th scope="col">Severity</th>
+                                    <th scope="col">Issue type</th>
+                                    <th scope="col">Field</th>
+                                    <th scope="col">Message</th>
+                                    <th scope="col">Run</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($recentIssues as $issue)
+                                    @php
+                                        $runId = $issue->dataset_comparison_run_id !== null
+                                            ? (int) $issue->dataset_comparison_run_id
+                                            : null;
+                                        $plotLookup = $runId !== null
+                                            ? ($plotDisplayLookupByRunId[$runId] ?? $developmentPlotLookup)
+                                            : $developmentPlotLookup;
+                                        $issuePlotMeta = $plotLookup->forPlotEntity(
+                                            $issue->entity_type !== null && $issue->entity_type !== ''
+                                                ? (string) $issue->entity_type
+                                                : null,
+                                            $issue->entity_id,
+                                        );
+
+                                        $sevKey = strtolower((string) $issue->severity);
+                                        $sevClass = match ($sevKey) {
+                                            'error' => 'cc-sev--error',
+                                            'warning' => 'cc-sev--warning',
+                                            'info' => 'cc-sev--info',
+                                            default => 'cc-sev--default',
+                                        };
+                                    @endphp
+                                    <tr data-test="development-recent-issue-row">
+                                        <td class="mono cc-time">{{ $issue->created_at?->toDateTimeString() ?? '—' }}</td>
+                                        <td>
+                                            @if (($issue->entity_type ?? null) === 'plot' && $issue->entity_id !== null && $issue->entity_id !== '')
+                                                <div class="cc-entity-display">
+                                                    @if ($issuePlotMeta !== null && $issuePlotMeta['plot_label'] !== null)
+                                                        <div class="cc-entity-display__primary">{{ $issuePlotMeta['plot_label'] }}</div>
+                                                    @endif
+                                                    <div class="cc-entity-display__tech muted mono" data-test="development-recent-issue-technical-id">
+                                                        plot:{{ $issue->entity_id }}
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <span class="mono">—</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="cc-sev {{ $sevClass }}">{{ $issue->severity }}</span>
+                                        </td>
+                                        <td class="mono">{{ $issue->issue_type }}</td>
+                                        <td class="mono">{{ $issue->field ?? '—' }}</td>
+                                        <td>{{ $issue->message }}</td>
+                                        <td class="mono">
+                                            @if ($issue->dataset_comparison_run_id !== null)
+                                                <a href="{{ route('sources.runs.show', [$source, $issue->dataset_comparison_run_id]) }}" data-test="development-recent-issue-run-link">{{ $issue->dataset_comparison_run_id }}</a>
+                                            @else
+                                                <span class="muted">—</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
+                </div>
+            </section>
         </div>
     </body>
 </html>

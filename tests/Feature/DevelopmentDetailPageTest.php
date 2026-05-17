@@ -258,6 +258,205 @@ it('lists development detail plots matched by URL-derived fallback labels', func
         ->assertSee('data-test="development-plot-row"', false);
 });
 
+it('shows recent changes for plots in the selected development only', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dev-detail-recent-changes',
+        'name' => 'Dev Detail Recent Changes Source',
+    ]);
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, [
+        [
+            'id' => 1,
+            'title' => 'Alpha Plot',
+            'price' => 100_000,
+            'status' => 'available',
+            'development' => 'Alpha Fields',
+        ],
+        [
+            'id' => 2,
+            'title' => 'Beta Plot',
+            'price' => 200_000,
+            'status' => 'available',
+            'development' => 'Beta Meadows',
+        ],
+    ]);
+    $service->run($source, [
+        [
+            'id' => 1,
+            'title' => 'Alpha Plot',
+            'price' => 110_000,
+            'status' => 'available',
+            'development' => 'Alpha Fields',
+        ],
+        [
+            'id' => 2,
+            'title' => 'Beta Plot',
+            'price' => 250_000,
+            'status' => 'available',
+            'development' => 'Beta Meadows',
+        ],
+    ]);
+
+    $slug = DevelopmentRouteSlug::encode('Alpha Fields');
+
+    $this->actingAs($user)
+        ->get(route('sources.developments.show', [$source, $slug]))
+        ->assertOk()
+        ->assertSee('data-test="development-recent-changes-table"', false)
+        ->assertSee('data-test="development-recent-change-row"', false)
+        ->assertSeeText('Alpha Plot')
+        ->assertSeeText('100000')
+        ->assertSeeText('110000')
+        ->assertSeeText('price')
+        ->assertDontSeeText('250000')
+        ->assertDontSeeText('Beta Plot');
+});
+
+it('shows recent issues for plots in the selected development only', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dev-detail-recent-issues',
+        'name' => 'Dev Detail Recent Issues Source',
+    ]);
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, [
+        [
+            'id' => 1,
+            'title' => 'Alpha Plot',
+            'price' => 100_000,
+            'status' => 'available',
+            'development' => 'Alpha Fields',
+        ],
+        [
+            'id' => 2,
+            'title' => 'Beta Plot',
+            'price' => 200_000,
+            'status' => 'available',
+            'development' => 'Beta Meadows',
+        ],
+    ]);
+    $service->run($source, [
+        [
+            'id' => 1,
+            'title' => 'Alpha Plot',
+            'price' => 100_000,
+            'status' => 'reserved',
+            'development' => 'Alpha Fields',
+        ],
+        [
+            'id' => 2,
+            'title' => 'Beta Plot',
+            'price' => 200_000,
+            'status' => 'sold',
+            'development' => 'Beta Meadows',
+        ],
+    ]);
+
+    $slug = DevelopmentRouteSlug::encode('Alpha Fields');
+
+    $this->actingAs($user)
+        ->get(route('sources.developments.show', [$source, $slug]))
+        ->assertOk()
+        ->assertSee('data-test="development-recent-issues-table"', false)
+        ->assertSee('data-test="development-recent-issue-row"', false)
+        ->assertSeeText('Alpha Plot')
+        ->assertSeeText('status')
+        ->assertDontSeeText('Beta Plot')
+        ->assertDontSeeText('sold');
+});
+
+it('does not show recent changes or issues from other monitored sources', function () {
+    $user = User::factory()->create();
+    $sourceA = MonitoredSource::create([
+        'key' => 'hb:dev-detail-source-a',
+        'name' => 'Dev Detail Source A',
+    ]);
+    $sourceB = MonitoredSource::create([
+        'key' => 'hb:dev-detail-source-b',
+        'name' => 'Dev Detail Source B',
+    ]);
+
+    $service = app(PlotDatasetRunService::class);
+
+    $service->run($sourceA, [
+        [
+            'id' => 1,
+            'title' => 'Shared Name Plot',
+            'price' => 100_000,
+            'status' => 'available',
+            'development' => 'Alpha Fields',
+        ],
+    ]);
+    $service->run($sourceA, [
+        [
+            'id' => 1,
+            'title' => 'Shared Name Plot',
+            'price' => 110_000,
+            'status' => 'available',
+            'development' => 'Alpha Fields',
+        ],
+    ]);
+
+    $service->run($sourceB, [
+        [
+            'id' => 1,
+            'title' => 'Shared Name Plot',
+            'price' => 100_000,
+            'status' => 'available',
+            'development' => 'Alpha Fields',
+        ],
+    ]);
+    $service->run($sourceB, [
+        [
+            'id' => 1,
+            'title' => 'Shared Name Plot',
+            'price' => 999_000,
+            'status' => 'available',
+            'development' => 'Alpha Fields',
+        ],
+    ]);
+
+    $slug = DevelopmentRouteSlug::encode('Alpha Fields');
+
+    $this->actingAs($user)
+        ->get(route('sources.developments.show', [$sourceA, $slug]))
+        ->assertOk()
+        ->assertSeeText('110000')
+        ->assertDontSeeText('999000');
+});
+
+it('shows empty states when there are no matching recent changes or issues', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dev-detail-recent-empty',
+        'name' => 'Dev Detail Recent Empty Source',
+    ]);
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, [
+        [
+            'id' => 1,
+            'title' => 'Alpha Plot',
+            'price' => 100_000,
+            'status' => 'available',
+            'development' => 'Alpha Fields',
+        ],
+    ]);
+
+    $slug = DevelopmentRouteSlug::encode('Alpha Fields');
+
+    $this->actingAs($user)
+        ->get(route('sources.developments.show', [$source, $slug]))
+        ->assertOk()
+        ->assertSee('data-test="development-empty-no-recent-changes"', false)
+        ->assertSee('data-test="development-empty-no-recent-issues"', false)
+        ->assertSeeText('No recent changes for this development')
+        ->assertSeeText('No recent issues for this development');
+});
+
 it('shows an empty state when the source has no snapshot for development drilldown', function () {
     $user = User::factory()->create();
     $source = MonitoredSource::create([
