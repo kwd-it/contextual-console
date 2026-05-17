@@ -11,13 +11,13 @@
             @include('sources._dashboard-nav')
 
             <header class="cc-page-header">
-                <h1 class="cc-page-title">Plot data changes</h1>
+                <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'change'])<span>Plot data changes</span></h1>
                 <p class="cc-page-sub">Recent field-level changes detected from daily dataset comparisons across all sources (newest first, up to {{ $changeLimit }} entries).</p>
             </header>
 
             <section class="cc-card" aria-labelledby="hdr-all-changes">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-all-changes">Change list</h2>
+                    <h2 class="cc-card-title" id="hdr-all-changes">@include('sources._dashboard-icon', ['name' => 'change'])<span>Change list</span></h2>
                     <p class="cc-card-desc">Differences between snapshots produced by comparison runs.</p>
                 </div>
                 <form class="cc-filter-form" method="get" action="{{ route('changes.index') }}" aria-label="Filter changes">

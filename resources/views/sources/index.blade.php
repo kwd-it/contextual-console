@@ -11,7 +11,7 @@
             @include('sources._dashboard-nav')
 
             <header class="cc-page-header">
-                <h1 class="cc-page-title">Data sources</h1>
+                <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'source'])<span>Data sources</span></h1>
                 <p class="cc-page-sub">Each source is a tracked website feed. Compare daily snapshots to detect plot data changes and surface issues. This table shows the latest comparison run per source.</p>
             </header>
 
@@ -25,7 +25,7 @@
             @else
                 <div class="cc-card">
                     <div class="cc-card-header">
-                        <h2 class="cc-card-title">Sources</h2>
+                        <h2 class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'source'])<span>Sources</span></h2>
                         <p class="cc-card-desc">{{ count($summaries) }} configured source{{ count($summaries) === 1 ? '' : 's' }}</p>
                     </div>
                     <div class="cc-card-body">
@@ -71,14 +71,6 @@
                                             }
                                         }
 
-                                        $statusClass = 'cc-badge--neutral';
-                                        if ($latestStatus === 'completed') {
-                                            $statusClass = 'cc-badge--ok';
-                                        } elseif ($latestStatus === 'failed') {
-                                            $statusClass = 'cc-badge--fail';
-                                        } elseif (in_array($latestStatus, ['running', 'pending'], true)) {
-                                            $statusClass = 'cc-badge--info';
-                                        }
                                     @endphp
 
                                     <tr>
@@ -92,7 +84,7 @@
                                         </td>
                                         <td class="mono">{{ $s['source_key'] ?? '' }}</td>
                                         <td>
-                                            <span class="cc-badge {{ $statusClass }}">{{ $latestStatusLabel }}</span>
+                                            @include('sources._dashboard-status-badge', ['status' => $latestStatus ?? '', 'label' => $latestStatusLabel])
                                         </td>
                                         <td class="mono cc-time">{{ $finishedLabel }}</td>
                                         <td>

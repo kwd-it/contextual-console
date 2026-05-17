@@ -15,14 +15,14 @@
             </div>
 
             <header class="cc-page-header">
-                <h1 class="cc-page-title">Comparison run #{{ $run->id }}</h1>
+                <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'run'])<span>Comparison run #{{ $run->id }}</span></h1>
                 <p class="cc-page-sub">Daily snapshot comparison for {{ $source->name }}. Counts and rows below reflect differences between that run's captured dataset and the previous snapshot.</p>
                 <p class="cc-source-meta muted mono">Source key: {{ $source->key }}</p>
             </header>
 
             <section class="cc-card" aria-labelledby="hdr-run-summary">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-run-summary">Run overview</h2>
+                    <h2 class="cc-card-title" id="hdr-run-summary">@include('sources._dashboard-icon', ['name' => 'run'])<span>Run overview</span></h2>
                     <p class="cc-card-desc">Status, timing, snapshot ids, and summary counts for this comparison run.</p>
                 </div>
                 <div class="cc-card-body">
@@ -38,21 +38,13 @@
                         $warningCount = (int) ($severityCounts['warning'] ?? 0);
                         $infoCount = (int) ($severityCounts['info'] ?? 0);
 
-                        $runStatusClass = 'cc-badge--neutral';
-                        if ($run->status === 'completed') {
-                            $runStatusClass = 'cc-badge--ok';
-                        } elseif ($run->status === 'failed') {
-                            $runStatusClass = 'cc-badge--fail';
-                        } elseif (in_array($run->status, ['running', 'pending'], true)) {
-                            $runStatusClass = 'cc-badge--info';
-                        }
                     @endphp
 
                     <table class="cc-kv">
                         <tbody>
                             <tr>
                                 <th>Status</th>
-                                <td><span class="cc-badge {{ $runStatusClass }}">{{ $run->status }}</span></td>
+                                <td>@include('sources._dashboard-status-badge', ['status' => $run->status, 'label' => $run->status])</td>
                             </tr>
                             <tr>
                                 <th>Run id</th>
@@ -108,7 +100,7 @@
 
             <section class="cc-card" aria-labelledby="hdr-run-issues">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-run-issues">Issues on this run</h2>
+                    <h2 class="cc-card-title" id="hdr-run-issues">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Issues on this run</span></h2>
                     <p class="cc-card-desc">Data checks and ingest messages recorded for this run.</p>
                 </div>
                 <div class="cc-card-body">
@@ -146,17 +138,10 @@
                                         $context = is_array($issue->context) ? $issue->context : null;
                                         $contextLabel = ($context === null || $context === []) ? '-' : json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 
-                                        $sevKey = strtolower((string) $issue->severity);
-                                        $sevClass = match ($sevKey) {
-                                            'error' => 'cc-sev--error',
-                                            'warning' => 'cc-sev--warning',
-                                            'info' => 'cc-sev--info',
-                                            default => 'cc-sev--default',
-                                        };
                                     @endphp
                                     <tr>
                                         <td class="mono">
-                                            <span class="cc-sev {{ $sevClass }}">{{ $issue->severity }}</span>
+                                            @include('sources._dashboard-severity-badge', ['severity' => $issue->severity, 'label' => $issue->severity])
                                         </td>
                                         <td class="mono">{{ $issue->issue_type }}</td>
                                         <td>
@@ -192,7 +177,7 @@
 
             <section class="cc-card" aria-labelledby="hdr-run-changes">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-run-changes">Plot data changes on this run</h2>
+                    <h2 class="cc-card-title" id="hdr-run-changes">@include('sources._dashboard-icon', ['name' => 'change'])<span>Plot data changes on this run</span></h2>
                     <p class="cc-card-desc">Field-level differences detected between snapshots for this run.</p>
                 </div>
                 <div class="cc-card-body">

@@ -15,25 +15,25 @@
             href="{{ route('dashboard.index') }}"
             class="cc-nav__link {{ $dashboardActive ? 'cc-nav__link--current' : '' }}"
             @if ($dashboardActive) aria-current="page" @endif
-        >Dashboard</a>
+        ><span class="cc-icon-label">@include('sources._dashboard-icon', ['name' => 'dashboard'])<span>Dashboard</span></span></a>
         <a
             href="{{ route('sources.index') }}"
             class="cc-nav__link {{ $sourcesActive ? 'cc-nav__link--current' : '' }}"
             @if ($sourcesActive) aria-current="page" @endif
-        >Sources</a>
+        ><span class="cc-icon-label">@include('sources._dashboard-icon', ['name' => 'source'])<span>Sources</span></span></a>
         <a
             href="{{ route('changes.index') }}"
             class="cc-nav__link {{ $changesActive ? 'cc-nav__link--current' : '' }}"
             @if ($changesActive) aria-current="page" @endif
-        >Changes</a>
+        ><span class="cc-icon-label">@include('sources._dashboard-icon', ['name' => 'change'])<span>Changes</span></span></a>
         <a
             href="{{ route('issues.index') }}"
             class="cc-nav__link {{ $issuesActive ? 'cc-nav__link--current' : '' }}"
             @if ($issuesActive) aria-current="page" @endif
-        >Issues</a>
+        ><span class="cc-icon-label">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Issues</span></span></a>
         <form method="post" action="{{ route('logout') }}" class="cc-nav__logout-form">
             @csrf
-            <button type="submit" class="cc-nav__link cc-nav__logout" data-test="logout">Log out</button>
+            <button type="submit" class="cc-nav__link cc-nav__logout" data-test="logout"><span class="cc-icon-label">@include('sources._dashboard-icon', ['name' => 'logout'])<span>Log out</span></span></button>
         </form>
     </nav>
 </div>

@@ -11,7 +11,7 @@
             @include('sources._dashboard-nav')
 
             <header class="cc-page-header">
-                <h1 class="cc-page-title">Dashboard</h1>
+                <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'dashboard'])<span>Dashboard</span></h1>
                 <p class="cc-page-sub">
                     Summary of monitored website datasets: comparison runs, detected plot data changes, and validation issues from daily snapshots.
                 </p>
@@ -19,7 +19,7 @@
 
             <section class="cc-stat-grid" aria-label="Monitoring summary">
                 <article class="cc-stat-card">
-                    <p class="cc-stat-card__label">Monitored sources</p>
+                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'source', 'class' => 'cc-stat-icon'])<span>Monitored sources</span></p>
                     <p class="cc-stat-card__value" data-test="dashboard-total-sources">{{ $totalSources }}</p>
                     <p class="cc-stat-card__hint muted">Total configured data sources</p>
                     <p class="cc-stat-card__action">
@@ -27,7 +27,7 @@
                     </p>
                 </article>
                 <article class="cc-stat-card">
-                    <p class="cc-stat-card__label">Sources with runs</p>
+                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'run', 'class' => 'cc-stat-icon'])<span>Sources with runs</span></p>
                     <p class="cc-stat-card__value" data-test="dashboard-sources-with-runs">{{ $sourcesWithAtLeastOneRun }}</p>
                     <p class="cc-stat-card__hint muted">At least one comparison run recorded</p>
                     <p class="cc-stat-card__action">
@@ -35,7 +35,7 @@
                     </p>
                 </article>
                 <article class="cc-stat-card">
-                    <p class="cc-stat-card__label">Latest completed run</p>
+                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'check', 'class' => 'cc-stat-icon'])<span>Latest completed run</span></p>
                     <p class="cc-stat-card__value cc-stat-card__value--text" data-test="dashboard-latest-completed">
                         @if ($latestCompletedRunFinishedAt !== null)
                             <span class="mono cc-time">{{ $latestCompletedRunFinishedAt->toDateTimeString() }}</span>
@@ -46,12 +46,12 @@
                     <p class="cc-stat-card__hint muted">Finished time (completed runs only)</p>
                 </article>
                 <article class="cc-stat-card">
-                    <p class="cc-stat-card__label">Failed runs (7 days)</p>
+                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'cross', 'class' => 'cc-stat-icon'])<span>Failed runs (7 days)</span></p>
                     <p class="cc-stat-card__value" data-test="dashboard-failed-runs-7d">{{ $failedRunsLast7Days }}</p>
                     <p class="cc-stat-card__hint muted">Comparison or ingest failures</p>
                 </article>
                 <article class="cc-stat-card">
-                    <p class="cc-stat-card__label">Issues (7 days)</p>
+                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'issue', 'class' => 'cc-stat-icon'])<span>Issues (7 days)</span></p>
                     <p class="cc-stat-card__value" data-test="dashboard-issues-7d">{{ $issuesLast7Days }}</p>
                     <p class="cc-stat-card__hint muted">All severities</p>
                     <p class="cc-stat-card__action">
@@ -59,7 +59,7 @@
                     </p>
                 </article>
                 <article class="cc-stat-card">
-                    <p class="cc-stat-card__label">Warnings (7 days)</p>
+                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'issue', 'class' => 'cc-stat-icon'])<span>Warnings (7 days)</span></p>
                     <p class="cc-stat-card__value" data-test="dashboard-warnings-7d">{{ $warningsLast7Days }}</p>
                     <p class="cc-stat-card__hint muted">Dataset validation warnings</p>
                     <p class="cc-stat-card__action">
@@ -67,7 +67,7 @@
                     </p>
                 </article>
                 <article class="cc-stat-card">
-                    <p class="cc-stat-card__label">Errors (7 days)</p>
+                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'cross', 'class' => 'cc-stat-icon'])<span>Errors (7 days)</span></p>
                     <p class="cc-stat-card__value" data-test="dashboard-errors-7d">{{ $errorsLast7Days }}</p>
                     <p class="cc-stat-card__hint muted">Dataset validation errors</p>
                     <p class="cc-stat-card__action">
@@ -75,7 +75,7 @@
                     </p>
                 </article>
                 <article class="cc-stat-card">
-                    <p class="cc-stat-card__label">Plot data changes (7 days)</p>
+                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'change', 'class' => 'cc-stat-icon'])<span>Plot data changes (7 days)</span></p>
                     <p class="cc-stat-card__value" data-test="dashboard-changes-7d">{{ $changesLast7Days }}</p>
                     <p class="cc-stat-card__hint muted">Field-level changes logged</p>
                     <p class="cc-stat-card__action">
@@ -86,7 +86,7 @@
 
             <section class="cc-card" aria-labelledby="hdr-development-overview" data-test="dashboard-development-overview">
                 <div class="cc-card-header">
-                    <h2 id="hdr-development-overview" class="cc-card-title">Development overview</h2>
+                    <h2 id="hdr-development-overview" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'development'])<span>Development overview</span></h2>
                     <p class="cc-card-desc">
                         Plot counts by development from each source’s latest completed or baseline snapshot (top groups by plot count).
                     </p>
@@ -151,7 +151,7 @@
 
             <section class="cc-card" aria-labelledby="hdr-recent-runs">
                 <div class="cc-card-header">
-                    <h2 id="hdr-recent-runs" class="cc-card-title">Recent activity</h2>
+                    <h2 id="hdr-recent-runs" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'run'])<span>Recent activity</span></h2>
                     <p class="cc-card-desc">Latest dataset comparison runs (newest first).</p>
                 </div>
                 <div class="cc-card-body">
@@ -192,11 +192,11 @@
                                         </td>
                                         <td>
                                             @if ($run->status === 'completed')
-                                                <span class="cc-badge cc-badge--ok">Completed</span>
+                                                @include('sources._dashboard-status-badge', ['status' => 'completed', 'label' => 'Completed'])
                                             @elseif ($run->status === 'failed')
-                                                <span class="cc-badge cc-badge--fail">Failed</span>
+                                                @include('sources._dashboard-status-badge', ['status' => 'failed', 'label' => 'Failed'])
                                             @else
-                                                <span class="cc-badge cc-badge--neutral">{{ $run->status }}</span>
+                                                @include('sources._dashboard-status-badge', ['status' => $run->status, 'label' => $run->status])
                                             @endif
                                         </td>
                                         <td class="mono cc-time">{{ $run->finished_at?->toDateTimeString() ?? '—' }}</td>
@@ -210,7 +210,7 @@
 
             <section class="cc-card" aria-labelledby="hdr-recent-changes">
                 <div class="cc-card-header">
-                    <h2 id="hdr-recent-changes" class="cc-card-title">Recent changes</h2>
+                    <h2 id="hdr-recent-changes" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'change'])<span>Recent changes</span></h2>
                     <p class="cc-card-desc">
                         Latest field-level plot changes across all monitored sources (newest first).
                         <a href="{{ route('changes.index') }}" data-test="dashboard-view-all-changes">View all changes</a>
@@ -306,7 +306,7 @@
 
             <section class="cc-card" aria-labelledby="hdr-recent-issues">
                 <div class="cc-card-header">
-                    <h2 id="hdr-recent-issues" class="cc-card-title">Recent issues</h2>
+                    <h2 id="hdr-recent-issues" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Recent issues</span></h2>
                     <p class="cc-card-desc">Latest validation and comparison issues (newest first).</p>
                 </div>
                 <div class="cc-card-body">
@@ -334,13 +334,13 @@
                                     <tr>
                                         <td>
                                             @if ($issue->severity === 'error')
-                                                <span class="cc-sev cc-sev--error">Error</span>
+                                                @include('sources._dashboard-severity-badge', ['severity' => 'error', 'label' => 'Error'])
                                             @elseif ($issue->severity === 'warning')
-                                                <span class="cc-sev cc-sev--warning">Warning</span>
+                                                @include('sources._dashboard-severity-badge', ['severity' => 'warning', 'label' => 'Warning'])
                                             @elseif ($issue->severity === 'info')
-                                                <span class="cc-sev cc-sev--info">Info</span>
+                                                @include('sources._dashboard-severity-badge', ['severity' => 'info', 'label' => 'Info'])
                                             @else
-                                                <span class="cc-sev cc-sev--default">{{ $issue->severity }}</span>
+                                                @include('sources._dashboard-severity-badge', ['severity' => $issue->severity, 'label' => $issue->severity])
                                             @endif
                                         </td>
                                         <td>{{ $issue->message }}</td>

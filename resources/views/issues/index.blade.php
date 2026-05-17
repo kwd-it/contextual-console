@@ -11,13 +11,13 @@
             @include('sources._dashboard-nav')
 
             <header class="cc-page-header">
-                <h1 class="cc-page-title">Issues</h1>
+                <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Issues</span></h1>
                 <p class="cc-page-sub">Recent issues from daily dataset comparisons across all sources (newest first, up to {{ $issueLimit }} entries).</p>
             </header>
 
             <section class="cc-card" aria-labelledby="hdr-all-issues">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-all-issues">Issue list</h2>
+                    <h2 class="cc-card-title" id="hdr-all-issues">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Issue list</span></h2>
                     <p class="cc-card-desc">Validation and ingest messages recorded when comparison runs finish.</p>
                 </div>
                 <form class="cc-filter-form" method="get" action="{{ route('issues.index') }}" aria-label="Filter issues">
@@ -109,19 +109,11 @@
                                             $issue->entity_id,
                                         );
 
-                                        $sevKey = strtolower((string) $issue->severity);
-                                        $sevClass = match ($sevKey) {
-                                            'error' => 'cc-sev--error',
-                                            'warning' => 'cc-sev--warning',
-                                            'info' => 'cc-sev--info',
-                                            default => 'cc-sev--default',
-                                        };
-
                                         $recordedAt = $issue->created_at?->toDateTimeString() ?? '-';
                                     @endphp
                                     <tr>
                                         <td class="mono">
-                                            <span class="cc-sev {{ $sevClass }}">{{ $issue->severity }}</span>
+                                            @include('sources._dashboard-severity-badge', ['severity' => $issue->severity, 'label' => $issue->severity])
                                         </td>
                                         <td class="mono">{{ $issue->issue_type }}</td>
                                         <td>

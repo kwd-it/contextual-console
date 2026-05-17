@@ -18,7 +18,7 @@
             </div>
 
             <header class="cc-page-header" data-test="development-detail-header">
-                <h1 class="cc-page-title">{{ $developmentLabel }}</h1>
+                <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'development'])<span>{{ $developmentLabel }}</span></h1>
                 <p class="cc-page-sub">
                     Plots in this development from <strong>{{ $source->name }}</strong>’s latest completed or baseline snapshot.
                 </p>
@@ -34,7 +34,7 @@
 
             <section class="cc-card" aria-labelledby="hdr-development-plots" data-test="development-plots-section">
                 <div class="cc-card-header">
-                    <h2 id="hdr-development-plots" class="cc-card-title">Plots</h2>
+                    <h2 id="hdr-development-plots" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'source'])<span>Plots</span></h2>
                     <p class="cc-card-desc">
                         Snapshot plot rows grouped under this development name (inspection only; no scoring or charts).
                     </p>
@@ -109,7 +109,7 @@
 
             <section class="cc-card" aria-labelledby="hdr-development-recent-changes" data-test="development-recent-changes-section">
                 <div class="cc-card-header">
-                    <h2 id="hdr-development-recent-changes" class="cc-card-title">Recent changes for this development</h2>
+                    <h2 id="hdr-development-recent-changes" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'change'])<span>Recent changes for this development</span></h2>
                     <p class="cc-card-desc">
                         Latest field-level changes for plots in this development on {{ $source->name }} (newest first).
                     </p>
@@ -184,7 +184,7 @@
 
             <section class="cc-card" aria-labelledby="hdr-development-recent-issues" data-test="development-recent-issues-section">
                 <div class="cc-card-header">
-                    <h2 id="hdr-development-recent-issues" class="cc-card-title">Recent issues for this development</h2>
+                    <h2 id="hdr-development-recent-issues" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Recent issues for this development</span></h2>
                     <p class="cc-card-desc">
                         Latest validation and comparison issues for plots in this development on {{ $source->name }} (newest first).
                     </p>
@@ -224,13 +224,6 @@
                                             $issue->entity_id,
                                         );
 
-                                        $sevKey = strtolower((string) $issue->severity);
-                                        $sevClass = match ($sevKey) {
-                                            'error' => 'cc-sev--error',
-                                            'warning' => 'cc-sev--warning',
-                                            'info' => 'cc-sev--info',
-                                            default => 'cc-sev--default',
-                                        };
                                     @endphp
                                     <tr data-test="development-recent-issue-row">
                                         <td class="mono cc-time">{{ $issue->created_at?->toDateTimeString() ?? '—' }}</td>
@@ -249,7 +242,7 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="cc-sev {{ $sevClass }}">{{ $issue->severity }}</span>
+                                            @include('sources._dashboard-severity-badge', ['severity' => $issue->severity, 'label' => $issue->severity])
                                         </td>
                                         <td class="mono">{{ $issue->issue_type }}</td>
                                         <td class="mono">{{ $issue->field ?? '—' }}</td>
