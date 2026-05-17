@@ -1,3 +1,17 @@
+<script>
+    (function () {
+        var storageKey = 'cc-theme';
+        var stored = localStorage.getItem(storageKey);
+        var theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+        var root = document.documentElement;
+
+        if (theme === 'light' || theme === 'dark') {
+            root.dataset.theme = theme;
+        } else {
+            root.removeAttribute('data-theme');
+        }
+    })();
+</script>
 <style>
     :root {
         /* Page & surfaces */
@@ -67,8 +81,9 @@
         --cc-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.75);
     }
 
+    /* System mode: follow OS appearance unless light is forced. */
     @media (prefers-color-scheme: dark) {
-        :root {
+        :root:not([data-theme="light"]) {
             /* Page & surfaces */
             --cc-bg: #0c1017;
             --cc-surface: #151b26;
@@ -131,6 +146,76 @@
             --cc-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 16px rgba(0, 0, 0, 0.45);
             --cc-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
         }
+    }
+
+    /* Explicit dark mode (also when OS prefers light). */
+    [data-theme="dark"] {
+        /* Page & surfaces */
+        --cc-bg: #0c1017;
+        --cc-surface: #151b26;
+        --cc-surface-muted: #1c2433;
+        --cc-surface-subtle: #181f2c;
+        --cc-surface-hover: #252f42;
+        --cc-table-header-bg: #1a2230;
+
+        /* Borders */
+        --cc-border: #2a3548;
+        --cc-border-strong: #3b4a63;
+
+        /* Text */
+        --cc-text: #e8edf5;
+        --cc-muted: #94a3b8;
+        --cc-heading: #cbd5e1;
+        --cc-tech: #64748b;
+        --cc-on-accent: #f8fafc;
+        --cc-nav-active-text: #c7d2fe;
+
+        /* Links & accent */
+        --cc-link: #818cf8;
+        --cc-link-hover: #a5b4fc;
+        --cc-accent: #818cf8;
+        --cc-accent-soft: rgba(99, 102, 241, 0.18);
+        --cc-accent-border: rgba(129, 140, 248, 0.35);
+        --cc-accent-shadow: rgba(0, 0, 0, 0.25);
+        --cc-accent-gradient-mid: rgba(129, 140, 248, 0.45);
+        --cc-accent-gradient-end: rgba(96, 165, 250, 0.15);
+        --cc-bg-glow-indigo: rgba(99, 102, 241, 0.12);
+        --cc-bg-glow-blue: rgba(59, 130, 246, 0.08);
+
+        /* Focus */
+        --cc-focus-ring-color: #a5b4fc;
+
+        /* Status: success */
+        --cc-success-bg: #052e1a;
+        --cc-success-text: #86efac;
+        --cc-success-border: #166534;
+
+        /* Status: error */
+        --cc-error-bg: #3f1515;
+        --cc-error-text: #fca5a5;
+        --cc-error-border: #991b1b;
+
+        /* Status: warning */
+        --cc-warning-bg: #3d2808;
+        --cc-warning-text: #fcd34d;
+        --cc-warning-border: #b45309;
+
+        /* Status: info */
+        --cc-info-bg: #172554;
+        --cc-info-text: #93c5fd;
+        --cc-info-border: #1d4ed8;
+
+        /* Status: neutral */
+        --cc-neutral-bg: #1e293b;
+
+        /* Layout & elevation */
+        --cc-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 16px rgba(0, 0, 0, 0.45);
+        --cc-shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    /* Explicit light mode when OS prefers dark (:root defaults + media :not above). */
+    [data-theme="light"] {
+        color-scheme: light;
     }
 
     body {
@@ -237,6 +322,32 @@
         font: inherit;
         cursor: pointer;
         background: none;
+    }
+    .cc-theme {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: 4px;
+        padding-left: 10px;
+        border-left: 1px solid var(--cc-border);
+    }
+    .cc-theme__label {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--cc-muted);
+        white-space: nowrap;
+    }
+    .cc-theme__select {
+        min-width: 6.5rem;
+        padding: 7px 10px;
+        font: inherit;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--cc-text);
+        background: var(--cc-surface);
+        border: 1px solid var(--cc-border-strong);
+        border-radius: var(--cc-radius-sm);
+        cursor: pointer;
     }
     .cc-page-header {
         margin-bottom: 24px;

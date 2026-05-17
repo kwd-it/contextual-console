@@ -31,9 +31,51 @@
             class="cc-nav__link {{ $issuesActive ? 'cc-nav__link--current' : '' }}"
             @if ($issuesActive) aria-current="page" @endif
         ><span class="cc-icon-label">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Issues</span></span></a>
+        <label class="cc-theme" for="cc-theme-select">
+            <span class="cc-theme__label" id="cc-theme-label">Theme</span>
+            <select
+                id="cc-theme-select"
+                class="cc-theme__select"
+                data-test="theme-select"
+                aria-labelledby="cc-theme-label"
+            >
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+            </select>
+        </label>
         <form method="post" action="{{ route('logout') }}" class="cc-nav__logout-form">
             @csrf
             <button type="submit" class="cc-nav__link cc-nav__logout" data-test="logout"><span class="cc-icon-label">@include('sources._dashboard-icon', ['name' => 'logout'])<span>Log out</span></span></button>
         </form>
     </nav>
 </div>
+<script>
+    (function () {
+        var storageKey = 'cc-theme';
+        var select = document.getElementById('cc-theme-select');
+        if (!select) {
+            return;
+        }
+
+        var stored = localStorage.getItem(storageKey);
+        var theme = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system';
+        select.value = theme;
+
+        function applyTheme(value) {
+            var root = document.documentElement;
+
+            if (value === 'light' || value === 'dark') {
+                root.dataset.theme = value;
+            } else {
+                root.removeAttribute('data-theme');
+            }
+        }
+
+        select.addEventListener('change', function () {
+            var value = select.value;
+            applyTheme(value);
+            localStorage.setItem(storageKey, value);
+        });
+    })();
+</script>
