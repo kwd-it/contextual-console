@@ -21,8 +21,6 @@ final class DashboardViewData
 
     private const int DEVELOPMENT_OVERVIEW_LIMIT = 10;
 
-    private const string UNKNOWN_DEVELOPMENT_LABEL = 'Unknown development';
-
     /** @var array<int, string> */
     private const KNOWN_PLOT_STATUSES = ['available', 'reserved', 'sold', 'coming_soon'];
 
@@ -261,7 +259,7 @@ final class DashboardViewData
                 continue;
             }
 
-            $development = $this->plotDevelopmentLabel($item);
+            $development = PlotDevelopmentLabel::fromPlot($item);
             $statusBucket = $this->plotStatusBucket($item['status'] ?? null);
 
             $groups[$development] ??= [
@@ -278,17 +276,6 @@ final class DashboardViewData
         }
 
         return $groups;
-    }
-
-    /**
-     * @param  array<string, mixed>  $plot
-     */
-    private function plotDevelopmentLabel(array $plot): string
-    {
-        $development = $this->nonEmptyPlotString($plot['development'] ?? null)
-            ?? $this->nonEmptyPlotString($plot['development_name'] ?? null);
-
-        return $development ?? self::UNKNOWN_DEVELOPMENT_LABEL;
     }
 
     private function plotStatusBucket(mixed $status): string

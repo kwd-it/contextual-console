@@ -127,7 +127,12 @@
                                         <td>
                                             <a href="{{ route('sources.show', $devSource) }}" data-test="dashboard-development-overview-source-link">{{ $devSource->name }}</a>
                                         </td>
-                                        <td data-test="dashboard-development-overview-development">{{ $group['development'] }}</td>
+                                        <td data-test="dashboard-development-overview-development">
+                                            <a
+                                                href="{{ route('sources.developments.show', [$devSource, \App\Support\DevelopmentRouteSlug::encode($group['development'])]) }}"
+                                                data-test="dashboard-development-overview-development-link"
+                                            >{{ $group['development'] }}</a>
+                                        </td>
                                         <td class="mono" data-test="dashboard-development-overview-total">{{ $group['total'] }}</td>
                                         <td class="mono">{{ $group['available'] }}</td>
                                         <td class="mono">{{ $group['reserved'] }}</td>

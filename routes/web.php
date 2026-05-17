@@ -37,6 +37,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/sources/{source}', [SourceStatusController::class, 'show'])
         ->name('sources.show');
 
+    Route::get('/sources/{source}/developments/{development}', [SourceStatusController::class, 'showDevelopment'])
+        ->name('sources.developments.show')
+        ->where('development', '.*');
+
     Route::get('/sources/{source}/runs/{run}', [SourceStatusController::class, 'showRun'])
         ->name('sources.runs.show')
         ->scopeBindings();

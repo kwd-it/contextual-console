@@ -1,7 +1,7 @@
 @php
     $routeName = request()->route()?->getName();
     $dashboardActive = $routeName === 'dashboard.index';
-    $sourcesActive = in_array($routeName, ['sources.index', 'sources.show', 'sources.runs.show'], true);
+    $sourcesActive = in_array($routeName, ['sources.index', 'sources.show', 'sources.runs.show', 'sources.developments.show'], true);
     $changesActive = $routeName === 'changes.index';
     $issuesActive = $routeName === 'issues.index';
 @endphp

@@ -8,6 +8,7 @@ use App\Core\Models\DatasetIssue;
 use App\Core\Models\DatasetSnapshot;
 use App\Core\Models\MonitoredSource;
 use App\Core\Services\MonitoredSourceStatusService;
+use App\Support\DevelopmentDetailViewData;
 use App\Support\PlotSnapshotDisplayLookup;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -123,6 +124,14 @@ class SourceStatusController extends Controller
             'latestRunChanges' => $latestRunChanges,
             'plotDisplayLookup' => $plotDisplayLookup,
         ]);
+    }
+
+    public function showDevelopment(
+        MonitoredSource $source,
+        string $development,
+        DevelopmentDetailViewData $developmentDetailViewData,
+    ): View {
+        return view('sources.development-show', $developmentDetailViewData->forShow($source, $development));
     }
 
     public function showRun(MonitoredSource $source, DatasetComparisonRun $run): View
