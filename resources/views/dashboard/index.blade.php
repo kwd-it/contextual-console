@@ -143,6 +143,102 @@
                 </div>
             </section>
 
+            <section class="cc-card" aria-labelledby="hdr-recent-changes">
+                <div class="cc-card-header">
+                    <h2 id="hdr-recent-changes" class="cc-card-title">Recent changes</h2>
+                    <p class="cc-card-desc">
+                        Latest field-level plot changes across all monitored sources (newest first).
+                        <a href="{{ route('changes.index') }}" data-test="dashboard-view-all-changes">View all changes</a>
+                    </p>
+                </div>
+                <div class="cc-card-body">
+                    @if ($recentChanges->isEmpty())
+                        <div class="cc-empty">
+                            <p class="cc-empty-title">No changes recorded</p>
+                            <p class="muted">Plot field changes from dataset comparisons will appear here when detected.</p>
+                        </div>
+                    @else
+                        <table class="cc-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Changed at</th>
+                                    <th scope="col">Source</th>
+                                    <th scope="col">Plot</th>
+                                    <th scope="col">Field</th>
+                                    <th scope="col">Old value</th>
+                                    <th scope="col">New value</th>
+                                    <th scope="col">Run</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($recentChanges as $change)
+                                    @php
+                                        $run = $change->datasetComparisonRun;
+                                        $source = $run?->source;
+                                        $runId = $change->dataset_comparison_run_id !== null
+                                            ? (int) $change->dataset_comparison_run_id
+                                            : null;
+                                        $plotLookup = $runId !== null
+                                            ? ($plotDisplayLookupByRunId[$runId] ?? $emptyPlotLookup)
+                                            : $emptyPlotLookup;
+
+                                        $entityLabel = '-';
+                                        if (!empty($change->entity_type) && $change->entity_id !== null) {
+                                            $entityLabel = "{$change->entity_type}:{$change->entity_id}";
+                                        } elseif (!empty($change->entity_type)) {
+                                            $entityLabel = (string) $change->entity_type;
+                                        }
+
+                                        $changePlotMeta = $plotLookup->forPlotEntity(
+                                            $change->entity_type !== null && $change->entity_type !== ''
+                                                ? (string) $change->entity_type
+                                                : null,
+                                            $change->entity_id,
+                                        );
+                                    @endphp
+                                    <tr data-test="dashboard-recent-change-row">
+                                        <td class="mono cc-time">{{ $change->changed_at?->toDateTimeString() ?? '—' }}</td>
+                                        <td>
+                                            @if ($source !== null)
+                                                <a href="{{ route('sources.show', $source) }}">{{ $source->name }}</a>
+                                            @else
+                                                <span class="muted">—</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if (($change->entity_type ?? null) === 'plot' && $change->entity_id !== null && $change->entity_id !== '')
+                                                <div class="cc-entity-display">
+                                                    @if ($changePlotMeta !== null && $changePlotMeta['plot_label'] !== null)
+                                                        <div class="cc-entity-display__primary">{{ $changePlotMeta['plot_label'] }}</div>
+                                                    @endif
+                                                    <div class="cc-entity-display__tech muted mono">
+                                                        {{ $change->entity_type }}:{{ $change->entity_id }}
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <span class="mono">{{ $entityLabel }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="mono">{{ $change->field }}</td>
+                                        <td class="mono">{{ $change->old_value ?? '—' }}</td>
+                                        <td class="mono">{{ $change->new_value ?? '—' }}</td>
+                                        <td class="mono">
+                                            @if ($source !== null && $run !== null)
+                                                <a href="{{ route('sources.runs.show', [$source, $run]) }}">{{ $change->dataset_comparison_run_id }}</a>
+                                            @elseif ($change->dataset_comparison_run_id !== null)
+                                                {{ $change->dataset_comparison_run_id }}
+                                            @else
+                                                <span class="muted">—</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
+                </div>
+            </section>
+
             <section class="cc-card" aria-labelledby="hdr-recent-issues">
                 <div class="cc-card-header">
                     <h2 id="hdr-recent-issues" class="cc-card-title">Recent issues</h2>

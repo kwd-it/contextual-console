@@ -1,5 +1,6 @@
 <?php
 
+use App\Core\Models\ChangeLog;
 use App\Core\Models\DatasetComparisonRun;
 use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
@@ -34,12 +35,12 @@ it('links dashboard summary drilldowns to issues, changes, and sources using the
             ->assertOk()
             ->getContent();
 
-        $dom = new \DOMDocument;
+        $dom = new DOMDocument;
         libxml_use_internal_errors(true);
         $dom->loadHTML('<?xml encoding="UTF-8">'.$html);
         libxml_clear_errors();
 
-        $xpath = new \DOMXPath($dom);
+        $xpath = new DOMXPath($dom);
         $href = static fn (string $dataTest): string => (string) $xpath->evaluate("string(//a[@data-test='{$dataTest}']/@href)");
 
         expect($href('dashboard-drill-issues-7d'))->toBe(route('issues.index', ['date_from' => $expectedDateFrom]));
@@ -75,6 +76,7 @@ it('shows helpful empty states when there is little or no data', function () {
         ->get('/dashboard')
         ->assertOk()
         ->assertSeeText('No runs yet')
+        ->assertSeeText('No changes recorded')
         ->assertSeeText('No issues recorded')
         ->assertSeeText('Comparison runs will appear here after snapshots are ingested and compared.')
         ->getContent();
@@ -153,6 +155,7 @@ it('renders summary counts and recent activity with links', function () {
         ->get('/dashboard')
         ->assertOk()
         ->assertSeeText('Recent activity')
+        ->assertSeeText('Recent changes')
         ->assertSeeText('Recent issues')
         ->assertSee('href="'.$latestRunHref.'"', false)
         ->assertSee('href="'.$failedHref.'"', false)
@@ -207,6 +210,61 @@ it('lists recent issues with links to the source and run when available', functi
         ->assertSeeText('DASHBOARD_ISSUE_LINK_MESSAGE')
         ->assertSee('href="'.$sourceHref.'"', false)
         ->assertSee('href="'.$runHref.'"', false);
+});
+
+it('links view all changes to the changes index page', function () {
+    $changesHref = route('changes.index');
+
+    $html = $this->actingAs(User::factory()->create())
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertSeeText('View all changes')
+        ->getContent();
+
+    expect($html)->toContain('href="'.$changesHref.'"');
+    expect($html)->toContain('data-test="dashboard-view-all-changes"');
+});
+
+it('lists recent plot changes with labels, values, and run links', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dash-recent-changes',
+        'name' => 'Dashboard Recent Changes Source',
+    ]);
+
+    $baseline = [
+        ['id' => 14, 'price' => 100_000, 'status' => 'available', 'title' => 'Plot 14, The Spetisbury'],
+    ];
+    $second = [
+        ['id' => 14, 'price' => 110_000, 'status' => 'reserved', 'title' => 'Plot 14, The Spetisbury'],
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+    $run = $service->run($source, $second);
+    $run->refresh();
+
+    $priceLog = ChangeLog::query()
+        ->where('dataset_comparison_run_id', $run->id)
+        ->where('field', 'price')
+        ->firstOrFail();
+
+    $runHref = route('sources.runs.show', [$source, $run]);
+    $sourceHref = route('sources.show', $source);
+
+    $this->actingAs($user)
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertSeeText('Recent changes')
+        ->assertSeeText('Dashboard Recent Changes Source')
+        ->assertSeeText('Plot 14, The Spetisbury')
+        ->assertSeeText('plot:14')
+        ->assertSeeText('price')
+        ->assertSeeText((string) $priceLog->old_value)
+        ->assertSeeText((string) $priceLog->new_value)
+        ->assertSee('href="'.$sourceHref.'"', false)
+        ->assertSee('href="'.$runHref.'"', false)
+        ->assertSee('data-test="dashboard-recent-change-row"', false);
 });
 
 it('orders recent comparison runs newest first by run id', function () {
