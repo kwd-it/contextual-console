@@ -181,6 +181,83 @@ it('shows an empty state when the development is not in the latest snapshot', fu
         ->assertSeeText('Development not found');
 });
 
+it('groups dashboard development overview using URL-derived labels when development fields are blank', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dev-detail-url-fallback-dash',
+        'name' => 'Dev Detail URL Fallback Dashboard Source',
+    ]);
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ]);
+    $service->run($source, [
+        [
+            'id' => 1,
+            'title' => 'Plot 241',
+            'price' => 110_000,
+            'status' => 'available',
+            'development' => '',
+            'url' => 'https://www.wyatthomes.co.uk/developments/brimsmore-townhouse-collection/plot-241/',
+        ],
+    ]);
+
+    $fallbackLabel = 'Brimsmore Townhouse Collection';
+    $developmentHref = route('sources.developments.show', [
+        $source,
+        DevelopmentRouteSlug::encode($fallbackLabel),
+    ]);
+
+    $this->actingAs($user)
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertSee('href="'.$developmentHref.'"', false)
+        ->assertSeeText($fallbackLabel)
+        ->assertSee('data-test="dashboard-development-overview-development-link"', false);
+});
+
+it('lists development detail plots matched by URL-derived fallback labels', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dev-detail-url-fallback-show',
+        'name' => 'Dev Detail URL Fallback Show Source',
+    ]);
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ]);
+    $service->run($source, [
+        [
+            'id' => 1,
+            'title' => 'Plot 241',
+            'price' => 110_000,
+            'status' => 'available',
+            'development' => '',
+            'url' => 'https://www.wyatthomes.co.uk/developments/brimsmore-townhouse-collection/plot-241/',
+        ],
+        [
+            'id' => 2,
+            'title' => 'Other Plot',
+            'price' => 220_000,
+            'status' => 'reserved',
+            'development' => 'Known Site',
+        ],
+    ]);
+
+    $slug = DevelopmentRouteSlug::encode('Brimsmore Townhouse Collection');
+
+    $this->actingAs($user)
+        ->get(route('sources.developments.show', [$source, $slug]))
+        ->assertOk()
+        ->assertSeeText('Brimsmore Townhouse Collection')
+        ->assertSeeText('Plot 241')
+        ->assertDontSeeText('Other Plot')
+        ->assertDontSeeText('Known Site')
+        ->assertSee('data-test="development-plot-row"', false);
+});
+
 it('shows an empty state when the source has no snapshot for development drilldown', function () {
     $user = User::factory()->create();
     $source = MonitoredSource::create([
