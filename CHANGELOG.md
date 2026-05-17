@@ -5,6 +5,29 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.1] - 2026-05-17
+
+Dashboard and UI refinement: clearer overview sections, development drilldowns, and shared styling tokens. Presentation and navigation only; ingest and detection behaviour unchanged.
+
+### Added
+
+- Added dashboard **Recent Changes** and **Development overview** sections.
+- Added **development drilldown** pages showing plots, recent changes and recent issues for a selected development.
+- Added **fallback development label** resolution from plot URLs when development fields are missing from snapshot payloads.
+- Added dashboard icons, clearer status/severity badges, automatic dark mode and a visible **System / Light / Dark** theme selector.
+
+### Changed
+
+- Refactored dashboard view-data preparation out of the controller.
+- Made the dashboard more compact by reducing recent activity/change/issue lists to the latest five items.
+- Combined issue, warning and error dashboard summary information into a more compact issues summary card.
+- Introduced shared dashboard design tokens to make future UI styling easier.
+
+### Notes
+
+- No ingest, comparison, change detection or issue detection behaviour changed.
+- No health scores, risk scores, charts, alerting or workflow features were added.
+
 ## [0.8.0] - 2026-05-16
 
 Display support for Housebuilder Pack plot **modified-author** labels supplied by the source endpoint.
