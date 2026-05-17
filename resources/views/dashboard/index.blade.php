@@ -50,28 +50,20 @@
                     <p class="cc-stat-card__value" data-test="dashboard-failed-runs-7d">{{ $failedRunsLast7Days }}</p>
                     <p class="cc-stat-card__hint muted">Comparison or ingest failures</p>
                 </article>
-                <article class="cc-stat-card">
+                <article class="cc-stat-card cc-stat-card--issues-summary">
                     <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'issue', 'class' => 'cc-stat-icon'])<span>Issues (7 days)</span></p>
                     <p class="cc-stat-card__value" data-test="dashboard-issues-7d">{{ $issuesLast7Days }}</p>
-                    <p class="cc-stat-card__hint muted">All severities</p>
-                    <p class="cc-stat-card__action">
-                        <a href="{{ route('issues.index', ['date_from' => $summaryDateFrom]) }}" data-test="dashboard-drill-issues-7d">View</a>
+                    <p class="cc-stat-card__hint muted cc-stat-card__breakdown">
+                        <span data-test="dashboard-warnings-7d">{{ $warningsLast7Days }} warnings</span>
+                        <span class="cc-stat-card__breakdown-sep" aria-hidden="true">·</span>
+                        <span data-test="dashboard-errors-7d">{{ $errorsLast7Days }} errors</span>
                     </p>
-                </article>
-                <article class="cc-stat-card">
-                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'issue', 'class' => 'cc-stat-icon'])<span>Warnings (7 days)</span></p>
-                    <p class="cc-stat-card__value" data-test="dashboard-warnings-7d">{{ $warningsLast7Days }}</p>
-                    <p class="cc-stat-card__hint muted">Dataset validation warnings</p>
-                    <p class="cc-stat-card__action">
-                        <a href="{{ route('issues.index', ['date_from' => $summaryDateFrom, 'severity' => 'warning']) }}" data-test="dashboard-drill-warnings-7d">View</a>
-                    </p>
-                </article>
-                <article class="cc-stat-card">
-                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'cross', 'class' => 'cc-stat-icon'])<span>Errors (7 days)</span></p>
-                    <p class="cc-stat-card__value" data-test="dashboard-errors-7d">{{ $errorsLast7Days }}</p>
-                    <p class="cc-stat-card__hint muted">Dataset validation errors</p>
-                    <p class="cc-stat-card__action">
-                        <a href="{{ route('issues.index', ['date_from' => $summaryDateFrom, 'severity' => 'error']) }}" data-test="dashboard-drill-errors-7d">View</a>
+                    <p class="cc-stat-card__action cc-stat-card__action--split">
+                        <a href="{{ route('issues.index', ['date_from' => $summaryDateFrom]) }}" data-test="dashboard-drill-issues-7d">All issues</a>
+                        <span class="cc-stat-card__action-sep" aria-hidden="true">·</span>
+                        <a href="{{ route('issues.index', ['date_from' => $summaryDateFrom, 'severity' => 'warning']) }}" data-test="dashboard-drill-warnings-7d">Warnings</a>
+                        <span class="cc-stat-card__action-sep" aria-hidden="true">·</span>
+                        <a href="{{ route('issues.index', ['date_from' => $summaryDateFrom, 'severity' => 'error']) }}" data-test="dashboard-drill-errors-7d">Errors</a>
                     </p>
                 </article>
                 <article class="cc-stat-card">
@@ -152,7 +144,7 @@
             <section class="cc-card" aria-labelledby="hdr-recent-runs">
                 <div class="cc-card-header">
                     <h2 id="hdr-recent-runs" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'run'])<span>Recent activity</span></h2>
-                    <p class="cc-card-desc">Latest dataset comparison runs (newest first).</p>
+                    <p class="cc-card-desc">Latest 5 dataset comparison runs (newest first).</p>
                 </div>
                 <div class="cc-card-body">
                     @if ($recentRuns->isEmpty())
@@ -161,7 +153,7 @@
                             <p class="muted">Comparison runs will appear here after snapshots are ingested and compared.</p>
                         </div>
                     @else
-                        <table class="cc-table">
+                        <table class="cc-table cc-table--compact">
                             <thead>
                                 <tr>
                                     <th scope="col">Run</th>
@@ -212,7 +204,7 @@
                 <div class="cc-card-header">
                     <h2 id="hdr-recent-changes" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'change'])<span>Recent changes</span></h2>
                     <p class="cc-card-desc">
-                        Latest field-level plot changes across all monitored sources (newest first).
+                        Latest 5 field-level plot changes across all monitored sources (newest first).
                         <a href="{{ route('changes.index') }}" data-test="dashboard-view-all-changes">View all changes</a>
                     </p>
                 </div>
@@ -223,7 +215,7 @@
                             <p class="muted">Plot field changes from dataset comparisons will appear here when detected.</p>
                         </div>
                     @else
-                        <table class="cc-table">
+                        <table class="cc-table cc-table--compact">
                             <thead>
                                 <tr>
                                     <th scope="col">Changed at</th>
@@ -307,7 +299,10 @@
             <section class="cc-card" aria-labelledby="hdr-recent-issues">
                 <div class="cc-card-header">
                     <h2 id="hdr-recent-issues" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Recent issues</span></h2>
-                    <p class="cc-card-desc">Latest validation and comparison issues (newest first).</p>
+                    <p class="cc-card-desc">
+                        Latest 5 validation and comparison issues (newest first).
+                        <a href="{{ route('issues.index') }}" data-test="dashboard-view-all-issues">View all issues</a>
+                    </p>
                 </div>
                 <div class="cc-card-body">
                     @if ($recentIssues->isEmpty())
@@ -316,7 +311,7 @@
                             <p class="muted">Issues from dataset checks and comparisons will appear here when detected.</p>
                         </div>
                     @else
-                        <table class="cc-table">
+                        <table class="cc-table cc-table--compact">
                             <thead>
                                 <tr>
                                     <th scope="col">Severity</th>

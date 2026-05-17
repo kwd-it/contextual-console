@@ -13,11 +13,11 @@ use Illuminate\Support\Facades\DB;
 
 final class DashboardViewData
 {
-    private const int RECENT_RUNS_LIMIT = 10;
+    private const int DASHBOARD_RECENT_RUNS_LIMIT = 5;
 
-    private const int RECENT_ISSUES_LIMIT = 10;
+    private const int DASHBOARD_RECENT_CHANGES_LIMIT = 5;
 
-    private const int RECENT_CHANGES_LIMIT = 10;
+    private const int DASHBOARD_RECENT_ISSUES_LIMIT = 5;
 
     private const int DEVELOPMENT_OVERVIEW_LIMIT = 10;
 
@@ -99,21 +99,21 @@ final class DashboardViewData
         $recentRuns = DatasetComparisonRun::query()
             ->with('source')
             ->orderByDesc('id')
-            ->limit(self::RECENT_RUNS_LIMIT)
+            ->limit(self::DASHBOARD_RECENT_RUNS_LIMIT)
             ->get();
 
         $recentIssues = DatasetIssue::query()
             ->with(['monitoredSource', 'datasetComparisonRun'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->limit(self::RECENT_ISSUES_LIMIT)
+            ->limit(self::DASHBOARD_RECENT_ISSUES_LIMIT)
             ->get();
 
         $recentChanges = ChangeLog::query()
             ->with(['datasetComparisonRun.source'])
             ->orderByDesc('changed_at')
             ->orderByDesc('id')
-            ->limit(self::RECENT_CHANGES_LIMIT)
+            ->limit(self::DASHBOARD_RECENT_CHANGES_LIMIT)
             ->get();
 
         $plotDisplayLookupByRunId = $this->plotDisplayLookupsForRuns(

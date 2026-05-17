@@ -88,8 +88,8 @@ it('shows helpful empty states when there is little or no data', function () {
     expect($html)->toMatch('/data-test="dashboard-sources-with-runs">\s*0\s*</');
     expect($html)->toMatch('/data-test="dashboard-failed-runs-7d">\s*0\s*</');
     expect($html)->toMatch('/data-test="dashboard-issues-7d">\s*0\s*</');
-    expect($html)->toMatch('/data-test="dashboard-warnings-7d">\s*0\s*</');
-    expect($html)->toMatch('/data-test="dashboard-errors-7d">\s*0\s*</');
+    expect($html)->toMatch('/data-test="dashboard-warnings-7d">\s*0 warnings\s*</');
+    expect($html)->toMatch('/data-test="dashboard-errors-7d">\s*0 errors\s*</');
     expect($html)->toMatch('/data-test="dashboard-changes-7d">\s*0\s*</');
 });
 
@@ -170,8 +170,8 @@ it('renders summary counts and recent activity with links', function () {
     expect($html)->toMatch('/data-test="dashboard-sources-with-runs">\s*1\s*</');
     expect($html)->toMatch('/data-test="dashboard-failed-runs-7d">\s*1\s*</');
     expect($html)->toMatch('/data-test="dashboard-issues-7d">\s*4\s*</');
-    expect($html)->toMatch('/data-test="dashboard-warnings-7d">\s*1\s*</');
-    expect($html)->toMatch('/data-test="dashboard-errors-7d">\s*1\s*</');
+    expect($html)->toMatch('/data-test="dashboard-warnings-7d">\s*1 warnings\s*</');
+    expect($html)->toMatch('/data-test="dashboard-errors-7d">\s*1 errors\s*</');
     expect($html)->toMatch('/data-test="dashboard-changes-7d">\s*[1-9]\d*\s*</');
 
     $issueRunHref = route('sources.runs.show', [$active, $runForIssues]);
@@ -226,6 +226,88 @@ it('links view all changes to the changes index page', function () {
 
     expect($html)->toContain('href="'.$changesHref.'"');
     expect($html)->toContain('data-test="dashboard-view-all-changes"');
+});
+
+it('links view all issues to the issues index page', function () {
+    $issuesHref = route('issues.index');
+
+    $html = $this->actingAs(User::factory()->create())
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertSeeText('View all issues')
+        ->getContent();
+
+    expect($html)->toContain('href="'.$issuesHref.'"');
+    expect($html)->toContain('data-test="dashboard-view-all-issues"');
+});
+
+it('shows at most five rows in recent activity, changes, and issues tables', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dash-limits',
+        'name' => 'Dashboard Limits Source',
+    ]);
+
+    $runs = [];
+    for ($i = 0; $i < 6; $i++) {
+        $runs[] = DatasetComparisonRun::create([
+            'source_id' => $source->id,
+            'status' => 'completed',
+            'current_snapshot_id' => null,
+            'previous_snapshot_id' => null,
+            'summary' => null,
+            'started_at' => now()->subMinutes(10 - $i),
+            'finished_at' => now()->subMinutes(9 - $i),
+        ]);
+    }
+
+    for ($i = 0; $i < 6; $i++) {
+        DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_snapshot_id' => null,
+            'dataset_comparison_run_id' => $runs[$i]->id,
+            'issue_type' => 'dashboard_limit',
+            'severity' => 'info',
+            'message' => 'DASHBOARD_LIMIT_ISSUE_'.$i,
+            'created_at' => now()->subMinutes($i),
+        ]);
+    }
+
+    for ($i = 0; $i < 6; $i++) {
+        ChangeLog::create([
+            'dataset_comparison_run_id' => $runs[$i]->id,
+            'entity_type' => 'plot',
+            'entity_id' => (string) (100 + $i),
+            'field' => 'status',
+            'old_value' => 'available',
+            'new_value' => 'reserved',
+            'changed_at' => now()->subMinutes($i),
+        ]);
+    }
+
+    $html = $this->actingAs($user)
+        ->get('/dashboard')
+        ->assertOk()
+        ->getContent();
+
+    $dom = new DOMDocument;
+    libxml_use_internal_errors(true);
+    $dom->loadHTML('<?xml encoding="UTF-8">'.$html);
+    libxml_clear_errors();
+
+    $xpath = new DOMXPath($dom);
+
+    $recentRunsSection = $xpath->query("//*[@id='hdr-recent-runs']/ancestor::section[1]//tbody/tr");
+    expect($recentRunsSection)->not->toBeFalse();
+    expect($recentRunsSection->length)->toBe(5);
+
+    $recentChangesSection = $xpath->query("//*[@id='hdr-recent-changes']/ancestor::section[1]//tbody/tr");
+    expect($recentChangesSection)->not->toBeFalse();
+    expect($recentChangesSection->length)->toBe(5);
+
+    $recentIssuesSection = $xpath->query("//*[@id='hdr-recent-issues']/ancestor::section[1]//tbody/tr");
+    expect($recentIssuesSection)->not->toBeFalse();
+    expect($recentIssuesSection->length)->toBe(5);
 });
 
 it('lists recent plot changes with labels, values, and run links', function () {

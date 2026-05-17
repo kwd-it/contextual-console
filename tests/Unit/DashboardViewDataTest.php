@@ -1,5 +1,9 @@
 <?php
 
+use App\Core\Models\ChangeLog;
+use App\Core\Models\DatasetComparisonRun;
+use App\Core\Models\DatasetIssue;
+use App\Core\Models\MonitoredSource;
 use App\Support\DashboardViewData;
 use App\Support\PlotSnapshotDisplayLookup;
 use Carbon\Carbon;
@@ -36,4 +40,54 @@ it('returns the dashboard view variable contract', function () {
     } finally {
         Carbon::setTestNow();
     }
+});
+
+it('limits dashboard recent runs, changes, and issues to five items each', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:dash-viewdata-limits',
+        'name' => 'Dashboard ViewData Limits Source',
+    ]);
+
+    $runs = [];
+    for ($i = 0; $i < 6; $i++) {
+        $runs[] = DatasetComparisonRun::create([
+            'source_id' => $source->id,
+            'status' => 'completed',
+            'current_snapshot_id' => null,
+            'previous_snapshot_id' => null,
+            'summary' => null,
+            'started_at' => now()->subMinutes(10 - $i),
+            'finished_at' => now()->subMinutes(9 - $i),
+        ]);
+    }
+
+    for ($i = 0; $i < 6; $i++) {
+        DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_snapshot_id' => null,
+            'dataset_comparison_run_id' => $runs[$i]->id,
+            'issue_type' => 'limit',
+            'severity' => 'info',
+            'message' => 'limit-issue-'.$i,
+            'created_at' => now()->subMinutes($i),
+        ]);
+    }
+
+    for ($i = 0; $i < 6; $i++) {
+        ChangeLog::create([
+            'dataset_comparison_run_id' => $runs[$i]->id,
+            'entity_type' => 'plot',
+            'entity_id' => (string) (200 + $i),
+            'field' => 'status',
+            'old_value' => 'a',
+            'new_value' => 'b',
+            'changed_at' => now()->subMinutes($i),
+        ]);
+    }
+
+    $data = app(DashboardViewData::class)->forIndex();
+
+    expect($data['recentRuns'])->toHaveCount(5);
+    expect($data['recentIssues'])->toHaveCount(5);
+    expect($data['recentChanges'])->toHaveCount(5);
 });

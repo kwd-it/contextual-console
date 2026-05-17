@@ -511,6 +511,14 @@
     .cc-table tbody tr:hover td {
         background: var(--cc-surface-muted);
     }
+    .cc-table--compact th,
+    .cc-table--compact td {
+        padding: 9px 14px;
+        font-size: 0.8125rem;
+    }
+    .cc-table--compact thead th {
+        font-size: 0.6875rem;
+    }
     .cc-details {
         margin-top: 6px;
         font-size: 0.75rem;
@@ -672,9 +680,12 @@
         font-size: 0.8125rem;
     }
     .cc-entity-display__tech {
-        margin-top: 8px;
-        font-size: 0.6875rem;
+        margin-top: 4px;
+        font-size: 0.625rem;
+        font-weight: 400;
+        letter-spacing: 0.01em;
         color: var(--cc-tech);
+        opacity: 0.88;
     }
     .cc-entity-display__tech.muted {
         color: var(--cc-tech);
@@ -785,6 +796,27 @@
         margin: 10px 0 0;
         font-size: 0.8125rem;
         font-weight: 500;
+    }
+    .cc-stat-card__breakdown {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.35em 0.5em;
+    }
+    .cc-stat-card__breakdown-sep {
+        color: var(--cc-border-strong);
+        font-weight: 400;
+    }
+    .cc-stat-card__action--split {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.35em 0.5em;
+    }
+    .cc-stat-card__action-sep {
+        color: var(--cc-muted);
+        font-weight: 400;
+        user-select: none;
     }
 
     @media (max-width: 720px) {
