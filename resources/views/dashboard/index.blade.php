@@ -84,6 +84,66 @@
                 </article>
             </section>
 
+            <section class="cc-card" aria-labelledby="hdr-development-overview" data-test="dashboard-development-overview">
+                <div class="cc-card-header">
+                    <h2 id="hdr-development-overview" class="cc-card-title">Development overview</h2>
+                    <p class="cc-card-desc">
+                        Plot counts by development from each source’s latest completed or baseline snapshot (top groups by plot count).
+                    </p>
+                </div>
+                <div class="cc-card-body">
+                    @if ($developmentOverviewGroups === [])
+                        <div class="cc-empty" data-test="dashboard-development-overview-empty">
+                            <p class="cc-empty-title">No snapshot development data</p>
+                            <p class="muted">Development groupings appear here after a source has a completed or baseline run with plot snapshot data.</p>
+                        </div>
+                    @else
+                        @php
+                            $showComingSoonColumn = collect($developmentOverviewGroups)->contains(
+                                fn ($row) => ($row['coming_soon'] ?? 0) > 0,
+                            );
+                        @endphp
+                        <table class="cc-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Source</th>
+                                    <th scope="col">Development</th>
+                                    <th scope="col">Total</th>
+                                    <th scope="col">Available</th>
+                                    <th scope="col">Reserved</th>
+                                    <th scope="col">Sold</th>
+                                    @if ($showComingSoonColumn)
+                                        <th scope="col">Coming soon</th>
+                                    @endif
+                                    <th scope="col">Unknown</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($developmentOverviewGroups as $group)
+                                    @php
+                                        $devSource = $group['source'];
+                                    @endphp
+                                    <tr data-test="dashboard-development-overview-row">
+                                        <td>
+                                            <a href="{{ route('sources.show', $devSource) }}" data-test="dashboard-development-overview-source-link">{{ $devSource->name }}</a>
+                                        </td>
+                                        <td data-test="dashboard-development-overview-development">{{ $group['development'] }}</td>
+                                        <td class="mono" data-test="dashboard-development-overview-total">{{ $group['total'] }}</td>
+                                        <td class="mono">{{ $group['available'] }}</td>
+                                        <td class="mono">{{ $group['reserved'] }}</td>
+                                        <td class="mono">{{ $group['sold'] }}</td>
+                                        @if ($showComingSoonColumn)
+                                            <td class="mono">{{ $group['coming_soon'] }}</td>
+                                        @endif
+                                        <td class="mono">{{ $group['unknown'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
+                </div>
+            </section>
+
             <section class="cc-card" aria-labelledby="hdr-recent-runs">
                 <div class="cc-card-header">
                     <h2 id="hdr-recent-runs" class="cc-card-title">Recent activity</h2>

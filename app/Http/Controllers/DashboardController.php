@@ -10,6 +10,7 @@ use App\Core\Models\MonitoredSource;
 use App\Support\PlotSnapshotDisplayLookup;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -19,6 +20,13 @@ class DashboardController extends Controller
     private const int RECENT_ISSUES_LIMIT = 10;
 
     private const int RECENT_CHANGES_LIMIT = 10;
+
+    private const int DEVELOPMENT_OVERVIEW_LIMIT = 10;
+
+    private const string UNKNOWN_DEVELOPMENT_LABEL = 'Unknown development';
+
+    /** @var array<int, string> */
+    private const KNOWN_PLOT_STATUSES = ['available', 'reserved', 'sold', 'coming_soon'];
 
     public function index(): View
     {
@@ -88,6 +96,8 @@ class DashboardController extends Controller
             $recentChanges->pluck('dataset_comparison_run_id')->unique()->filter()->values(),
         );
 
+        $developmentOverviewGroups = $this->developmentOverviewGroups();
+
         return view('dashboard.index', [
             'summaryDateFrom' => $since->toDateString(),
             'totalSources' => $totalSources,
@@ -105,7 +115,184 @@ class DashboardController extends Controller
             'recentChanges' => $recentChanges,
             'plotDisplayLookupByRunId' => $plotDisplayLookupByRunId,
             'emptyPlotLookup' => PlotSnapshotDisplayLookup::empty(),
+            'developmentOverviewGroups' => $developmentOverviewGroups,
         ]);
+    }
+
+    /**
+     * @return list<array{
+     *   source: MonitoredSource,
+     *   development: string,
+     *   total: int,
+     *   available: int,
+     *   reserved: int,
+     *   sold: int,
+     *   coming_soon: int,
+     *   unknown: int,
+     * }>
+     */
+    private function developmentOverviewGroups(): array
+    {
+        $latestRunIdsBySourceId = DatasetComparisonRun::query()
+            ->select('source_id', DB::raw('max(id) as latest_run_id'))
+            ->whereIn('status', ['completed', 'baseline'])
+            ->whereNotNull('current_snapshot_id')
+            ->groupBy('source_id')
+            ->pluck('latest_run_id', 'source_id');
+
+        if ($latestRunIdsBySourceId->isEmpty()) {
+            return [];
+        }
+
+        /** @var Collection<int, DatasetComparisonRun> $runsBySourceId */
+        $runsBySourceId = DatasetComparisonRun::query()
+            ->with('source')
+            ->whereIn('id', $latestRunIdsBySourceId->values())
+            ->get()
+            ->keyBy('source_id');
+
+        $snapshotIds = $runsBySourceId
+            ->pluck('current_snapshot_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($snapshotIds === []) {
+            return [];
+        }
+
+        /** @var array<int, DatasetSnapshot> $snapshotsById */
+        $snapshotsById = DatasetSnapshot::query()
+            ->whereIn('id', $snapshotIds)
+            ->get()
+            ->keyBy('id')
+            ->all();
+
+        $groups = [];
+
+        foreach ($runsBySourceId as $sourceId => $run) {
+            $source = $run->source;
+            if ($source === null) {
+                continue;
+            }
+
+            $snapshot = $run->current_snapshot_id !== null
+                ? ($snapshotsById[$run->current_snapshot_id] ?? null)
+                : null;
+            $payload = is_array($snapshot?->payload) ? $snapshot->payload : null;
+
+            if ($payload === null || $payload === []) {
+                continue;
+            }
+
+            $dataUpdatedAt = $run->finished_at ?? $run->started_at;
+
+            foreach ($this->developmentGroupsFromPayload($payload) as $development => $counts) {
+                $groups[] = [
+                    'source' => $source,
+                    'development' => $development,
+                    'total' => $counts['total'],
+                    'available' => $counts['available'],
+                    'reserved' => $counts['reserved'],
+                    'sold' => $counts['sold'],
+                    'coming_soon' => $counts['coming_soon'],
+                    'unknown' => $counts['unknown'],
+                    '_sort_total' => $counts['total'],
+                    '_sort_updated_at' => $dataUpdatedAt?->getTimestamp() ?? 0,
+                ];
+            }
+        }
+
+        usort($groups, static function (array $a, array $b): int {
+            $byTotal = $b['_sort_total'] <=> $a['_sort_total'];
+            if ($byTotal !== 0) {
+                return $byTotal;
+            }
+
+            return $b['_sort_updated_at'] <=> $a['_sort_updated_at'];
+        });
+
+        $trimmed = array_slice($groups, 0, self::DEVELOPMENT_OVERVIEW_LIMIT);
+
+        return array_map(static function (array $row): array {
+            unset($row['_sort_total'], $row['_sort_updated_at']);
+
+            return $row;
+        }, $trimmed);
+    }
+
+    /**
+     * @param  array<int, mixed>  $payload
+     * @return array<string, array{total: int, available: int, reserved: int, sold: int, coming_soon: int, unknown: int}>
+     */
+    private function developmentGroupsFromPayload(array $payload): array
+    {
+        $groups = [];
+
+        foreach ($payload as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $development = $this->plotDevelopmentLabel($item);
+            $statusBucket = $this->plotStatusBucket($item['status'] ?? null);
+
+            $groups[$development] ??= [
+                'total' => 0,
+                'available' => 0,
+                'reserved' => 0,
+                'sold' => 0,
+                'coming_soon' => 0,
+                'unknown' => 0,
+            ];
+
+            $groups[$development]['total']++;
+            $groups[$development][$statusBucket]++;
+        }
+
+        return $groups;
+    }
+
+    /**
+     * @param  array<string, mixed>  $plot
+     */
+    private function plotDevelopmentLabel(array $plot): string
+    {
+        $development = $this->nonEmptyPlotString($plot['development'] ?? null)
+            ?? $this->nonEmptyPlotString($plot['development_name'] ?? null);
+
+        return $development ?? self::UNKNOWN_DEVELOPMENT_LABEL;
+    }
+
+    private function plotStatusBucket(mixed $status): string
+    {
+        if (! is_string($status)) {
+            return 'unknown';
+        }
+
+        $normalized = strtolower(trim($status));
+
+        if ($normalized === '' || ! in_array($normalized, self::KNOWN_PLOT_STATUSES, true)) {
+            return 'unknown';
+        }
+
+        return $normalized;
+    }
+
+    private function nonEmptyPlotString(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        return html_entity_decode($trimmed, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
     /**
