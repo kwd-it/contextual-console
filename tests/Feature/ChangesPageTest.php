@@ -73,7 +73,7 @@ it('shows sources, changes, and issues links in the dashboard navigation', funct
     expect(substr_count($sourceShow->getContent(), 'aria-current="page"'))->toBe(1);
 });
 
-it('shows changes from multiple sources with source names and keys', function () {
+it('shows changes from multiple sources with source display labels only', function () {
     $user = User::factory()->create();
 
     $sourceA = MonitoredSource::create([
@@ -104,9 +104,48 @@ it('shows changes from multiple sources with source names and keys', function ()
         ->get('/changes')
         ->assertOk()
         ->assertSeeText('Changes Multi Source A')
-        ->assertSeeText('hb:changes-multi-a')
         ->assertSeeText('Changes Multi Source B')
-        ->assertSeeText('hb:changes-multi-b');
+        ->assertDontSeeText('hb:changes-multi-a')
+        ->assertDontSeeText('hb:changes-multi-b');
+});
+
+it('shows a user-focused changes table without the source key column', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-table-ui',
+        'name' => 'Changes Table UI Source',
+    ]);
+
+    $baseline = [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+    $run2 = $service->run($source, [
+        ['id' => 1, 'price' => 110_000, 'status' => 'reserved'],
+    ]);
+    $run2->refresh();
+
+    $href = route('sources.runs.show', [$source, $run2]);
+
+    $html = $this->actingAs($user)
+        ->get('/changes')
+        ->assertOk()
+        ->assertSeeText('Changes Table UI Source')
+        ->assertSee('href="'.$href.'"', false)
+        ->getContent();
+
+    expect($html)->toContain('<th>Source</th>');
+    expect($html)->toContain('<th>Entity</th>');
+    expect($html)->toContain('<th>Field</th>');
+    expect($html)->toContain('<th>Old value</th>');
+    expect($html)->toContain('<th>New value</th>');
+    expect($html)->toContain('<th>Changed at</th>');
+    expect($html)->toContain('<th>Run</th>');
+    expect($html)->not->toContain('<th>Source key</th>');
+    expect($html)->not->toContain('hb:changes-table-ui');
+    expect($html)->toMatch('/<th>Source<\/th>[\s\S]*<th>Entity<\/th>[\s\S]*<th>Field<\/th>[\s\S]*<th>Old value<\/th>[\s\S]*<th>New value<\/th>[\s\S]*<th>Changed at<\/th>[\s\S]*<th>Run<\/th>/');
 });
 
 it('lists newest changes first by changed_at', function () {

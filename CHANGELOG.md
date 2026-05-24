@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Issues bulk review** on `/issues`: when filters are applied, update all matching issues to a chosen review status (`open`, `acknowledged`, `ignored`, or `resolved`) in one action, with a separate bulk panel that states how many rows match the filters (not only the current page). The issues list shows total matches and the visible range. The **Active** review-status filter (`issue_status=active`) and single-status filters are unchanged. The dashboard active issues card shows info, warning, and error severity breakdowns.
 - **Issues page pagination** on `/issues`: browse matching issues beyond the first 100 with server-rendered compact numbered page links plus first, previous, next, and last controls (100 per page, newest first; ellipses when page ranges are skipped). Filter query parameters are preserved across pages.
 - **Changes page pagination** on `/changes`: browse matching plot data changes beyond the first 100 with the same compact numbered pagination as Issues (100 per page, newest first; filter query parameters preserved across pages). The change list shows total matches and the visible range.
+- **Changes page table** on `/changes`: the change list leads with source, entity, field, and old/new values; source keys are hidden from the default table (still shown on source detail pages). Changed-at timestamps and run links remain at the end for audit context.
 
 ## [0.8.1] - 2026-05-17
 

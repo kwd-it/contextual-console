@@ -79,14 +79,13 @@
                         <table class="cc-table">
                             <thead>
                                 <tr>
-                                    <th>Changed at</th>
                                     <th>Source</th>
-                                    <th>Source key</th>
-                                    <th>Run</th>
                                     <th>Entity</th>
                                     <th>Field</th>
                                     <th>Old value</th>
                                     <th>New value</th>
+                                    <th>Changed at</th>
+                                    <th>Run</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -118,29 +117,9 @@
                                         $changedAt = $change->changed_at?->toDateTimeString() ?? '-';
                                     @endphp
                                     <tr>
-                                        <td class="mono cc-time">
-                                            {{ $changedAt }}
-                                            <div class="cc-details muted mono">Change log id: {{ $change->id }}</div>
-                                        </td>
                                         <td>
                                             @if ($source !== null)
                                                 <a href="{{ route('sources.show', $source) }}">{{ $source->display_label }}</a>
-                                            @else
-                                                <span class="muted">—</span>
-                                            @endif
-                                        </td>
-                                        <td class="mono">
-                                            @if ($source !== null)
-                                                {{ $source->key }}
-                                            @else
-                                                —
-                                            @endif
-                                        </td>
-                                        <td class="mono">
-                                            @if ($source !== null && $run !== null)
-                                                <a href="{{ route('sources.runs.show', [$source, $run]) }}">{{ $change->dataset_comparison_run_id }}</a>
-                                            @elseif ($change->dataset_comparison_run_id !== null)
-                                                {{ $change->dataset_comparison_run_id }}
                                             @else
                                                 <span class="muted">—</span>
                                             @endif
@@ -168,6 +147,19 @@
                                         <td class="mono">{{ $change->field }}</td>
                                         <td class="mono">{{ $change->old_value ?? '-' }}</td>
                                         <td class="mono">{{ $change->new_value ?? '-' }}</td>
+                                        <td class="mono cc-time">
+                                            {{ $changedAt }}
+                                            <div class="cc-details muted mono">Change log id: {{ $change->id }}</div>
+                                        </td>
+                                        <td class="mono">
+                                            @if ($source !== null && $run !== null)
+                                                <a href="{{ route('sources.runs.show', [$source, $run]) }}">{{ $change->dataset_comparison_run_id }}</a>
+                                            @elseif ($change->dataset_comparison_run_id !== null)
+                                                {{ $change->dataset_comparison_run_id }}
+                                            @else
+                                                <span class="muted">—</span>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
