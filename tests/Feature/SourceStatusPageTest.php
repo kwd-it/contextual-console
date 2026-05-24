@@ -35,7 +35,7 @@ it('shows a source with no runs', function () {
         ->get('/sources')
         ->assertOk()
         ->assertSeeText($source->name)
-        ->assertSeeText($source->key)
+        ->assertDontSeeText($source->key)
         ->assertSeeText('none')
         ->assertSeeText('0');
 });
@@ -453,18 +453,75 @@ it('shows a failed latest run safely on the source list page', function () {
         'context' => ['reason' => 'boom'],
     ]);
 
+    $runHref = route('sources.runs.show', [$source, $run]);
+
     $this->actingAs($user)
         ->get('/sources')
         ->assertOk()
         ->assertSeeText($source->name)
-        ->assertSeeText($source->key)
+        ->assertDontSeeText($source->key)
         ->assertSeeText('failed')
-        ->assertSeeText("Run ID: {$run->id}")
-        ->assertSeeText('Current snapshot ID: -')
+        ->assertSeeText("Run {$run->id}")
+        ->assertSee('href="'.$runHref.'"', false)
+        ->assertSeeText('Current snapshot: -')
+        ->assertSeeText('Previous snapshot: -')
         ->assertSeeText('added=0')
         ->assertSeeText('removed=0')
         ->assertSeeText('changed=0')
         ->assertSeeText('unchanged=0');
+});
+
+it('shows an operational sources table without the source key column', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:sources-table-ui',
+        'name' => 'Sources Table UI',
+        'display_name' => 'Sources Table Display',
+    ]);
+
+    $baseline = [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+    $run2 = $service->run($source, [
+        ['id' => 1, 'price' => 110_000, 'status' => 'reserved'],
+    ]);
+    $run2->refresh();
+
+    $runHref = route('sources.runs.show', [$source, $run2]);
+
+    $html = $this->actingAs($user)
+        ->get('/sources')
+        ->assertOk()
+        ->assertSeeText('Sources Table Display')
+        ->assertSeeText('completed')
+        ->assertSeeText("Run {$run2->id}")
+        ->assertSee('href="'.$runHref.'"', false)
+        ->assertSeeText('Current snapshot: '.(string) $run2->current_snapshot_id)
+        ->assertSeeText('Previous snapshot: '.(string) $run2->previous_snapshot_id)
+        ->getContent();
+
+    expect($html)->toContain('<th>Source</th>');
+    expect($html)->toContain('<th>Latest run</th>');
+    expect($html)->not->toContain('<th>Source key</th>');
+    expect($html)->not->toContain('hb:sources-table-ui');
+    expect($html)->not->toContain('Run ID:');
+    expect($html)->not->toContain('Current snapshot ID:');
+});
+
+it('keeps the source key visible on the source detail page', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:sources-detail-key',
+        'name' => 'Sources Detail Key',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('sources.show', $source))
+        ->assertOk()
+        ->assertSeeText('Source key: hb:sources-detail-key');
 });
 
 it('shows a failed latest run and its source_run_failed issue on the source detail page', function () {

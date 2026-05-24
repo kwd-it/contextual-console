@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Issues page pagination** on `/issues`: browse matching issues beyond the first 100 with server-rendered compact numbered page links plus first, previous, next, and last controls (100 per page, newest first; ellipses when page ranges are skipped). Filter query parameters are preserved across pages.
 - **Changes page pagination** on `/changes`: browse matching plot data changes beyond the first 100 with the same compact numbered pagination as Issues (100 per page, newest first; filter query parameters preserved across pages). The change list shows total matches and the visible range.
 - **Changes page table** on `/changes`: the change list leads with source, entity, field, and old/new values; source keys are hidden from the default table (still shown on source detail pages). Changed-at timestamps and run links remain at the end for audit context.
+- **Sources page table** on `/sources`: the list uses display labels only (no source key column), quieter snapshot context under each source (`Current snapshot` / `Previous snapshot`), and a linked **Run** id with status badge in the latest-run column. Source keys and full run metadata remain on source and run detail pages.
 
 ## [0.8.1] - 2026-05-17
 

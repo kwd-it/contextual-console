@@ -38,19 +38,22 @@ it('falls back to name in source status summaries when display_name is unset', f
     expect($summary['source_name'])->toBe('Internal Source Name');
 });
 
-it('shows display label on the sources list while keeping the source key visible', function () {
+it('shows display label on the sources list without the source key column', function () {
     $source = MonitoredSource::create([
         'key' => 'wyatt:housebuilder',
         'name' => 'Wyatt Homes Housebuilder',
         'display_name' => 'Wyatt Homes',
     ]);
 
-    $this->actingAs(User::factory()->create())
+    $html = $this->actingAs(User::factory()->create())
         ->get('/sources')
         ->assertOk()
         ->assertSeeText('Wyatt Homes')
         ->assertDontSeeText('Wyatt Homes Housebuilder')
-        ->assertSeeText('wyatt:housebuilder');
+        ->assertDontSeeText('wyatt:housebuilder')
+        ->getContent();
+
+    expect($html)->not->toContain('<th>Source key</th>');
 });
 
 it('shows display label on the source detail heading while keeping the source key visible', function () {

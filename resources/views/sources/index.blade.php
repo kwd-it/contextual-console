@@ -33,7 +33,6 @@
                             <thead>
                                 <tr>
                                     <th>Source</th>
-                                    <th>Source key</th>
                                     <th>Latest run</th>
                                     <th>Finished</th>
                                     <th>Changes</th>
@@ -76,14 +75,19 @@
                                     <tr>
                                         <td>
                                             <a href="{{ route('sources.show', $s['source_id']) }}">{{ $s['source_name'] ?? '' }}</a>
-                                            <div class="cc-details muted mono">
-                                                Run ID: {{ $s['latest_run_id'] ?? '-' }}
-                                                · Current snapshot ID: {{ $s['current_snapshot_id'] ?? '-' }}
-                                                · Previous snapshot ID: {{ $s['previous_snapshot_id'] ?? '-' }}
+                                            <div class="cc-details muted">
+                                                Current snapshot: {{ $s['current_snapshot_id'] ?? '-' }}
+                                                · Previous snapshot: {{ $s['previous_snapshot_id'] ?? '-' }}
                                             </div>
                                         </td>
-                                        <td class="mono">{{ $s['source_key'] ?? '' }}</td>
                                         <td>
+                                            @if (($s['latest_run_id'] ?? null) !== null)
+                                                <div class="mono">
+                                                    <a href="{{ route('sources.runs.show', [$s['source_id'], $s['latest_run_id']]) }}">Run {{ $s['latest_run_id'] }}</a>
+                                                </div>
+                                            @else
+                                                <span class="muted">—</span>
+                                            @endif
                                             @include('sources._dashboard-status-badge', ['status' => $latestStatus ?? '', 'label' => $latestStatusLabel])
                                         </td>
                                         <td class="mono cc-time">{{ $finishedLabel }}</td>
