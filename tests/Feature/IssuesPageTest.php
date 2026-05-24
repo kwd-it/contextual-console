@@ -5,6 +5,7 @@ use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -346,8 +347,8 @@ it('filters issues by created_at date range via GET query', function () {
         'message' => 'ISSUES_FILTER_DATE_EARLY',
     ]);
     $early->forceFill([
-        'created_at' => \Carbon\Carbon::parse('2026-05-01 12:00:00'),
-        'updated_at' => \Carbon\Carbon::parse('2026-05-01 12:00:00'),
+        'created_at' => Carbon::parse('2026-05-01 12:00:00'),
+        'updated_at' => Carbon::parse('2026-05-01 12:00:00'),
     ])->save();
 
     $mid = DatasetIssue::create([
@@ -359,8 +360,8 @@ it('filters issues by created_at date range via GET query', function () {
         'message' => 'ISSUES_FILTER_DATE_MID',
     ]);
     $mid->forceFill([
-        'created_at' => \Carbon\Carbon::parse('2026-05-10 12:00:00'),
-        'updated_at' => \Carbon\Carbon::parse('2026-05-10 12:00:00'),
+        'created_at' => Carbon::parse('2026-05-10 12:00:00'),
+        'updated_at' => Carbon::parse('2026-05-10 12:00:00'),
     ])->save();
 
     $late = DatasetIssue::create([
@@ -372,8 +373,8 @@ it('filters issues by created_at date range via GET query', function () {
         'message' => 'ISSUES_FILTER_DATE_LATE',
     ]);
     $late->forceFill([
-        'created_at' => \Carbon\Carbon::parse('2026-05-20 12:00:00'),
-        'updated_at' => \Carbon\Carbon::parse('2026-05-20 12:00:00'),
+        'created_at' => Carbon::parse('2026-05-20 12:00:00'),
+        'updated_at' => Carbon::parse('2026-05-20 12:00:00'),
     ])->save();
 
     $this->actingAs($user)
@@ -891,7 +892,7 @@ it('shows the bulk update form only when filters are active', function () {
         ->assertSeeText('not only the');
 });
 
-it('shows the filtered issue count and newest limit wording on the issues page', function () {
+it('shows the filtered issue count and visible range on the issues page', function () {
     $user = User::factory()->create();
     $source = MonitoredSource::create([
         'key' => 'hb:issues-count-summary',
@@ -909,7 +910,7 @@ it('shows the filtered issue count and newest limit wording on the issues page',
     ]);
 
     for ($i = 0; $i < 101; $i++) {
-        DatasetIssue::create([
+        $issue = DatasetIssue::create([
             'monitored_source_id' => $source->id,
             'dataset_snapshot_id' => null,
             'dataset_comparison_run_id' => $run->id,
@@ -917,8 +918,11 @@ it('shows the filtered issue count and newest limit wording on the issues page',
             'severity' => 'info',
             'status' => DatasetIssue::STATUS_OPEN,
             'message' => 'ISSUES_COUNT_SUMMARY_'.$i,
-            'created_at' => now()->subMinutes($i),
         ]);
+        $issue->forceFill([
+            'created_at' => now()->subMinutes($i),
+            'updated_at' => now()->subMinutes($i),
+        ])->save();
     }
 
     $this->actingAs($user)
@@ -926,7 +930,299 @@ it('shows the filtered issue count and newest limit wording on the issues page',
         ->assertOk()
         ->assertSee('data-test="issues-result-summary"', false)
         ->assertSeeText('101 issues match the current filters.')
-        ->assertSeeText('Showing newest 100.');
+        ->assertSeeText('Showing 1 to 100.')
+        ->assertSee('data-test="issues-pagination"', false)
+        ->assertSee('aria-current="page">1<', false)
+        ->assertSeeText('ISSUES_COUNT_SUMMARY_0')
+        ->assertSeeText('ISSUES_COUNT_SUMMARY_99')
+        ->assertDontSeeText('ISSUES_COUNT_SUMMARY_100')
+        ->assertDontSeeText('Showing newest 100.');
+});
+
+it('paginates issues beyond the first page while preserving newest-first order', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-pagination',
+        'name' => 'Issues Pagination Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    for ($i = 0; $i < 101; $i++) {
+        $issue = DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_snapshot_id' => null,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'issues_pagination',
+            'severity' => 'info',
+            'status' => DatasetIssue::STATUS_OPEN,
+            'message' => 'ISSUES_PAGINATION_'.$i,
+        ]);
+        $issue->forceFill([
+            'created_at' => now()->subMinutes($i),
+            'updated_at' => now()->subMinutes($i),
+        ])->save();
+    }
+
+    $this->actingAs($user)
+        ->get(route('issues.index', [
+            'issue_status' => DatasetIssue::STATUS_OPEN,
+            'page' => 2,
+        ]))
+        ->assertOk()
+        ->assertSeeText('Showing 101 to 101.')
+        ->assertSeeText('ISSUES_PAGINATION_100')
+        ->assertDontSeeText('ISSUES_PAGINATION_0')
+        ->assertSee('data-test="issues-pagination"', false)
+        ->assertSee('aria-current="page">2<', false)
+        ->assertSee('cc-pagination__link--active', false);
+});
+
+it('shows numbered pagination links when there are multiple pages', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-numbered-pagination',
+        'name' => 'Issues Numbered Pagination Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    for ($i = 0; $i < 101; $i++) {
+        $issue = DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_snapshot_id' => null,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'issues_numbered_pagination',
+            'severity' => 'info',
+            'status' => DatasetIssue::STATUS_OPEN,
+            'message' => 'ISSUES_NUMBERED_PAGINATION_'.$i,
+        ]);
+        $issue->forceFill([
+            'created_at' => now()->subMinutes($i),
+            'updated_at' => now()->subMinutes($i),
+        ])->save();
+    }
+
+    $html = $this->actingAs($user)
+        ->get(route('issues.index', ['issue_status' => DatasetIssue::STATUS_OPEN]))
+        ->assertOk()
+        ->assertSee('data-test="issues-pagination"', false)
+        ->assertSeeText('First')
+        ->assertSeeText('Last')
+        ->getContent();
+
+    expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*page=2[^"]*">2<\/a>/');
+    expect($html)->toMatch('/aria-current="page">1<\//');
+});
+
+it('uses compact windowed numbered pagination when there are many pages', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-windowed-pagination',
+        'name' => 'Issues Windowed Pagination Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    for ($i = 0; $i < 1001; $i++) {
+        $issue = DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_snapshot_id' => null,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'issues_windowed_pagination',
+            'severity' => 'info',
+            'status' => DatasetIssue::STATUS_OPEN,
+            'message' => 'ISSUES_WINDOWED_PAGINATION_'.$i,
+        ]);
+        $issue->forceFill([
+            'created_at' => now()->subMinutes($i),
+            'updated_at' => now()->subMinutes($i),
+        ])->save();
+    }
+
+    $html = $this->actingAs($user)
+        ->get(route('issues.index', [
+            'issue_status' => DatasetIssue::STATUS_OPEN,
+            'page' => 6,
+        ]))
+        ->assertOk()
+        ->assertSee('data-test="issues-pagination"', false)
+        ->assertSee('aria-current="page">6<', false)
+        ->getContent();
+
+    expect($html)->toContain('cc-pagination__ellipsis');
+    expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*page=1[^"]*">1<\/a>/');
+    expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*page=4[^"]*">4<\/a>/');
+    expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*page=8[^"]*">8<\/a>/');
+    expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*page=11[^"]*">11<\/a>/');
+    expect($html)->not->toMatch('/<a class="cc-pagination__link" href="[^"]*page=3[^"]*">3<\/a>/');
+    expect($html)->not->toMatch('/<a class="cc-pagination__link" href="[^"]*page=9[^"]*">9<\/a>/');
+    expect(substr_count($html, 'class="cc-pagination__ellipsis muted"'))->toBe(2);
+    expect(preg_match_all('/class="cc-pagination__link" href="[^"]*page=\d+[^"]*">\d+<\/a>/', $html))->toBe(6);
+});
+
+it('preserves issue filters in pagination links', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-pagination-filters',
+        'name' => 'Issues Pagination Filters Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    for ($i = 0; $i < 101; $i++) {
+        $issue = DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_snapshot_id' => null,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'issues_pagination_filters',
+            'severity' => 'info',
+            'status' => DatasetIssue::STATUS_OPEN,
+            'message' => 'ISSUES_PAGINATION_FILTERS_'.$i,
+        ]);
+        $issue->forceFill([
+            'created_at' => now()->subMinutes($i),
+            'updated_at' => now()->subMinutes($i),
+        ])->save();
+    }
+
+    $html = $this->actingAs($user)
+        ->get(route('issues.index', ['issue_status' => DatasetIssue::STATUS_OPEN]))
+        ->assertOk()
+        ->getContent();
+
+    expect($html)->toContain('issue_status=open');
+    expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*issue_status=open[^"]*page=2[^"]*">2<\/a>/');
+});
+
+it('applies the active review status filter across paginated results', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-pagination-active',
+        'name' => 'Issues Pagination Active Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    for ($i = 0; $i < 101; $i++) {
+        $issue = DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_snapshot_id' => null,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'issues_pagination_active',
+            'severity' => 'info',
+            'status' => DatasetIssue::STATUS_OPEN,
+            'message' => 'ISSUES_PAGINATION_ACTIVE_'.$i,
+        ]);
+        $issue->forceFill([
+            'created_at' => now()->subMinutes($i),
+            'updated_at' => now()->subMinutes($i),
+        ])->save();
+    }
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_pagination_active',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_RESOLVED,
+        'message' => 'ISSUES_PAGINATION_ACTIVE_RESOLVED',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('issues.index', [
+            'issue_status' => DatasetIssue::FILTER_ACTIVE,
+            'page' => 2,
+        ]))
+        ->assertOk()
+        ->assertSeeText('ISSUES_PAGINATION_ACTIVE_100')
+        ->assertDontSeeText('ISSUES_PAGINATION_ACTIVE_RESOLVED');
+});
+
+it('bulk update still updates all filtered issues beyond the current page', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-bulk-pagination',
+        'name' => 'Issues Bulk Pagination Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    for ($i = 0; $i < 101; $i++) {
+        $issue = DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_snapshot_id' => null,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'issues_bulk_pagination',
+            'severity' => 'info',
+            'status' => DatasetIssue::STATUS_OPEN,
+            'message' => 'ISSUES_BULK_PAGINATION_'.$i,
+        ]);
+        $issue->forceFill([
+            'created_at' => now()->subMinutes($i),
+            'updated_at' => now()->subMinutes($i),
+        ])->save();
+    }
+
+    $this->actingAs($user)
+        ->post(route('issues.bulk-update-status'), [
+            'status' => DatasetIssue::STATUS_IGNORED,
+            'issue_status' => DatasetIssue::STATUS_OPEN,
+        ])
+        ->assertRedirect(route('issues.index', ['issue_status' => DatasetIssue::STATUS_OPEN]))
+        ->assertSessionHas('status', 'Updated 101 issues matching the current filters.');
+
+    expect(DatasetIssue::query()->where('status', DatasetIssue::STATUS_OPEN)->count())->toBe(0);
+    expect(DatasetIssue::query()->where('status', DatasetIssue::STATUS_IGNORED)->count())->toBe(101);
 });
 
 it('requires an explicit bulk target status', function () {

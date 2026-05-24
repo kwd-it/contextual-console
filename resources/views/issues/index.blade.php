@@ -12,7 +12,7 @@
 
             <header class="cc-page-header">
                 <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Issues</span></h1>
-                <p class="cc-page-sub">Recent issues from daily dataset comparisons across all sources (newest first, up to {{ $issueLimit }} entries).</p>
+                <p class="cc-page-sub">Recent issues from daily dataset comparisons across all sources (newest first).</p>
             </header>
 
             <section class="cc-card" aria-labelledby="hdr-all-issues">
@@ -70,8 +70,13 @@
                     <div class="cc-issues-bulk-panel" data-test="issues-bulk-form">
                         <h3 class="cc-issues-bulk-panel__title">Bulk review</h3>
                         <p class="cc-issues-bulk-panel__caution muted">
-                            This updates <strong>all {{ number_format($filteredIssuesCount) }} issues</strong> matching the current filters,
-                            not only the {{ number_format(min($filteredIssuesCount, $issueLimit)) }} rows shown below.
+                            This updates <strong>all {{ number_format($issues->total()) }} issues</strong> matching the current filters,
+                            not only the {{ number_format($issues->count()) }} issues on this page
+                            @if ($issues->total() > $issues->count())
+                                (showing {{ number_format($issues->firstItem()) }} to {{ number_format($issues->lastItem()) }}).
+                            @else
+                                .
+                            @endif
                         </p>
                         <form
                             class="cc-issues-bulk-panel__form"
@@ -114,15 +119,15 @@
                     </div>
                 @endif
                 <div class="cc-card-body">
-                    @if ($filteredIssuesCount > 0 || $filtersActive)
+                    @if ($issues->total() > 0 || $filtersActive)
                         <p class="cc-issues-result-summary muted" data-test="issues-result-summary">
                             @if ($filtersActive)
-                                {{ number_format($filteredIssuesCount) }} {{ $filteredIssuesCount === 1 ? 'issue' : 'issues' }} match the current filters.
+                                {{ number_format($issues->total()) }} {{ $issues->total() === 1 ? 'issue' : 'issues' }} match the current filters.
                             @else
-                                {{ number_format($filteredIssuesCount) }} {{ $filteredIssuesCount === 1 ? 'issue' : 'issues' }} recorded.
+                                {{ number_format($issues->total()) }} {{ $issues->total() === 1 ? 'issue' : 'issues' }} recorded.
                             @endif
-                            @if ($issuesListTruncated)
-                                Showing newest {{ $issueLimit }}.
+                            @if ($issues->total() > 0)
+                                Showing {{ number_format($issues->firstItem()) }} to {{ number_format($issues->lastItem()) }}.
                             @endif
                         </p>
                     @endif
@@ -269,6 +274,9 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        @if ($issues->hasPages())
+                            {{ $issues->links('vendor.pagination.cc') }}
+                        @endif
                     @endif
                 </div>
             </section>

@@ -17,7 +17,7 @@ use Illuminate\View\View;
 
 class IssuesController extends Controller
 {
-    private const int ISSUE_LIMIT = 100;
+    private const int ISSUES_PER_PAGE = 100;
 
     public function index(Request $request): View
     {
@@ -43,27 +43,21 @@ class IssuesController extends Controller
 
         $filters = $this->resolvedIssueFilters($request, $severityOptions, $issueTypeOptions);
 
-        $filteredIssuesQuery = $this->filteredIssuesQuery($filters);
-        $filteredIssuesCount = (clone $filteredIssuesQuery)->count();
-
-        $issues = (clone $filteredIssuesQuery)
+        $issues = $this->filteredIssuesQuery($filters)
             ->with(['monitoredSource', 'datasetComparisonRun'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->limit(self::ISSUE_LIMIT)
-            ->get();
+            ->paginate(self::ISSUES_PER_PAGE)
+            ->withQueryString();
 
         $plotDisplayLookupByRunId = $this->plotDisplayLookupsForRuns(
-            $issues->pluck('dataset_comparison_run_id')->unique()->filter()->values(),
+            $issues->getCollection()->pluck('dataset_comparison_run_id')->unique()->filter()->values(),
         );
 
         return view('issues.index', [
             'issues' => $issues,
-            'filteredIssuesCount' => $filteredIssuesCount,
-            'issuesListTruncated' => $filteredIssuesCount > self::ISSUE_LIMIT,
             'plotDisplayLookupByRunId' => $plotDisplayLookupByRunId,
             'emptyPlotLookup' => PlotSnapshotDisplayLookup::empty(),
-            'issueLimit' => self::ISSUE_LIMIT,
             'sources' => $sources,
             'severityOptions' => $severityOptions,
             'issueStatusFilterValues' => DatasetIssue::STATUS_FILTER_VALUES,

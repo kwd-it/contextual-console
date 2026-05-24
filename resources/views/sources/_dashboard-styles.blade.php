@@ -825,6 +825,70 @@
     .cc-issues-result-summary {
         margin: 0 0 14px;
         font-size: 0.8125rem;
+        padding: 14px 18px 0;
+    }
+    .cc-pagination {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 10px 14px;
+        padding: 16px 18px;
+        border-top: 1px solid var(--cc-border);
+    }
+    .cc-pagination__group,
+    .cc-pagination__pages {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+    .cc-pagination__link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.25rem;
+        padding: 6px 10px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--cc-link);
+        text-decoration: none;
+        background: var(--cc-surface);
+        border: 1px solid var(--cc-border-strong);
+        border-radius: var(--cc-radius-sm);
+        line-height: 1.2;
+    }
+    .cc-pagination__link:hover {
+        color: var(--cc-link-hover);
+        border-color: var(--cc-accent);
+    }
+    .cc-pagination__link--active {
+        color: var(--cc-on-accent);
+        background: var(--cc-accent);
+        border-color: var(--cc-accent);
+        cursor: default;
+    }
+    .cc-pagination__link--active:hover {
+        color: var(--cc-on-accent);
+        border-color: var(--cc-accent);
+    }
+    .cc-pagination__link--disabled {
+        color: var(--cc-muted);
+        cursor: default;
+        opacity: 0.6;
+    }
+    .cc-pagination__link--disabled:hover {
+        color: var(--cc-muted);
+        border-color: var(--cc-border-strong);
+    }
+    .cc-pagination__ellipsis {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.5rem;
+        padding: 6px 2px;
+        font-size: 0.8125rem;
+        user-select: none;
     }
     .cc-filter-form--issues .cc-filter-form select,
     .cc-filter-form--issues .cc-filter-form input[type="date"] {
