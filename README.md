@@ -6,13 +6,13 @@ The first vertical is **housebuilders**; domain-specific logic lives alongside s
 
 ## Product direction
 
-The long-term focus is operational visibility across many properties: change history and consistency signals—not a single-site CMS replacement.
+The long-term focus is operational visibility across many properties: change history and consistency signals, not a single-site CMS replacement.
 
 ## Current status
 
 This project is early-stage but usable for manually ingesting and reviewing changes in Housebuilder plot datasets:
 
-The **first deployment-ready monitoring release** was **v0.4.0**; **v0.5.0** builds on that baseline with dashboard and navigation polish, explicit scheduler timezone defaults, and broader passive plot field tracking. **v0.6.0** adds optional daily SQLite backups to S3-compatible object storage; **v0.6.1** adds the S3 filesystem adapter dependency required for those uploads. **v0.7.0** adds a first dashboard summary, cross-source Issues and Changes pages with basic filters, comparison run detail for any past run (with human-readable plot labels where snapshot data allows), navigation and styling polish, and initial dashboard drilldown links. **v0.8.0** shows Housebuilder Pack **`last_modified_by`** on plot rows as **Last modified by: {label}** when the endpoint supplies it—display-only snapshot metadata, not change detection or an audit trail. **v0.8.1** refines the dashboard and UI: Recent Changes and Development overview sections, development drilldown pages (plots, recent changes, recent issues), development label fallback from plot URLs when snapshot development fields are missing, shared design tokens, icons, badges, a more compact layout, automatic dark mode and a System / Light / Dark theme selector—presentation and navigation only. See `CHANGELOG.md`.
+The **first deployment-ready monitoring release** was **v0.4.0**; **v0.5.0** builds on that baseline with dashboard and navigation polish, explicit scheduler timezone defaults, and broader passive plot field tracking. **v0.6.0** adds optional daily SQLite backups to S3-compatible object storage; **v0.6.1** adds the S3 filesystem adapter dependency required for those uploads. **v0.7.0** adds a first dashboard summary, cross-source Issues and Changes pages with basic filters, comparison run detail for any past run (with human-readable plot labels where snapshot data allows), navigation and styling polish, and initial dashboard drilldown links. **v0.8.0** shows Housebuilder Pack **`last_modified_by`** on plot rows as **Last modified by: {label}** when the endpoint supplies it, display-only snapshot metadata, not change detection or an audit trail. **v0.8.1** refines the dashboard and UI: Recent Changes and Development overview sections, development drilldown pages (plots, recent changes, recent issues), development label fallback from plot URLs when snapshot development fields are missing, shared design tokens, icons, badges, a more compact layout, automatic dark mode, and a System / Light / Dark theme selector, presentation and navigation only. **v0.9.0** adds issue review statuses (open, acknowledged, ignored, resolved), dashboard summaries for **active** issues (open or acknowledged), bulk issue review on filtered sets, server-rendered pagination on Issues and Changes (100 per page), optional monitored source **display labels**, and UI table polish, review and presentation only; ingest, comparison, change detection, and issue detection rules are unchanged. See `CHANGELOG.md`.
 
 - **Monitored sources** (`MonitoredSource`): identify feeds by stable `key`, with a configured endpoint and optional HTTP ingest settings. Optional `display_name` provides a cleaner UI label (for example **Wyatt Homes**); when unset, the UI falls back to `name`. Source keys and ingest behaviour are unchanged.
 - **HTTP JSON plot ingest**: read-only GET via `php artisan contextual-console:run-http-plot-source`.
@@ -24,11 +24,11 @@ The **first deployment-ready monitoring release** was **v0.4.0**; **v0.5.0** bui
 - **Comparison runs** (`DatasetComparisonRun`): baseline then compare-to-previous summaries (`added`, `removed`, `changed`, `unchanged`) and change logs.
 - **Issue detection**: dataset-level validation (invalid/missing ids, duplicates, missing/invalid `status`, and status-aware `price` rules). See `PlotDatasetIssueDetector`.
 - **Source status**: CLI summary via `php artisan contextual-console:source-status`.
-- **Web UI** (session **login** required for pages below; `/login` and POST `/logout`): **dashboard** at `/dashboard` with Recent Changes and Development overview sections (compact recent lists); **development drilldown** pages per source for plots, recent changes and recent issues; monitored **sources** at `/sources` and `/sources/{source}` (`{source}` is the monitored source **database id** in URLs); **comparison run detail** at `/sources/{source}/runs/{run}` (`{run}` is the comparison run id), including **historic** runs; cross-source **Changes** at `/changes` and **Issues** at `/issues` with **basic query filters** (for example date range, severity, and review status on issues). On **Issues**, you can mark each detected issue as open, acknowledged, ignored, or resolved without changing how issues are detected. Development labels can fall back from plot URLs when snapshot development fields are missing. Plot entity blocks can show **Last modified by: {label}** when snapshot payloads include Housebuilder Pack **`last_modified_by`** (display-only; not tracked for changes or issues). Shared dashboard styling (design tokens, icons, badges, automatic dark mode, System / Light / Dark theme selector). The site **root (`/`)** redirects to `/dashboard`; successful login redirects there as well.
+- **Web UI** (session **login** required for pages below; `/login` and POST `/logout`): **dashboard** at `/dashboard` with active-issue summaries (open or acknowledged, with severity breakdown), Recent Changes and Development overview sections (compact recent lists); **development drilldown** pages per source for plots, recent changes and recent issues; monitored **sources** at `/sources` (display labels in the list; source keys on detail pages) and `/sources/{source}` (`{source}` is the monitored source **database id** in URLs); **comparison run detail** at `/sources/{source}/runs/{run}` (`{run}` is the comparison run id), including **historic** runs; cross-source **Changes** at `/changes` and **Issues** at `/issues` with **basic query filters** and **server-rendered pagination** (100 per page; filters preserved; total matches and visible range shown). On **Issues**, mark each detected issue or **bulk-update** all issues matching the current filters to open, acknowledged, ignored, or resolved without changing how issues are detected. Development labels can fall back from plot URLs when snapshot development fields are missing. Plot entity blocks can show **Last modified by: {label}** when snapshot payloads include Housebuilder Pack **`last_modified_by`** (display-only; not tracked for changes or issues). Shared dashboard styling (design tokens, icons, badges, automatic dark mode, System / Light / Dark theme selector). The site **root (`/`)** redirects to `/dashboard`; successful login redirects there as well.
 - **Admin users**: bootstrap the first account with `php artisan contextual-console:create-admin-user`; add further internal accounts the same way when testers or operators need access. Do not commit or document real passwords.
 - **Scheduled monitoring** (Laravel scheduler; times use `config/app.php` **schedule timezone**, default **Europe/London**): `contextual-console:run-scheduled-sources` daily at **06:00**; **daily summary email** via `contextual-console:daily-summary --email` at **06:30** (recipient and mail env in `docs/DEPLOYMENT.md`).
-- **SQLite backups** (optional): `php artisan contextual-console:backup-database` — scheduled daily at **06:45**; configure S3-compatible storage and env vars per `docs/DEPLOYMENT.md`.
-- **Production smoke test** (no external HTTP): `php artisan contextual-console:smoke-test` — checks key production configuration and is documented in `docs/DEPLOYMENT.md`.
+- **SQLite backups** (optional): `php artisan contextual-console:backup-database`, scheduled daily at **06:45**; configure S3-compatible storage and env vars per `docs/DEPLOYMENT.md`.
+- **Production smoke test** (no external HTTP): `php artisan contextual-console:smoke-test`, checks key production configuration and is documented in `docs/DEPLOYMENT.md`.
 
 For release history, see `CHANGELOG.md`.
 
@@ -36,9 +36,9 @@ For release history, see `CHANGELOG.md`.
 
 | Area | What exists today |
 |------|-------------------|
-| **Model** | `App\Core\Models\ChangeLog` — stores entity type/id, field name, old/new values, and `changed_at`. |
+| **Model** | `App\Core\Models\ChangeLog`, stores entity type/id, field name, old/new values, and `changed_at`. |
 | **Database** | `change_logs` table (see `database/migrations/2026_04_09_052942_create_change_logs_table.php`). |
-| **Models (run flow)** | `App\Core\Models\MonitoredSource`, `DatasetSnapshot`, `DatasetComparisonRun` — persisted per-source snapshots and comparison runs. |
+| **Models (run flow)** | `App\Core\Models\MonitoredSource`, `DatasetSnapshot`, `DatasetComparisonRun`, persisted per-source snapshots and comparison runs. |
 | **Services** | `ChangeDetectionService` (`record`, `recordDomainField`, `recordPlotPrice`), `PlotDatasetComparisonService`, `PlotChangeDetector` (whitelisted fields), `PlotDatasetPresenceChangeLogger`, `PlotDatasetRunService` (snapshot + compare + persist summary), `HttpJsonSourceFetcher` (HTTP GET + JSON unwrap + env header values), `PlotHttpIngestNormalizer` (optional `contextualwp_list_contexts` adapter). |
 | **Command (internal)** | `php artisan contextual-console:run-plot-source {sourceKey} --file=/path/to/payload.json`; `php artisan contextual-console:run-http-plot-source {sourceKey}`. |
 
@@ -46,8 +46,8 @@ Everything else is default Laravel scaffolding (auth migrations, queue/cache tab
 
 ## Architecture approach
 
-- **`app/Core`** — reusable platform concepts (e.g. shared models like `ChangeLog`).
-- **`app/Domains/Housebuilder`** — housebuilder-specific services and future domain code.
+- **`app/Core`**: reusable platform concepts (e.g. shared models like `ChangeLog`).
+- **`app/Domains/Housebuilder`**: housebuilder-specific services and future domain code.
 
 This split is intentional so additional verticals can follow the same pattern later.
 
@@ -157,7 +157,7 @@ Notes:
 To ingest real production data from a remote JSON endpoint (read-only), configure the monitored source with HTTP fields:
 
 - `endpoint_url`: full URL to a JSON endpoint (read-only GET).
-- `auth_header_name` + `auth_token_env_key` (optional): the **name** of the HTTP header (for example `Authorization`) and the **name** of an environment variable whose value is sent as that header’s **value only**—not a `Header-Name: …` line (for example use `Basic …` in env when `auth_header_name` is `Authorization`). Nothing secret is stored in the database.
+- `auth_header_name` + `auth_token_env_key` (optional): the **name** of the HTTP header (for example `Authorization`) and the **name** of an environment variable whose value is sent as that header’s **value only**, not a `Header-Name: …` line (for example use `Basic …` in env when `auth_header_name` is `Authorization`). Nothing secret is stored in the database.
 - `http_json_items_key` (optional): when the JSON body is an **object** wrapping the list (not a top-level array), set this to the property that holds the array of plot records (for example `contexts` on ContextualWP `list_contexts` responses).
 - `http_plot_payload_adapter` (optional): `contextualwp_list_contexts` maps common ContextualWP / WordPress-style rows (for example `post_id`, `acf.price`) onto the plot fields the console compares (`id`, `price`, `status`). When this adapter is set and `http_json_items_key` is empty, the fetcher defaults the wrapper key to `contexts`.
 
@@ -220,7 +220,7 @@ php artisan contextual-console:run-http-plot-source hb:example
 
 Your laptop can call a **public** WordPress HTTPS URL; the site does **not** need to reach your local Laravel app.
 
-1. In `.env`, define a placeholder env var holding the **value** that will be sent on the configured header (for Application Password Basic auth that is typically `Basic <base64-placeholder>`—without an `Authorization:` prefix). Example names only:
+1. In `.env`, define a placeholder env var holding the **value** that will be sent on the configured header (for Application Password Basic auth that is typically `Basic <base64-placeholder>`, without an `Authorization:` prefix). Example names only:
 
    ```env
    WYATT_CONTEXTUALWP_AUTH="Basic <base64-placeholder>"
@@ -244,10 +244,10 @@ If the env var referenced by `auth_token_env_key` is missing or empty, the comma
 ## Source status and dashboards (internal/dev)
 
 - **CLI**: `php artisan contextual-console:source-status`
-- **Dashboard**: `/dashboard` — high-level counts and recent runs; drilldown links apply **basic filters** on Issues, Changes, or Sources where noted on the page.
-- **Sources list**: `/sources` — monitored sources and status-oriented summary.
-- **Source detail**: `/sources/{source}` — recent runs, latest run’s issues and changes, links to each run’s detail page.
-- **Run detail**: `/sources/{source}/runs/{run}` — that run’s issues and plot change rows (works for past runs, not only the latest).
+- **Dashboard**: `/dashboard`: high-level counts and recent runs; drilldown links apply **basic filters** on Issues, Changes, or Sources where noted on the page.
+- **Sources list**: `/sources`: monitored sources and status-oriented summary.
+- **Source detail**: `/sources/{source}`: recent runs, latest run’s issues and changes, links to each run’s detail page.
+- **Run detail**: `/sources/{source}/runs/{run}`: that run’s issues and plot change rows (works for past runs, not only the latest).
 
 To create an admin user locally (example placeholders only):
 

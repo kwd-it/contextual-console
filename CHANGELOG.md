@@ -7,20 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-05-24
+
+Issue review workflow, active-issue dashboard summaries, bulk issue review, paginated Issues and Changes listings, monitored source display labels, and UI table polish. Review and presentation only; ingest, comparison, change detection, and issue detection rules are unchanged.
+
 ### Added
 
 - **Monitored source display labels**: optional `display_name` on `MonitoredSource` rows provides a cleaner UI label (for example **Wyatt Homes** instead of **Wyatt Homes Housebuilder**). When unset, the UI falls back to `name`. Source keys, ingest behaviour, and endpoint configuration are unchanged. Existing environments can set `display_name` via Tinker (see README Wyatt example).
 
-- **Issue review status workflow** on the cross-source **Issues** page: internal users can mark dataset issues as `open`, `acknowledged`, `ignored`, or `resolved`, filter by review status, and update status from a simple server-rendered form. Newly detected issues default to `open`; issue detection, severity, and `issue_type` behaviour are unchanged. Repeated detections still create separate issue rows (no deduplication or auto-resolve).
+- **Issue review status workflow** on the cross-source **Issues** page: internal users can mark dataset issues as open, acknowledged, ignored, or resolved, filter by review status, and update status from a simple server-rendered form. Newly detected issues default to open; issue detection, severity, and `issue_type` behaviour are unchanged. Repeated detections still create separate issue rows (no deduplication or auto-resolve).
+
+- **Issues bulk review** on `/issues`: when at least one filter is applied, update all matching issues (across the full filtered result set, not only the current page) to a chosen review status (open, acknowledged, ignored, or resolved) in one action, with an explicit target status.
 
 ### Changed
 
-- **Dashboard monitoring** now focuses on **active** issues (`open` and `acknowledged`): the summary card counts all active issues (not limited to seven days), drilldown links go to `issue_status=active` (hidden when the count is zero), and the recent issues list excludes `ignored` and `resolved` issues. Removed the **Sources with runs** summary tile to keep the dashboard grid compact.
-- **Issues bulk review** on `/issues`: when filters are applied, update all matching issues to a chosen review status (`open`, `acknowledged`, `ignored`, or `resolved`) in one action, with a separate bulk panel that states how many rows match the filters (not only the current page). The issues list shows total matches and the visible range. The **Active** review-status filter (`issue_status=active`) and single-status filters are unchanged. The dashboard active issues card shows info, warning, and error severity breakdowns.
-- **Issues page pagination** on `/issues`: browse matching issues beyond the first 100 with server-rendered compact numbered page links plus first, previous, next, and last controls (100 per page, newest first; ellipses when page ranges are skipped). Filter query parameters are preserved across pages.
-- **Changes page pagination** on `/changes`: browse matching plot data changes beyond the first 100 with the same compact numbered pagination as Issues (100 per page, newest first; filter query parameters preserved across pages). The change list shows total matches and the visible range.
+- **Dashboard monitoring** now focuses on **active** issues (open and acknowledged): the summary card counts all active issues (not limited to seven days), shows info, warning, and error severity breakdowns, drilldown links go to `issue_status=active` (hidden when the count is zero), and the recent issues list excludes ignored and resolved issues. Removed the **Sources with runs** summary tile to keep the dashboard grid compact.
+- **Issues page pagination** on `/issues`: browse matching issues with server-rendered compact numbered page links plus first, previous, next, and last controls (100 per page, newest first; ellipses when page ranges are skipped). Filter query parameters are preserved across pages. The issues list shows total matches and the visible range.
+- **Changes page pagination** on `/changes`: browse matching plot data changes with the same compact numbered pagination as Issues (100 per page, newest first; filter query parameters preserved across pages). The change list shows total matches and the visible range.
 - **Changes page table** on `/changes`: the change list leads with source, entity, field, and old/new values; source keys are hidden from the default table (still shown on source detail pages). Changed-at timestamps and run links remain at the end for audit context.
 - **Sources page table** on `/sources`: the list uses display labels only (no source key column), quieter snapshot context under each source (`Current snapshot` / `Previous snapshot`), and a linked **Run** id with status badge in the latest-run column. Source keys and full run metadata remain on source and run detail pages.
+- **Issues page table**: simplified for day-to-day review (status updates and filtering).
+
+### Notes
+
+- No ingest, comparison, change detection, or issue detection behaviour changed.
 
 ## [0.8.1] - 2026-05-17
 
