@@ -1,8 +1,10 @@
 @if ($paginator->hasPages())
     @php
         $elements = \App\Support\CompactPaginatorWindow::elements($paginator);
+        $paginationLabel = $paginationLabel ?? 'Issues';
+        $paginationTestId = $paginationTestId ?? 'issues-pagination';
     @endphp
-    <nav class="cc-pagination" aria-label="Issues pagination" data-test="issues-pagination">
+    <nav class="cc-pagination" aria-label="{{ $paginationLabel }} pagination" data-test="{{ $paginationTestId }}">
         <div class="cc-pagination__group" aria-label="First and previous pages">
             @if ($paginator->onFirstPage())
                 <span class="cc-pagination__link cc-pagination__link--disabled" aria-disabled="true">First</span>

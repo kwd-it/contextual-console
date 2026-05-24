@@ -822,7 +822,8 @@
         background: var(--cc-link-hover);
         border-color: var(--cc-link-hover);
     }
-    .cc-issues-result-summary {
+    .cc-issues-result-summary,
+    .cc-changes-result-summary {
         margin: 0 0 14px;
         font-size: 0.8125rem;
         padding: 14px 18px 0;

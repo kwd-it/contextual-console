@@ -12,7 +12,7 @@
 
             <header class="cc-page-header">
                 <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'change'])<span>Plot data changes</span></h1>
-                <p class="cc-page-sub">Recent field-level changes detected from daily dataset comparisons across all sources (newest first, up to {{ $changeLimit }} entries).</p>
+                <p class="cc-page-sub">Recent field-level changes detected from daily dataset comparisons across all sources (newest first).</p>
             </header>
 
             <section class="cc-card" aria-labelledby="hdr-all-changes">
@@ -55,8 +55,20 @@
                     </div>
                 </form>
                 <div class="cc-card-body">
+                    @if ($changes->total() > 0 || $filtersActive)
+                        <p class="cc-changes-result-summary muted" data-test="changes-result-summary">
+                            @if ($filtersActive)
+                                {{ number_format($changes->total()) }} {{ $changes->total() === 1 ? 'change' : 'changes' }} match the current filters.
+                            @else
+                                {{ number_format($changes->total()) }} {{ $changes->total() === 1 ? 'change' : 'changes' }} recorded.
+                            @endif
+                            @if ($changes->total() > 0)
+                                Showing {{ number_format($changes->firstItem()) }} to {{ number_format($changes->lastItem()) }}.
+                            @endif
+                        </p>
+                    @endif
                     @if ($changes->isEmpty())
-                        <p class="muted cc-empty">
+                        <p class="muted cc-empty" data-test="changes-empty">
                             @if ($filtersActive)
                                 No changes match the current filters.
                             @else
@@ -160,6 +172,9 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        @if ($changes->hasPages())
+                            {{ $changes->links('vendor.pagination.cc', ['paginationLabel' => 'Changes', 'paginationTestId' => 'changes-pagination']) }}
+                        @endif
                     @endif
                 </div>
             </section>

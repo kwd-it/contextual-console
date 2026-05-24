@@ -8,13 +8,14 @@ use App\Core\Models\DatasetSnapshot;
 use App\Core\Models\MonitoredSource;
 use App\Support\PlotSnapshotDisplayLookup;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class ChangesController extends Controller
 {
-    private const int CHANGE_LIMIT = 100;
+    private const int CHANGES_PER_PAGE = 100;
 
     public function index(Request $request): View
     {
@@ -32,7 +33,33 @@ class ChangesController extends Controller
 
         $filters = $this->resolvedChangeFilters($request, $fieldOptions);
 
-        $changes = ChangeLog::query()
+        $changes = $this->filteredChangesQuery($filters)
+            ->orderByDesc('changed_at')
+            ->orderByDesc('id')
+            ->paginate(self::CHANGES_PER_PAGE)
+            ->withQueryString();
+
+        $plotDisplayLookupByRunId = $this->plotDisplayLookupsForRuns(
+            $changes->getCollection()->pluck('dataset_comparison_run_id')->unique()->filter()->values(),
+        );
+
+        return view('changes.index', [
+            'changes' => $changes,
+            'plotDisplayLookupByRunId' => $plotDisplayLookupByRunId,
+            'emptyPlotLookup' => PlotSnapshotDisplayLookup::empty(),
+            'sources' => $sources,
+            'fieldOptions' => $fieldOptions,
+            'filters' => $filters,
+            'filtersActive' => $this->changeFiltersActive($filters),
+        ]);
+    }
+
+    /**
+     * @param  array{source_id: int|null, field: string|null, date_from: Carbon|null, date_to: Carbon|null, date_from_input: string|null, date_to_input: string|null}  $filters
+     */
+    private function filteredChangesQuery(array $filters): Builder
+    {
+        return ChangeLog::query()
             ->with(['datasetComparisonRun.source'])
             ->when($filters['source_id'] !== null, function ($q) use ($filters): void {
                 $q->whereHas('datasetComparisonRun', function ($q2) use ($filters): void {
@@ -41,26 +68,7 @@ class ChangesController extends Controller
             })
             ->when($filters['field'] !== null, fn ($q) => $q->where('field', $filters['field']))
             ->when($filters['date_from'] !== null, fn ($q) => $q->where('changed_at', '>=', $filters['date_from']))
-            ->when($filters['date_to'] !== null, fn ($q) => $q->where('changed_at', '<=', $filters['date_to']))
-            ->orderByDesc('changed_at')
-            ->orderByDesc('id')
-            ->limit(self::CHANGE_LIMIT)
-            ->get();
-
-        $plotDisplayLookupByRunId = $this->plotDisplayLookupsForRuns(
-            $changes->pluck('dataset_comparison_run_id')->unique()->filter()->values(),
-        );
-
-        return view('changes.index', [
-            'changes' => $changes,
-            'plotDisplayLookupByRunId' => $plotDisplayLookupByRunId,
-            'emptyPlotLookup' => PlotSnapshotDisplayLookup::empty(),
-            'changeLimit' => self::CHANGE_LIMIT,
-            'sources' => $sources,
-            'fieldOptions' => $fieldOptions,
-            'filters' => $filters,
-            'filtersActive' => $this->changeFiltersActive($filters),
-        ]);
+            ->when($filters['date_to'] !== null, fn ($q) => $q->where('changed_at', '<=', $filters['date_to']));
     }
 
     /**

@@ -521,3 +521,236 @@ it('redirects unauthenticated users from filtered /changes to /login', function 
     $this->get(route('changes.index', ['source' => $source->id]))
         ->assertRedirect(route('login'));
 });
+
+it('shows change count summary with visible range on the first page', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-count-summary',
+        'name' => 'Changes Count Summary Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    for ($i = 0; $i < 101; $i++) {
+        $change = ChangeLog::create([
+            'entity_type' => 'plot',
+            'entity_id' => $i,
+            'dataset_comparison_run_id' => $run->id,
+            'field' => 'price',
+            'old_value' => 'CHANGES_COUNT_SUMMARY_'.$i,
+            'new_value' => (string) $i,
+            'changed_at' => now()->subMinutes($i),
+        ]);
+        $change->forceFill([
+            'changed_at' => now()->subMinutes($i),
+        ])->save();
+    }
+
+    $this->actingAs($user)
+        ->get(route('changes.index', ['source' => $source->id]))
+        ->assertOk()
+        ->assertSee('data-test="changes-result-summary"', false)
+        ->assertSeeText('101 changes match the current filters.')
+        ->assertSeeText('Showing 1 to 100.')
+        ->assertSee('data-test="changes-pagination"', false)
+        ->assertSee('aria-current="page">1<', false)
+        ->assertSeeText('CHANGES_COUNT_SUMMARY_0')
+        ->assertSeeText('CHANGES_COUNT_SUMMARY_99')
+        ->assertDontSeeText('CHANGES_COUNT_SUMMARY_100');
+});
+
+it('paginates changes beyond the first page while preserving newest-first order', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-pagination',
+        'name' => 'Changes Pagination Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    for ($i = 0; $i < 101; $i++) {
+        $change = ChangeLog::create([
+            'entity_type' => 'plot',
+            'entity_id' => $i,
+            'dataset_comparison_run_id' => $run->id,
+            'field' => 'price',
+            'old_value' => 'CHANGES_PAGINATION_'.$i,
+            'new_value' => (string) $i,
+            'changed_at' => now()->subMinutes($i),
+        ]);
+        $change->forceFill([
+            'changed_at' => now()->subMinutes($i),
+        ])->save();
+    }
+
+    $this->actingAs($user)
+        ->get(route('changes.index', [
+            'source' => $source->id,
+            'page' => 2,
+        ]))
+        ->assertOk()
+        ->assertSeeText('Showing 101 to 101.')
+        ->assertSeeText('CHANGES_PAGINATION_100')
+        ->assertDontSeeText('CHANGES_PAGINATION_0')
+        ->assertSee('data-test="changes-pagination"', false)
+        ->assertSee('aria-current="page">2<', false)
+        ->assertSee('cc-pagination__link--active', false);
+});
+
+it('shows numbered pagination links when there are multiple pages', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-numbered-pagination',
+        'name' => 'Changes Numbered Pagination Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    for ($i = 0; $i < 101; $i++) {
+        $change = ChangeLog::create([
+            'entity_type' => 'plot',
+            'entity_id' => $i,
+            'dataset_comparison_run_id' => $run->id,
+            'field' => 'price',
+            'old_value' => 'CHANGES_NUMBERED_PAGINATION_'.$i,
+            'new_value' => (string) $i,
+            'changed_at' => now()->subMinutes($i),
+        ]);
+        $change->forceFill([
+            'changed_at' => now()->subMinutes($i),
+        ])->save();
+    }
+
+    $html = $this->actingAs($user)
+        ->get(route('changes.index', ['source' => $source->id]))
+        ->assertOk()
+        ->assertSee('data-test="changes-pagination"', false)
+        ->assertSeeText('First')
+        ->assertSeeText('Last')
+        ->getContent();
+
+    expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*page=2[^"]*">2<\/a>/');
+    expect($html)->toMatch('/aria-current="page">1<\//');
+});
+
+it('uses compact windowed numbered pagination when there are many pages', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-windowed-pagination',
+        'name' => 'Changes Windowed Pagination Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    for ($i = 0; $i < 1001; $i++) {
+        $change = ChangeLog::create([
+            'entity_type' => 'plot',
+            'entity_id' => $i,
+            'dataset_comparison_run_id' => $run->id,
+            'field' => 'price',
+            'old_value' => 'CHANGES_WINDOWED_PAGINATION_'.$i,
+            'new_value' => (string) $i,
+            'changed_at' => now()->subMinutes($i),
+        ]);
+        $change->forceFill([
+            'changed_at' => now()->subMinutes($i),
+        ])->save();
+    }
+
+    $html = $this->actingAs($user)
+        ->get(route('changes.index', [
+            'source' => $source->id,
+            'page' => 6,
+        ]))
+        ->assertOk()
+        ->assertSee('data-test="changes-pagination"', false)
+        ->assertSee('aria-current="page">6<', false)
+        ->getContent();
+
+    expect($html)->toContain('cc-pagination__ellipsis');
+    expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*page=1[^"]*">1<\/a>/');
+    expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*page=4[^"]*">4<\/a>/');
+    expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*page=8[^"]*">8<\/a>/');
+    expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*page=11[^"]*">11<\/a>/');
+    expect($html)->not->toMatch('/<a class="cc-pagination__link" href="[^"]*page=3[^"]*">3<\/a>/');
+    expect($html)->not->toMatch('/<a class="cc-pagination__link" href="[^"]*page=9[^"]*">9<\/a>/');
+    expect(substr_count($html, 'class="cc-pagination__ellipsis muted"'))->toBe(2);
+    expect(preg_match_all('/class="cc-pagination__link" href="[^"]*page=\d+[^"]*">\d+<\/a>/', $html))->toBe(6);
+});
+
+it('preserves change filters in pagination links', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-pagination-filters',
+        'name' => 'Changes Pagination Filters Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    for ($i = 0; $i < 101; $i++) {
+        $change = ChangeLog::create([
+            'entity_type' => 'plot',
+            'entity_id' => $i,
+            'dataset_comparison_run_id' => $run->id,
+            'field' => 'price',
+            'old_value' => 'CHANGES_PAGINATION_FILTERS_'.$i,
+            'new_value' => (string) $i,
+            'changed_at' => now()->subMinutes($i),
+        ]);
+        $change->forceFill([
+            'changed_at' => now()->subMinutes($i),
+        ])->save();
+    }
+
+    $html = $this->actingAs($user)
+        ->get(route('changes.index', [
+            'source' => $source->id,
+            'field' => 'price',
+            'date_from' => '2026-01-01',
+            'date_to' => '2026-12-31',
+        ]))
+        ->assertOk()
+        ->getContent();
+
+    expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*source='.$source->id.'[^"]*field=price[^"]*date_from=2026-01-01[^"]*date_to=2026-12-31[^"]*page=2[^"]*">2<\/a>/');
+});
