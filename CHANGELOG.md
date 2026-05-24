@@ -5,6 +5,12 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Issue review status workflow** on the cross-source **Issues** page: internal users can mark dataset issues as `open`, `acknowledged`, `ignored`, or `resolved`, filter by review status, and update status from a simple server-rendered form. Newly detected issues default to `open`; issue detection, severity, and `issue_type` behaviour are unchanged. Repeated detections still create separate issue rows (no deduplication or auto-resolve).
+
 ## [0.8.1] - 2026-05-17
 
 Dashboard and UI refinement: clearer overview sections, development drilldowns, and shared styling tokens. Presentation and navigation only; ingest and detection behaviour unchanged.

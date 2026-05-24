@@ -432,6 +432,250 @@ it('retains selected issue filters in the filter form and shows a clear link', f
     expect($html)->toContain('name="date_to" value="2026-05-31"');
 });
 
+it('shows each issue review status on the issues page', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-show-status',
+        'name' => 'Issues Show Status Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_show_status',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_ACKNOWLEDGED,
+        'message' => 'ISSUES_SHOW_STATUS_MARKER',
+    ]);
+
+    $html = $this->actingAs($user)
+        ->get('/issues')
+        ->assertOk()
+        ->assertSeeText('ISSUES_SHOW_STATUS_MARKER')
+        ->getContent();
+
+    expect($html)->toMatch('/<option value="acknowledged"[^>]*\bselected\b/');
+});
+
+it('filters issues by review status via GET query', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-filter-status',
+        'name' => 'Issues Filter Status Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_status',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_OPEN,
+        'message' => 'ISSUES_FILTER_STATUS_OPEN',
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_status',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_RESOLVED,
+        'message' => 'ISSUES_FILTER_STATUS_RESOLVED',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('issues.index', ['issue_status' => DatasetIssue::STATUS_OPEN]))
+        ->assertOk()
+        ->assertSeeText('ISSUES_FILTER_STATUS_OPEN')
+        ->assertDontSeeText('ISSUES_FILTER_STATUS_RESOLVED');
+});
+
+it('allows authenticated users to update issue review status', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-update-status',
+        'name' => 'Issues Update Status Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    $issue = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_update_status',
+        'severity' => 'warning',
+        'status' => DatasetIssue::STATUS_OPEN,
+        'message' => 'ISSUES_UPDATE_STATUS_MARKER',
+    ]);
+
+    $this->actingAs($user)
+        ->patch(route('issues.update-status', $issue), [
+            'status' => DatasetIssue::STATUS_IGNORED,
+        ])
+        ->assertRedirect(route('issues.index'))
+        ->assertSessionHas('status', 'Issue status updated.');
+
+    expect($issue->fresh()->status)->toBe(DatasetIssue::STATUS_IGNORED);
+});
+
+it('rejects invalid issue review status updates', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-invalid-status',
+        'name' => 'Issues Invalid Status Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    $issue = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_invalid_status',
+        'severity' => 'info',
+        'message' => 'ISSUES_INVALID_STATUS_MARKER',
+    ]);
+
+    $this->actingAs($user)
+        ->patch(route('issues.update-status', $issue), [
+            'status' => 'not-a-real-status',
+        ])
+        ->assertSessionHasErrors('status');
+
+    expect($issue->fresh()->status)->toBe(DatasetIssue::STATUS_OPEN);
+});
+
+it('redirects unauthenticated users from issue status updates to login', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-status-auth',
+        'name' => 'Issues Status Auth Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    $issue = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_status_auth',
+        'severity' => 'info',
+        'message' => 'ISSUES_STATUS_AUTH_MARKER',
+    ]);
+
+    $this->patch(route('issues.update-status', $issue), [
+        'status' => DatasetIssue::STATUS_RESOLVED,
+    ])->assertRedirect(route('login'));
+});
+
+it('retains review status filter in the filter form and preserves filters after status update', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-status-retain',
+        'name' => 'Issues Status Retain Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    $issue = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_status_retain',
+        'severity' => 'warning',
+        'status' => DatasetIssue::STATUS_OPEN,
+        'message' => 'ISSUES_STATUS_RETAIN_MARKER',
+    ]);
+
+    $html = $this->actingAs($user)
+        ->get(route('issues.index', [
+            'source' => $source->id,
+            'issue_status' => DatasetIssue::STATUS_OPEN,
+            'severity' => 'warning',
+            'issue_type' => 'issues_status_retain',
+            'date_from' => '2026-05-01',
+            'date_to' => '2026-05-31',
+        ]))
+        ->assertOk()
+        ->getContent();
+
+    expect($html)->toMatch('/<option value="open"[^>]*\bselected\b/');
+    expect($html)->toContain('name="issue_status"');
+    expect($html)->toContain('name="date_from" value="2026-05-01"');
+
+    $this->actingAs($user)
+        ->patch(route('issues.update-status', $issue), [
+            'status' => DatasetIssue::STATUS_ACKNOWLEDGED,
+            'source' => $source->id,
+            'issue_status' => DatasetIssue::STATUS_OPEN,
+            'severity' => 'warning',
+            'issue_type' => 'issues_status_retain',
+            'date_from' => '2026-05-01',
+            'date_to' => '2026-05-31',
+        ])
+        ->assertRedirect(route('issues.index', [
+            'source' => $source->id,
+            'issue_status' => DatasetIssue::STATUS_OPEN,
+            'severity' => 'warning',
+            'issue_type' => 'issues_status_retain',
+            'date_from' => '2026-05-01',
+            'date_to' => '2026-05-31',
+        ]));
+});
+
 it('redirects unauthenticated users from filtered /issues to /login', function () {
     $source = MonitoredSource::create([
         'key' => 'hb:issues-filter-auth',

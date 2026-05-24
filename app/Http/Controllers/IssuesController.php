@@ -8,8 +8,10 @@ use App\Core\Models\DatasetSnapshot;
 use App\Core\Models\MonitoredSource;
 use App\Support\PlotSnapshotDisplayLookup;
 use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class IssuesController extends Controller
@@ -43,6 +45,7 @@ class IssuesController extends Controller
         $issues = DatasetIssue::query()
             ->with(['monitoredSource', 'datasetComparisonRun'])
             ->when($filters['source_id'] !== null, fn ($q) => $q->where('monitored_source_id', $filters['source_id']))
+            ->when($filters['issue_status'] !== null, fn ($q) => $q->where('status', $filters['issue_status']))
             ->when($filters['severity'] !== null, fn ($q) => $q->where('severity', $filters['severity']))
             ->when($filters['issue_type'] !== null, fn ($q) => $q->where('issue_type', $filters['issue_type']))
             ->when($filters['date_from'] !== null, fn ($q) => $q->where('created_at', '>=', $filters['date_from']))
@@ -64,15 +67,69 @@ class IssuesController extends Controller
             'sources' => $sources,
             'severityOptions' => $severityOptions,
             'issueTypeOptions' => $issueTypeOptions,
+            'issueStatusOptions' => DatasetIssue::STATUSES,
             'filters' => $filters,
             'filtersActive' => $this->issueFiltersActive($filters),
         ]);
     }
 
+    public function updateStatus(Request $request, DatasetIssue $issue): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'string', Rule::in(DatasetIssue::STATUSES)],
+        ]);
+
+        $issue->update(['status' => $validated['status']]);
+
+        return redirect()
+            ->route('issues.index', $this->issueIndexQueryFromRequest($request))
+            ->with('status', 'Issue status updated.');
+    }
+
+    /**
+     * @return array<string, int|string>
+     */
+    private function issueIndexQueryFromRequest(Request $request): array
+    {
+        $query = [];
+
+        $rawSource = $request->input('source');
+        if (is_numeric($rawSource)) {
+            $id = (int) $rawSource;
+            if ($id > 0) {
+                $query['source'] = $id;
+            }
+        }
+
+        $rawIssueStatus = $request->input('issue_status');
+        if (is_string($rawIssueStatus) && in_array($rawIssueStatus, DatasetIssue::STATUSES, true)) {
+            $query['issue_status'] = $rawIssueStatus;
+        }
+
+        $rawSeverity = $request->input('severity');
+        if (is_string($rawSeverity) && $rawSeverity !== '') {
+            $query['severity'] = $rawSeverity;
+        }
+
+        $rawIssueType = $request->input('issue_type');
+        if (is_string($rawIssueType) && $rawIssueType !== '') {
+            $query['issue_type'] = $rawIssueType;
+        }
+
+        foreach (['date_from', 'date_to'] as $key) {
+            $value = $request->input($key);
+            if (is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+                $query[$key] = $value;
+            }
+        }
+
+        return $query;
+    }
+
     /**
      * @param  list<string>  $severityOptions
      * @param  list<string>  $issueTypeOptions
-     * @return array{source_id: int|null, severity: string|null, issue_type: string|null, date_from: Carbon|null, date_to: Carbon|null, date_from_input: string|null, date_to_input: string|null}
+     * @return array{source_id: int|null, issue_status: string|null, severity: string|null, issue_type: string|null, date_from: Carbon|null, date_to: Carbon|null, date_from_input: string|null, date_to_input: string|null}
      */
     private function resolvedIssueFilters(Request $request, array $severityOptions, array $issueTypeOptions): array
     {
@@ -83,6 +140,12 @@ class IssuesController extends Controller
             if ($id > 0 && MonitoredSource::query()->whereKey($id)->exists()) {
                 $sourceId = $id;
             }
+        }
+
+        $issueStatus = null;
+        $rawIssueStatus = $request->query('issue_status');
+        if (is_string($rawIssueStatus) && in_array($rawIssueStatus, DatasetIssue::STATUSES, true)) {
+            $issueStatus = $rawIssueStatus;
         }
 
         $severity = null;
@@ -102,6 +165,7 @@ class IssuesController extends Controller
 
         return [
             'source_id' => $sourceId,
+            'issue_status' => $issueStatus,
             'severity' => $severity,
             'issue_type' => $issueType,
             'date_from' => $dateFrom,
@@ -130,11 +194,12 @@ class IssuesController extends Controller
     }
 
     /**
-     * @param  array{source_id: int|null, severity: string|null, issue_type: string|null, date_from: Carbon|null, date_to: Carbon|null, date_from_input: string|null, date_to_input: string|null}  $filters
+     * @param  array{source_id: int|null, issue_status: string|null, severity: string|null, issue_type: string|null, date_from: Carbon|null, date_to: Carbon|null, date_from_input: string|null, date_to_input: string|null}  $filters
      */
     private function issueFiltersActive(array $filters): bool
     {
         return $filters['source_id'] !== null
+            || $filters['issue_status'] !== null
             || $filters['severity'] !== null
             || $filters['issue_type'] !== null
             || $filters['date_from'] !== null

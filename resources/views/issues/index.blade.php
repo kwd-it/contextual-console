@@ -18,8 +18,11 @@
             <section class="cc-card" aria-labelledby="hdr-all-issues">
                 <div class="cc-card-header">
                     <h2 class="cc-card-title" id="hdr-all-issues">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Issue list</span></h2>
-                    <p class="cc-card-desc">Validation and ingest messages recorded when comparison runs finish.</p>
+                    <p class="cc-card-desc">Validation and ingest messages recorded when comparison runs finish. Mark issues as acknowledged, ignored, or resolved as you review them; newly detected issues start as open.</p>
                 </div>
+                @if (session('status'))
+                    <p class="cc-flash" role="status">{{ session('status') }}</p>
+                @endif
                 <form class="cc-filter-form" method="get" action="{{ route('issues.index') }}" aria-label="Filter issues">
                     <div class="cc-filter-form__fields">
                         <label>
@@ -28,6 +31,15 @@
                                 <option value="">All sources</option>
                                 @foreach ($sources as $s)
                                     <option value="{{ $s->id }}" @selected($filters['source_id'] === $s->id)>{{ $s->name }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label>
+                            Review status
+                            <select name="issue_status">
+                                <option value="">All statuses</option>
+                                @foreach ($issueStatusOptions as $opt)
+                                    <option value="{{ $opt }}" @selected($filters['issue_status'] === $opt)>{{ $opt }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -76,6 +88,7 @@
                         <table class="cc-table">
                             <thead>
                                 <tr>
+                                    <th>Status</th>
                                     <th>Severity</th>
                                     <th>Issue type</th>
                                     <th>Source</th>
@@ -112,6 +125,39 @@
                                         $recordedAt = $issue->created_at?->toDateTimeString() ?? '-';
                                     @endphp
                                     <tr>
+                                        <td>
+                                            <form class="cc-issue-status-form" method="post" action="{{ route('issues.update-status', $issue) }}">
+                                                @csrf
+                                                @method('PATCH')
+                                                @if ($filters['source_id'] !== null)
+                                                    <input type="hidden" name="source" value="{{ $filters['source_id'] }}">
+                                                @endif
+                                                @if ($filters['issue_status'] !== null)
+                                                    <input type="hidden" name="issue_status" value="{{ $filters['issue_status'] }}">
+                                                @endif
+                                                @if ($filters['severity'] !== null)
+                                                    <input type="hidden" name="severity" value="{{ $filters['severity'] }}">
+                                                @endif
+                                                @if ($filters['issue_type'] !== null)
+                                                    <input type="hidden" name="issue_type" value="{{ $filters['issue_type'] }}">
+                                                @endif
+                                                @if ($filters['date_from_input'] !== null)
+                                                    <input type="hidden" name="date_from" value="{{ $filters['date_from_input'] }}">
+                                                @endif
+                                                @if ($filters['date_to_input'] !== null)
+                                                    <input type="hidden" name="date_to" value="{{ $filters['date_to_input'] }}">
+                                                @endif
+                                                <label class="cc-issue-status-form__label">
+                                                    <span class="visually-hidden">Review status for issue {{ $issue->id }}</span>
+                                                    <select name="status" aria-label="Review status">
+                                                        @foreach ($issueStatusOptions as $opt)
+                                                            <option value="{{ $opt }}" @selected($issue->status === $opt)>{{ $opt }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </label>
+                                                <button type="submit">Save</button>
+                                            </form>
+                                        </td>
                                         <td class="mono">
                                             @include('sources._dashboard-severity-badge', ['severity' => $issue->severity, 'label' => $issue->severity])
                                         </td>

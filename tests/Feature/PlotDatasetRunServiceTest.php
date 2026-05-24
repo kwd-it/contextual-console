@@ -60,6 +60,7 @@ it('persists dataset issues for a baseline run', function () {
     expect($issues->every(fn ($issue) => $issue->monitored_source_id === $source->id))->toBeTrue();
     expect($issues->every(fn ($issue) => $issue->dataset_snapshot_id === $snapshot->id))->toBeTrue();
     expect($issues->every(fn ($issue) => $issue->dataset_comparison_run_id === $run->id))->toBeTrue();
+    expect($issues->every(fn ($issue) => $issue->status === DatasetIssue::STATUS_OPEN))->toBeTrue();
 
     expect($issues->where('issue_type', 'invalid_record')->count())->toBe(1);
     expect($issues->where('severity', 'error')->count())->toBe(2); // invalid_record + duplicate_value

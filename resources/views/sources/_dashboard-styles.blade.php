@@ -748,6 +748,65 @@
         font-size: 0.8125rem;
         font-weight: 500;
     }
+    .cc-flash {
+        margin: 0;
+        padding: 12px 18px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--cc-text);
+        background: var(--cc-surface-subtle);
+        border-bottom: 1px solid var(--cc-border);
+    }
+    .cc-issue-status-form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        min-width: 9rem;
+    }
+    .cc-issue-status-form__label {
+        margin: 0;
+        font-size: inherit;
+        font-weight: inherit;
+        letter-spacing: normal;
+        text-transform: none;
+        color: inherit;
+    }
+    .cc-issue-status-form select {
+        min-width: 7.5rem;
+        padding: 5px 8px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--cc-text);
+        background: var(--cc-surface);
+        border: 1px solid var(--cc-border-strong);
+        border-radius: var(--cc-radius-sm);
+    }
+    .cc-issue-status-form button {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--cc-on-accent);
+        background: var(--cc-accent);
+        border: 1px solid var(--cc-accent);
+        border-radius: var(--cc-radius-sm);
+        cursor: pointer;
+    }
+    .cc-issue-status-form button:hover {
+        background: var(--cc-link-hover);
+        border-color: var(--cc-link-hover);
+    }
+    .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
 
     .cc-stat-grid {
         display: grid;

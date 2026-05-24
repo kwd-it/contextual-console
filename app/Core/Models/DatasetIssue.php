@@ -7,6 +7,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DatasetIssue extends Model
 {
+    public const STATUS_OPEN = 'open';
+
+    public const STATUS_ACKNOWLEDGED = 'acknowledged';
+
+    public const STATUS_IGNORED = 'ignored';
+
+    public const STATUS_RESOLVED = 'resolved';
+
+    /** @var list<string> */
+    public const STATUSES = [
+        self::STATUS_OPEN,
+        self::STATUS_ACKNOWLEDGED,
+        self::STATUS_IGNORED,
+        self::STATUS_RESOLVED,
+    ];
+
     protected $fillable = [
         'monitored_source_id',
         'dataset_snapshot_id',
@@ -16,8 +32,13 @@ class DatasetIssue extends Model
         'field',
         'issue_type',
         'severity',
+        'status',
         'message',
         'context',
+    ];
+
+    protected $attributes = [
+        'status' => self::STATUS_OPEN,
     ];
 
     protected $casts = [

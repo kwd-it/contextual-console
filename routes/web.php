@@ -31,6 +31,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/issues', [IssuesController::class, 'index'])
         ->name('issues.index');
 
+    Route::patch('/issues/{issue}', [IssuesController::class, 'updateStatus'])
+        ->name('issues.update-status');
+
     Route::get('/sources', [SourceStatusController::class, 'index'])
         ->name('sources.index');
 
