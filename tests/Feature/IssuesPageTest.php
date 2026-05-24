@@ -520,6 +520,153 @@ it('shows each issue review status on the issues page', function () {
     expect($html)->toMatch('/<option value="acknowledged"[^>]*\bselected\b/');
 });
 
+it('includes active in the review status filter dropdown with correct selection', function () {
+    $user = User::factory()->create();
+
+    $html = $this->actingAs($user)
+        ->get(route('issues.index', ['issue_status' => DatasetIssue::FILTER_ACTIVE]))
+        ->assertOk()
+        ->getContent();
+
+    expect($html)->toMatch('/<option value="active"[^>]*>Active<\/option>/');
+    expect($html)->toMatch('/<option value="active"[^>]*\bselected\b/');
+    expect($html)->toMatch('/<option value="open"[^>]*>Open<\/option>/');
+    expect($html)->toMatch('/<option value="resolved"[^>]*>Resolved<\/option>/');
+});
+
+it('filters issues by active review status via GET query', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-filter-active',
+        'name' => 'Issues Filter Active Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_active',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_OPEN,
+        'message' => 'ISSUES_FILTER_ACTIVE_OPEN',
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_active',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_ACKNOWLEDGED,
+        'message' => 'ISSUES_FILTER_ACTIVE_ACK',
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_active',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_IGNORED,
+        'message' => 'ISSUES_FILTER_ACTIVE_IGNORED',
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_filter_active',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_RESOLVED,
+        'message' => 'ISSUES_FILTER_ACTIVE_RESOLVED',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('issues.index', ['issue_status' => DatasetIssue::FILTER_ACTIVE]))
+        ->assertOk()
+        ->assertSeeText('ISSUES_FILTER_ACTIVE_OPEN')
+        ->assertSeeText('ISSUES_FILTER_ACTIVE_ACK')
+        ->assertDontSeeText('ISSUES_FILTER_ACTIVE_IGNORED')
+        ->assertDontSeeText('ISSUES_FILTER_ACTIVE_RESOLVED');
+});
+
+it('shows a specific empty state when the active review status filter has no matches', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-empty-active',
+        'name' => 'Issues Empty Active Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_empty_active',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_RESOLVED,
+        'message' => 'ISSUES_EMPTY_ACTIVE_RESOLVED_ONLY',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('issues.index', ['issue_status' => DatasetIssue::FILTER_ACTIVE]))
+        ->assertOk()
+        ->assertSeeText('No active issues match the current filters.')
+        ->assertDontSeeText('ISSUES_EMPTY_ACTIVE_RESOLVED_ONLY');
+});
+
+it('ignores invalid review status filter query values', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-invalid-status',
+        'name' => 'Issues Invalid Status Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_invalid_status',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_OPEN,
+        'message' => 'ISSUES_INVALID_STATUS_SHOWN',
+    ]);
+
+    $html = $this->actingAs($user)
+        ->get(route('issues.index', ['issue_status' => 'not-a-real-status']))
+        ->assertOk()
+        ->assertSeeText('ISSUES_INVALID_STATUS_SHOWN')
+        ->getContent();
+
+    expect($html)->not->toMatch('/<option value="not-a-real-status"[^>]*\bselected\b/');
+});
+
 it('filters issues by review status via GET query', function () {
     $user = User::factory()->create();
     $source = MonitoredSource::create([
@@ -726,6 +873,215 @@ it('retains review status filter in the filter form and preserves filters after 
             'date_from' => '2026-05-01',
             'date_to' => '2026-05-31',
         ]));
+});
+
+it('shows the bulk update form only when filters are active', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get('/issues')
+        ->assertOk()
+        ->assertDontSee('data-test="issues-bulk-form"', false);
+
+    $this->actingAs($user)
+        ->get(route('issues.index', ['issue_status' => DatasetIssue::FILTER_ACTIVE]))
+        ->assertOk()
+        ->assertSee('data-test="issues-bulk-form"', false)
+        ->assertSeeText('Bulk review')
+        ->assertSeeText('not only the');
+});
+
+it('shows the filtered issue count and newest limit wording on the issues page', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-count-summary',
+        'name' => 'Issues Count Summary Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    for ($i = 0; $i < 101; $i++) {
+        DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_snapshot_id' => null,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'issues_count_summary',
+            'severity' => 'info',
+            'status' => DatasetIssue::STATUS_OPEN,
+            'message' => 'ISSUES_COUNT_SUMMARY_'.$i,
+            'created_at' => now()->subMinutes($i),
+        ]);
+    }
+
+    $this->actingAs($user)
+        ->get(route('issues.index', ['issue_status' => DatasetIssue::STATUS_OPEN]))
+        ->assertOk()
+        ->assertSee('data-test="issues-result-summary"', false)
+        ->assertSeeText('101 issues match the current filters.')
+        ->assertSeeText('Showing newest 100.');
+});
+
+it('requires an explicit bulk target status', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('issues.bulk-update-status'), [
+            'issue_status' => DatasetIssue::STATUS_OPEN,
+        ])
+        ->assertSessionHasErrors('status');
+
+    $this->actingAs($user)
+        ->post(route('issues.bulk-update-status'), [
+            'status' => '',
+            'issue_status' => DatasetIssue::STATUS_OPEN,
+        ])
+        ->assertSessionHasErrors('status');
+});
+
+it('allows authenticated users to bulk update filtered issues', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-bulk-update',
+        'name' => 'Issues Bulk Update Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    $openOne = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_bulk',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_OPEN,
+        'message' => 'ISSUES_BULK_OPEN_ONE',
+    ]);
+    $openTwo = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_bulk',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_OPEN,
+        'message' => 'ISSUES_BULK_OPEN_TWO',
+    ]);
+    $resolved = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_bulk',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_RESOLVED,
+        'message' => 'ISSUES_BULK_RESOLVED',
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('issues.bulk-update-status'), [
+            'status' => DatasetIssue::STATUS_IGNORED,
+            'issue_status' => DatasetIssue::STATUS_OPEN,
+        ])
+        ->assertRedirect(route('issues.index', ['issue_status' => DatasetIssue::STATUS_OPEN]))
+        ->assertSessionHas('status', 'Updated 2 issues matching the current filters.');
+
+    expect($openOne->fresh()->status)->toBe(DatasetIssue::STATUS_IGNORED);
+    expect($openTwo->fresh()->status)->toBe(DatasetIssue::STATUS_IGNORED);
+    expect($resolved->fresh()->status)->toBe(DatasetIssue::STATUS_RESOLVED);
+});
+
+it('rejects bulk update when no filters are active', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-bulk-no-filter',
+        'name' => 'Issues Bulk No Filter Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    $issue = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_bulk_no_filter',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_OPEN,
+        'message' => 'ISSUES_BULK_NO_FILTER',
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('issues.bulk-update-status'), [
+            'status' => DatasetIssue::STATUS_IGNORED,
+        ])
+        ->assertRedirect(route('issues.index'))
+        ->assertSessionHas('status', 'Apply at least one filter before updating issues in bulk.');
+
+    expect($issue->fresh()->status)->toBe(DatasetIssue::STATUS_OPEN);
+});
+
+it('rejects invalid bulk target statuses', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('issues.bulk-update-status'), [
+            'status' => 'not-a-status',
+            'issue_status' => DatasetIssue::STATUS_OPEN,
+        ])
+        ->assertSessionHasErrors('status');
+});
+
+it('redirects unauthenticated users from bulk issue status updates to login', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-bulk-auth',
+        'name' => 'Issues Bulk Auth Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_bulk_auth',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_OPEN,
+        'message' => 'ISSUES_BULK_AUTH',
+    ]);
+
+    $this->post(route('issues.bulk-update-status'), [
+        'status' => DatasetIssue::STATUS_IGNORED,
+        'issue_status' => DatasetIssue::STATUS_OPEN,
+    ])->assertRedirect(route('login'));
 });
 
 it('redirects unauthenticated users from filtered /issues to /login', function () {

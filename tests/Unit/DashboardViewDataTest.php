@@ -20,18 +20,19 @@ it('returns the dashboard view variable contract', function () {
         expect(array_keys($data))->toBe([
             'summaryDateFrom',
             'totalSources',
-            'sourcesWithAtLeastOneRun',
             'latestCompletedRunFinishedAt',
             'failedRunsLast7Days',
-            'issuesLast7Days',
-            'warningsLast7Days',
-            'errorsLast7Days',
+            'activeIssuesCount',
+            'activeInfosCount',
+            'activeWarningsCount',
+            'activeErrorsCount',
             'changesLast7Days',
             'recentRuns',
             'recentIssues',
             'recentChanges',
             'plotDisplayLookupByRunId',
             'emptyPlotLookup',
+            'hasInactiveIssues',
             'developmentOverviewGroups',
         ]);
         expect($data['summaryDateFrom'])->toBe('2026-05-07');
@@ -90,4 +91,46 @@ it('limits dashboard recent runs, changes, and issues to five items each', funct
     expect($data['recentRuns'])->toHaveCount(5);
     expect($data['recentIssues'])->toHaveCount(5);
     expect($data['recentChanges'])->toHaveCount(5);
+});
+
+it('excludes ignored and resolved issues from dashboard recent active issues', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:dash-viewdata-active',
+        'name' => 'Dashboard ViewData Active Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'inactive',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_IGNORED,
+        'message' => 'inactive-issue',
+        'created_at' => now(),
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'active',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_OPEN,
+        'message' => 'active-issue',
+        'created_at' => now()->subMinute(),
+    ]);
+
+    $data = app(DashboardViewData::class)->forIndex();
+
+    expect($data['recentIssues'])->toHaveCount(1);
+    expect($data['recentIssues']->first()?->message)->toBe('active-issue');
+    expect($data['hasInactiveIssues'])->toBeTrue();
 });

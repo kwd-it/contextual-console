@@ -27,14 +27,6 @@
                     </p>
                 </article>
                 <article class="cc-stat-card">
-                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'run', 'class' => 'cc-stat-icon'])<span>Sources with runs</span></p>
-                    <p class="cc-stat-card__value" data-test="dashboard-sources-with-runs">{{ $sourcesWithAtLeastOneRun }}</p>
-                    <p class="cc-stat-card__hint muted">At least one comparison run recorded</p>
-                    <p class="cc-stat-card__action">
-                        <a href="{{ route('sources.index') }}" data-test="dashboard-drill-sources-with-runs">View</a>
-                    </p>
-                </article>
-                <article class="cc-stat-card">
                     <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'check', 'class' => 'cc-stat-icon'])<span>Latest completed run</span></p>
                     <p class="cc-stat-card__value cc-stat-card__value--text" data-test="dashboard-latest-completed">
                         @if ($latestCompletedRunFinishedAt !== null)
@@ -51,19 +43,39 @@
                     <p class="cc-stat-card__hint muted">Comparison or ingest failures</p>
                 </article>
                 <article class="cc-stat-card cc-stat-card--issues-summary">
-                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'issue', 'class' => 'cc-stat-icon'])<span>Issues (7 days)</span></p>
-                    <p class="cc-stat-card__value" data-test="dashboard-issues-7d">{{ $issuesLast7Days }}</p>
+                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'issue', 'class' => 'cc-stat-icon'])<span>Active issues</span></p>
+                    <p class="cc-stat-card__value" data-test="dashboard-active-issues">{{ $activeIssuesCount }}</p>
                     <p class="cc-stat-card__hint muted cc-stat-card__breakdown">
-                        <span data-test="dashboard-warnings-7d">{{ $warningsLast7Days }} warnings</span>
-                        <span class="cc-stat-card__breakdown-sep" aria-hidden="true">·</span>
-                        <span data-test="dashboard-errors-7d">{{ $errorsLast7Days }} errors</span>
+                        <span data-test="dashboard-active-info">{{ $activeInfosCount }} info</span>
+                        <span class="cc-stat-card__breakdown-sep" aria-hidden="true">|</span>
+                        <span data-test="dashboard-active-warnings">{{ $activeWarningsCount }} warnings</span>
+                        <span class="cc-stat-card__breakdown-sep" aria-hidden="true">|</span>
+                        <span data-test="dashboard-active-errors">{{ $activeErrorsCount }} errors</span>
                     </p>
                     <p class="cc-stat-card__action cc-stat-card__action--split">
-                        <a href="{{ route('issues.index', ['date_from' => $summaryDateFrom]) }}" data-test="dashboard-drill-issues-7d">All issues</a>
-                        <span class="cc-stat-card__action-sep" aria-hidden="true">·</span>
-                        <a href="{{ route('issues.index', ['date_from' => $summaryDateFrom, 'severity' => 'warning']) }}" data-test="dashboard-drill-warnings-7d">Warnings</a>
-                        <span class="cc-stat-card__action-sep" aria-hidden="true">·</span>
-                        <a href="{{ route('issues.index', ['date_from' => $summaryDateFrom, 'severity' => 'error']) }}" data-test="dashboard-drill-errors-7d">Errors</a>
+                        @if ($activeIssuesCount > 0)
+                            <a href="{{ route('issues.index', ['issue_status' => \App\Core\Models\DatasetIssue::FILTER_ACTIVE]) }}" data-test="dashboard-drill-active-issues">Active issues</a>
+                        @else
+                            <span class="muted" data-test="dashboard-active-issues-none">No active issues</span>
+                        @endif
+                        <span class="cc-stat-card__action-sep" aria-hidden="true">|</span>
+                        @if ($activeInfosCount > 0)
+                            <a href="{{ route('issues.index', ['issue_status' => \App\Core\Models\DatasetIssue::FILTER_ACTIVE, 'severity' => 'info']) }}" data-test="dashboard-drill-active-info">Info</a>
+                        @else
+                            <span class="muted" data-test="dashboard-active-info-none">Info</span>
+                        @endif
+                        <span class="cc-stat-card__action-sep" aria-hidden="true">|</span>
+                        @if ($activeWarningsCount > 0)
+                            <a href="{{ route('issues.index', ['issue_status' => \App\Core\Models\DatasetIssue::FILTER_ACTIVE, 'severity' => 'warning']) }}" data-test="dashboard-drill-active-warnings">Warnings</a>
+                        @else
+                            <span class="muted" data-test="dashboard-active-warnings-none">Warnings</span>
+                        @endif
+                        <span class="cc-stat-card__action-sep" aria-hidden="true">|</span>
+                        @if ($activeErrorsCount > 0)
+                            <a href="{{ route('issues.index', ['issue_status' => \App\Core\Models\DatasetIssue::FILTER_ACTIVE, 'severity' => 'error']) }}" data-test="dashboard-drill-active-errors">Errors</a>
+                        @else
+                            <span class="muted" data-test="dashboard-active-errors-none">Errors</span>
+                        @endif
                     </p>
                 </article>
                 <article class="cc-stat-card">
@@ -298,17 +310,22 @@
 
             <section class="cc-card" aria-labelledby="hdr-recent-issues">
                 <div class="cc-card-header">
-                    <h2 id="hdr-recent-issues" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Recent issues</span></h2>
+                    <h2 id="hdr-recent-issues" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Recent active issues</span></h2>
                     <p class="cc-card-desc">
-                        Latest 5 validation and comparison issues (newest first).
-                        <a href="{{ route('issues.index') }}" data-test="dashboard-view-all-issues">View all issues</a>
+                        Latest 5 open or acknowledged issues (newest first). Ignored and resolved issues stay on the
+                        <a href="{{ route('issues.index') }}" data-test="dashboard-view-all-issues">Issues</a> page.
                     </p>
                 </div>
                 <div class="cc-card-body">
                     @if ($recentIssues->isEmpty())
-                        <div class="cc-empty">
-                            <p class="cc-empty-title">No issues recorded</p>
-                            <p class="muted">Issues from dataset checks and comparisons will appear here when detected.</p>
+                        <div class="cc-empty" data-test="dashboard-recent-issues-empty">
+                            @if ($hasInactiveIssues)
+                                <p class="cc-empty-title">No active issues</p>
+                                <p class="muted">Ignored and resolved issues are still available on the <a href="{{ route('issues.index') }}">Issues</a> page.</p>
+                            @else
+                                <p class="cc-empty-title">No active issues</p>
+                                <p class="muted">Open or acknowledged issues from dataset checks and comparisons will appear here when detected.</p>
+                            @endif
                         </div>
                     @else
                         <table class="cc-table cc-table--compact">

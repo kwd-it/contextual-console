@@ -28,18 +28,19 @@ final class DashboardViewData
      * @return array{
      *   summaryDateFrom: string,
      *   totalSources: int,
-     *   sourcesWithAtLeastOneRun: int,
      *   latestCompletedRunFinishedAt: ?Carbon,
      *   failedRunsLast7Days: int,
-     *   issuesLast7Days: int,
-     *   warningsLast7Days: int,
-     *   errorsLast7Days: int,
+     *   activeIssuesCount: int,
+     *   activeInfosCount: int,
+     *   activeWarningsCount: int,
+     *   activeErrorsCount: int,
      *   changesLast7Days: int,
      *   recentRuns: \Illuminate\Database\Eloquent\Collection<int, DatasetComparisonRun>,
      *   recentIssues: \Illuminate\Database\Eloquent\Collection<int, DatasetIssue>,
      *   recentChanges: \Illuminate\Database\Eloquent\Collection<int, ChangeLog>,
      *   plotDisplayLookupByRunId: array<int, PlotSnapshotDisplayLookup>,
      *   emptyPlotLookup: PlotSnapshotDisplayLookup,
+     *   hasInactiveIssues: bool,
      *   developmentOverviewGroups: list<array{
      *     source: MonitoredSource,
      *     development: string,
@@ -58,10 +59,6 @@ final class DashboardViewData
 
         $totalSources = MonitoredSource::query()->count();
 
-        $sourcesWithAtLeastOneRun = MonitoredSource::query()
-            ->whereHas('datasetComparisonRuns')
-            ->count();
-
         $latestCompletedRunFinishedAt = DatasetComparisonRun::query()
             ->where('status', 'completed')
             ->whereNotNull('finished_at')
@@ -78,19 +75,25 @@ final class DashboardViewData
             })
             ->count();
 
-        $issuesLast7Days = DatasetIssue::query()
-            ->where('created_at', '>=', $since)
+        $activeIssuesQuery = fn () => DatasetIssue::query()->active();
+
+        $activeIssuesCount = $activeIssuesQuery()->count();
+
+        $activeInfosCount = $activeIssuesQuery()
+            ->where('severity', 'info')
             ->count();
 
-        $warningsLast7Days = DatasetIssue::query()
-            ->where('created_at', '>=', $since)
+        $activeWarningsCount = $activeIssuesQuery()
             ->where('severity', 'warning')
             ->count();
 
-        $errorsLast7Days = DatasetIssue::query()
-            ->where('created_at', '>=', $since)
+        $activeErrorsCount = $activeIssuesQuery()
             ->where('severity', 'error')
             ->count();
+
+        $hasInactiveIssues = DatasetIssue::query()
+            ->whereIn('status', [DatasetIssue::STATUS_IGNORED, DatasetIssue::STATUS_RESOLVED])
+            ->exists();
 
         $changesLast7Days = ChangeLog::query()
             ->where('changed_at', '>=', $since)
@@ -103,6 +106,7 @@ final class DashboardViewData
             ->get();
 
         $recentIssues = DatasetIssue::query()
+            ->active()
             ->with(['monitoredSource', 'datasetComparisonRun'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
@@ -125,20 +129,21 @@ final class DashboardViewData
         return [
             'summaryDateFrom' => $since->toDateString(),
             'totalSources' => $totalSources,
-            'sourcesWithAtLeastOneRun' => $sourcesWithAtLeastOneRun,
             'latestCompletedRunFinishedAt' => $latestCompletedRunFinishedAt !== null
                 ? Carbon::parse($latestCompletedRunFinishedAt)
                 : null,
             'failedRunsLast7Days' => $failedRunsLast7Days,
-            'issuesLast7Days' => $issuesLast7Days,
-            'warningsLast7Days' => $warningsLast7Days,
-            'errorsLast7Days' => $errorsLast7Days,
+            'activeIssuesCount' => $activeIssuesCount,
+            'activeInfosCount' => $activeInfosCount,
+            'activeWarningsCount' => $activeWarningsCount,
+            'activeErrorsCount' => $activeErrorsCount,
             'changesLast7Days' => $changesLast7Days,
             'recentRuns' => $recentRuns,
             'recentIssues' => $recentIssues,
             'recentChanges' => $recentChanges,
             'plotDisplayLookupByRunId' => $plotDisplayLookupByRunId,
             'emptyPlotLookup' => PlotSnapshotDisplayLookup::empty(),
+            'hasInactiveIssues' => $hasInactiveIssues,
             'developmentOverviewGroups' => $developmentOverviewGroups,
         ];
     }

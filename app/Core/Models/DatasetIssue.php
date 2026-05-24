@@ -2,6 +2,7 @@
 
 namespace App\Core\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -15,6 +16,15 @@ class DatasetIssue extends Model
 
     public const STATUS_RESOLVED = 'resolved';
 
+    /** Query filter value for open and acknowledged issues (not stored on rows). */
+    public const FILTER_ACTIVE = 'active';
+
+    /** @var list<string> */
+    public const ACTIVE_STATUSES = [
+        self::STATUS_OPEN,
+        self::STATUS_ACKNOWLEDGED,
+    ];
+
     /** @var list<string> */
     public const STATUSES = [
         self::STATUS_OPEN,
@@ -22,6 +32,27 @@ class DatasetIssue extends Model
         self::STATUS_IGNORED,
         self::STATUS_RESOLVED,
     ];
+
+    /**
+     * Review status values for the issues page filter dropdown (includes virtual "active").
+     *
+     * @var list<string>
+     */
+    public const STATUS_FILTER_VALUES = [
+        self::FILTER_ACTIVE,
+        self::STATUS_OPEN,
+        self::STATUS_ACKNOWLEDGED,
+        self::STATUS_IGNORED,
+        self::STATUS_RESOLVED,
+    ];
+
+    public static function statusFilterLabel(string $value): string
+    {
+        return match ($value) {
+            self::FILTER_ACTIVE => 'Active',
+            default => ucfirst($value),
+        };
+    }
 
     protected $fillable = [
         'monitored_source_id',
@@ -44,6 +75,15 @@ class DatasetIssue extends Model
     protected $casts = [
         'context' => 'array',
     ];
+
+    /**
+     * @param  Builder<DatasetIssue>  $query
+     * @return Builder<DatasetIssue>
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->whereIn('status', self::ACTIVE_STATUSES);
+    }
 
     /**
      * @return BelongsTo<MonitoredSource, $this>

@@ -757,6 +757,75 @@
     .cc-filter-form--issues .cc-filter-form__fields label {
         min-width: 0;
     }
+    .cc-issues-bulk-panel {
+        margin: 0;
+        padding: 16px 18px;
+        background: var(--cc-surface-muted);
+        border-top: 1px solid var(--cc-border);
+        border-bottom: 1px solid var(--cc-border);
+    }
+    .cc-issues-bulk-panel__title {
+        margin: 0 0 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--cc-heading);
+    }
+    .cc-issues-bulk-panel__caution {
+        margin: 0 0 12px;
+        font-size: 0.8125rem;
+        line-height: 1.45;
+    }
+    .cc-issues-bulk-panel__caution strong {
+        color: var(--cc-text);
+        font-weight: 600;
+    }
+    .cc-issues-bulk-panel__controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 12px;
+    }
+    .cc-issues-bulk-panel__controls label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin: 0;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--cc-muted);
+    }
+    .cc-issues-bulk-panel__controls select {
+        min-width: 11rem;
+        padding: 7px 10px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--cc-text);
+        background: var(--cc-surface);
+        border: 1px solid var(--cc-border-strong);
+        border-radius: var(--cc-radius-sm);
+        text-transform: none;
+        letter-spacing: normal;
+    }
+    .cc-issues-bulk-panel__controls button {
+        padding: 7px 14px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--cc-on-accent);
+        background: var(--cc-accent);
+        border: 1px solid var(--cc-accent);
+        border-radius: var(--cc-radius-sm);
+        cursor: pointer;
+    }
+    .cc-issues-bulk-panel__controls button:hover {
+        background: var(--cc-link-hover);
+        border-color: var(--cc-link-hover);
+    }
+    .cc-issues-result-summary {
+        margin: 0 0 14px;
+        font-size: 0.8125rem;
+    }
     .cc-filter-form--issues .cc-filter-form select,
     .cc-filter-form--issues .cc-filter-form input[type="date"] {
         width: 100%;

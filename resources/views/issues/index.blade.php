@@ -38,8 +38,8 @@
                             Review status
                             <select name="issue_status">
                                 <option value="">All statuses</option>
-                                @foreach ($issueStatusOptions as $opt)
-                                    <option value="{{ $opt }}" @selected($filters['issue_status'] === $opt)>{{ $opt }}</option>
+                                @foreach ($issueStatusFilterValues as $opt)
+                                    <option value="{{ $opt }}" @selected($filters['issue_status'] === $opt)>{{ \App\Core\Models\DatasetIssue::statusFilterLabel($opt) }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -66,11 +66,74 @@
                         <a class="cc-filter-form__clear" href="{{ route('issues.index') }}">Clear filters</a>
                     </div>
                 </form>
+                @if ($filtersActive)
+                    <div class="cc-issues-bulk-panel" data-test="issues-bulk-form">
+                        <h3 class="cc-issues-bulk-panel__title">Bulk review</h3>
+                        <p class="cc-issues-bulk-panel__caution muted">
+                            This updates <strong>all {{ number_format($filteredIssuesCount) }} issues</strong> matching the current filters,
+                            not only the {{ number_format(min($filteredIssuesCount, $issueLimit)) }} rows shown below.
+                        </p>
+                        <form
+                            class="cc-issues-bulk-panel__form"
+                            method="post"
+                            action="{{ route('issues.bulk-update-status') }}"
+                            aria-label="Bulk update filtered issues"
+                        >
+                            @csrf
+                            @if ($filters['source_id'] !== null)
+                                <input type="hidden" name="source" value="{{ $filters['source_id'] }}">
+                            @endif
+                            @if ($filters['issue_status'] !== null)
+                                <input type="hidden" name="issue_status" value="{{ $filters['issue_status'] }}">
+                            @endif
+                            @if ($filters['severity'] !== null)
+                                <input type="hidden" name="severity" value="{{ $filters['severity'] }}">
+                            @endif
+                            @if ($filters['issue_type'] !== null)
+                                <input type="hidden" name="issue_type" value="{{ $filters['issue_type'] }}">
+                            @endif
+                            @if ($filters['date_from_input'] !== null)
+                                <input type="hidden" name="date_from" value="{{ $filters['date_from_input'] }}">
+                            @endif
+                            @if ($filters['date_to_input'] !== null)
+                                <input type="hidden" name="date_to" value="{{ $filters['date_to_input'] }}">
+                            @endif
+                            <div class="cc-issues-bulk-panel__controls">
+                                <label>
+                                    Set review status
+                                    <select name="status" required data-test="issues-bulk-status">
+                                        <option value="" selected disabled>Choose status...</option>
+                                        @foreach ($issueStatusOptions as $opt)
+                                            <option value="{{ $opt }}">{{ ucfirst($opt) }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                                <button type="submit" data-test="issues-bulk-submit">Apply to all matching issues</button>
+                            </div>
+                        </form>
+                    </div>
+                @endif
                 <div class="cc-card-body">
-                    @if ($issues->isEmpty())
-                        <p class="muted cc-empty">
+                    @if ($filteredIssuesCount > 0 || $filtersActive)
+                        <p class="cc-issues-result-summary muted" data-test="issues-result-summary">
                             @if ($filtersActive)
-                                No issues match the current filters.
+                                {{ number_format($filteredIssuesCount) }} {{ $filteredIssuesCount === 1 ? 'issue' : 'issues' }} match the current filters.
+                            @else
+                                {{ number_format($filteredIssuesCount) }} {{ $filteredIssuesCount === 1 ? 'issue' : 'issues' }} recorded.
+                            @endif
+                            @if ($issuesListTruncated)
+                                Showing newest {{ $issueLimit }}.
+                            @endif
+                        </p>
+                    @endif
+                    @if ($issues->isEmpty())
+                        <p class="muted cc-empty" data-test="issues-empty">
+                            @if ($filtersActive)
+                                @if ($filters['issue_status'] === \App\Core\Models\DatasetIssue::FILTER_ACTIVE)
+                                    No active issues match the current filters.
+                                @else
+                                    No issues match the current filters.
+                                @endif
                             @else
                                 No issues recorded yet.
                             @endif

@@ -29,8 +29,38 @@ it('links dashboard summary drilldowns to issues, changes, and sources using the
     Carbon::setTestNow(Carbon::parse('2026-05-14 12:00:00', 'UTC'));
     try {
         $expectedDateFrom = Carbon::now()->subDays(7)->toDateString();
+        $user = User::factory()->create();
+        $source = MonitoredSource::create([
+            'key' => 'hb:dash-drill-links',
+            'name' => 'Dashboard Drill Links Source',
+        ]);
+        $run = DatasetComparisonRun::create([
+            'source_id' => $source->id,
+            'status' => 'completed',
+            'current_snapshot_id' => null,
+            'previous_snapshot_id' => null,
+            'summary' => null,
+            'started_at' => now()->subMinute(),
+            'finished_at' => now(),
+        ]);
+        DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'dash_drill_warning',
+            'severity' => 'warning',
+            'status' => DatasetIssue::STATUS_OPEN,
+            'message' => 'DASHBOARD_DRILL_WARNING',
+        ]);
+        DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'dash_drill_error',
+            'severity' => 'error',
+            'status' => DatasetIssue::STATUS_ACKNOWLEDGED,
+            'message' => 'DASHBOARD_DRILL_ERROR',
+        ]);
 
-        $html = $this->actingAs(User::factory()->create())
+        $html = $this->actingAs($user)
             ->get('/dashboard')
             ->assertOk()
             ->getContent();
@@ -43,18 +73,20 @@ it('links dashboard summary drilldowns to issues, changes, and sources using the
         $xpath = new DOMXPath($dom);
         $href = static fn (string $dataTest): string => (string) $xpath->evaluate("string(//a[@data-test='{$dataTest}']/@href)");
 
-        expect($href('dashboard-drill-issues-7d'))->toBe(route('issues.index', ['date_from' => $expectedDateFrom]));
-        expect($href('dashboard-drill-warnings-7d'))->toBe(route('issues.index', [
-            'date_from' => $expectedDateFrom,
+        expect($href('dashboard-drill-active-issues'))->toBe(route('issues.index', [
+            'issue_status' => DatasetIssue::FILTER_ACTIVE,
+        ]));
+        expect($href('dashboard-drill-active-warnings'))->toBe(route('issues.index', [
+            'issue_status' => DatasetIssue::FILTER_ACTIVE,
             'severity' => 'warning',
         ]));
-        expect($href('dashboard-drill-errors-7d'))->toBe(route('issues.index', [
-            'date_from' => $expectedDateFrom,
+        expect($href('dashboard-drill-active-errors'))->toBe(route('issues.index', [
+            'issue_status' => DatasetIssue::FILTER_ACTIVE,
             'severity' => 'error',
         ]));
+        expect($href('dashboard-drill-active-info'))->toBe('');
         expect($href('dashboard-drill-changes-7d'))->toBe(route('changes.index', ['date_from' => $expectedDateFrom]));
         expect($href('dashboard-drill-sources-total'))->toBe(route('sources.index'));
-        expect($href('dashboard-drill-sources-with-runs'))->toBe(route('sources.index'));
     } finally {
         Carbon::setTestNow();
     }
@@ -79,17 +111,19 @@ it('shows helpful empty states when there is little or no data', function () {
         ->assertSeeText('No snapshot development data')
         ->assertSeeText('No runs yet')
         ->assertSeeText('No changes recorded')
-        ->assertSeeText('No issues recorded')
+        ->assertSeeText('No active issues')
         ->assertSeeText('Comparison runs will appear here after snapshots are ingested and compared.')
         ->assertSee('data-test="dashboard-development-overview-empty"', false)
         ->getContent();
 
     expect($html)->toMatch('/data-test="dashboard-total-sources">\s*0\s*</');
-    expect($html)->toMatch('/data-test="dashboard-sources-with-runs">\s*0\s*</');
     expect($html)->toMatch('/data-test="dashboard-failed-runs-7d">\s*0\s*</');
-    expect($html)->toMatch('/data-test="dashboard-issues-7d">\s*0\s*</');
-    expect($html)->toMatch('/data-test="dashboard-warnings-7d">\s*0 warnings\s*</');
-    expect($html)->toMatch('/data-test="dashboard-errors-7d">\s*0 errors\s*</');
+    expect($html)->toContain('data-test="dashboard-active-issues-none"');
+    expect($html)->not->toContain('data-test="dashboard-drill-active-issues"');
+    expect($html)->toMatch('/data-test="dashboard-active-issues">\s*0\s*</');
+    expect($html)->toMatch('/data-test="dashboard-active-info">\s*0 info\s*</');
+    expect($html)->toMatch('/data-test="dashboard-active-warnings">\s*0 warnings\s*</');
+    expect($html)->toMatch('/data-test="dashboard-active-errors">\s*0 errors\s*</');
     expect($html)->toMatch('/data-test="dashboard-changes-7d">\s*0\s*</');
 });
 
@@ -159,7 +193,7 @@ it('renders summary counts and recent activity with links', function () {
         ->assertOk()
         ->assertSeeText('Recent activity')
         ->assertSeeText('Recent changes')
-        ->assertSeeText('Recent issues')
+        ->assertSeeText('Recent active issues')
         ->assertSee('href="'.$latestRunHref.'"', false)
         ->assertSee('href="'.$failedHref.'"', false)
         ->assertSeeText('DASHBOARD_RECENT_ISSUE_WARNING')
@@ -167,11 +201,11 @@ it('renders summary counts and recent activity with links', function () {
         ->getContent();
 
     expect($html)->toMatch('/data-test="dashboard-total-sources">\s*2\s*</');
-    expect($html)->toMatch('/data-test="dashboard-sources-with-runs">\s*1\s*</');
     expect($html)->toMatch('/data-test="dashboard-failed-runs-7d">\s*1\s*</');
-    expect($html)->toMatch('/data-test="dashboard-issues-7d">\s*4\s*</');
-    expect($html)->toMatch('/data-test="dashboard-warnings-7d">\s*1 warnings\s*</');
-    expect($html)->toMatch('/data-test="dashboard-errors-7d">\s*1 errors\s*</');
+    expect($html)->toMatch('/data-test="dashboard-active-issues">\s*4\s*</');
+    expect($html)->toMatch('/data-test="dashboard-active-warnings">\s*1 warnings\s*</');
+    expect($html)->toMatch('/data-test="dashboard-active-errors">\s*1 errors\s*</');
+    expect($html)->toContain('data-test="dashboard-drill-active-issues"');
     expect($html)->toMatch('/data-test="dashboard-changes-7d">\s*[1-9]\d*\s*</');
 
     $issueRunHref = route('sources.runs.show', [$active, $runForIssues]);
@@ -228,13 +262,13 @@ it('links view all changes to the changes index page', function () {
     expect($html)->toContain('data-test="dashboard-view-all-changes"');
 });
 
-it('links view all issues to the issues index page', function () {
+it('links to the issues index page from recent active issues', function () {
     $issuesHref = route('issues.index');
 
     $html = $this->actingAs(User::factory()->create())
         ->get('/dashboard')
         ->assertOk()
-        ->assertSeeText('View all issues')
+        ->assertSeeText('Recent active issues')
         ->getContent();
 
     expect($html)->toContain('href="'.$issuesHref.'"');
@@ -474,6 +508,286 @@ it('uses the latest completed snapshot per source for development overview when 
     }
 
     expect($developmentNames)->toBe(['Current Development']);
+});
+
+it('shows active issue info, warning, and error severity counts on the dashboard', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dash-active-severity',
+        'name' => 'Dashboard Active Severity Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'dash_sev_info',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_OPEN,
+        'message' => 'DASHBOARD_SEV_INFO',
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'dash_sev_info_ack',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_ACKNOWLEDGED,
+        'message' => 'DASHBOARD_SEV_INFO_ACK',
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'dash_sev_warning',
+        'severity' => 'warning',
+        'status' => DatasetIssue::STATUS_OPEN,
+        'message' => 'DASHBOARD_SEV_WARNING',
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'dash_sev_error',
+        'severity' => 'error',
+        'status' => DatasetIssue::STATUS_ACKNOWLEDGED,
+        'message' => 'DASHBOARD_SEV_ERROR',
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'dash_sev_ignored_info',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_IGNORED,
+        'message' => 'DASHBOARD_SEV_IGNORED_INFO',
+    ]);
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'dash_sev_resolved_error',
+        'severity' => 'error',
+        'status' => DatasetIssue::STATUS_RESOLVED,
+        'message' => 'DASHBOARD_SEV_RESOLVED_ERROR',
+    ]);
+
+    $html = $this->actingAs($user)
+        ->get('/dashboard')
+        ->assertOk()
+        ->getContent();
+
+    expect($html)->toMatch('/data-test="dashboard-active-issues">\s*4\s*</');
+    expect($html)->toMatch('/data-test="dashboard-active-info">\s*2 info\s*</');
+    expect($html)->toMatch('/data-test="dashboard-active-warnings">\s*1 warnings\s*</');
+    expect($html)->toMatch('/data-test="dashboard-active-errors">\s*1 errors\s*</');
+    expect($html)->toContain('data-test="dashboard-drill-active-info"');
+    expect($html)->toContain('issue_status=active&amp;severity=info');
+});
+
+it('excludes ignored and resolved issues from dashboard summary counts and recent active issues', function () {
+    Carbon::setTestNow(Carbon::parse('2026-05-14 12:00:00', 'UTC'));
+    try {
+        $user = User::factory()->create();
+        $source = MonitoredSource::create([
+            'key' => 'hb:dash-active-filter',
+            'name' => 'Dashboard Active Filter Source',
+        ]);
+
+        $run = DatasetComparisonRun::create([
+            'source_id' => $source->id,
+            'status' => 'completed',
+            'current_snapshot_id' => null,
+            'previous_snapshot_id' => null,
+            'summary' => null,
+            'started_at' => now()->subMinute(),
+            'finished_at' => now(),
+        ]);
+
+        DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'dash_active_open',
+            'severity' => 'warning',
+            'status' => DatasetIssue::STATUS_OPEN,
+            'message' => 'DASHBOARD_ACTIVE_OPEN_ISSUE',
+            'created_at' => now(),
+        ]);
+        DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'dash_active_ack',
+            'severity' => 'error',
+            'status' => DatasetIssue::STATUS_ACKNOWLEDGED,
+            'message' => 'DASHBOARD_ACTIVE_ACK_ISSUE',
+            'created_at' => now(),
+        ]);
+        DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'dash_inactive_ignored',
+            'severity' => 'error',
+            'status' => DatasetIssue::STATUS_IGNORED,
+            'message' => 'DASHBOARD_INACTIVE_IGNORED_ISSUE',
+            'created_at' => now(),
+        ]);
+        DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'dash_inactive_resolved',
+            'severity' => 'warning',
+            'status' => DatasetIssue::STATUS_RESOLVED,
+            'message' => 'DASHBOARD_INACTIVE_RESOLVED_ISSUE',
+            'created_at' => now(),
+        ]);
+
+        $html = $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSeeText('DASHBOARD_ACTIVE_OPEN_ISSUE')
+            ->assertSeeText('DASHBOARD_ACTIVE_ACK_ISSUE')
+            ->assertDontSeeText('DASHBOARD_INACTIVE_IGNORED_ISSUE')
+            ->assertDontSeeText('DASHBOARD_INACTIVE_RESOLVED_ISSUE')
+            ->getContent();
+
+        expect($html)->toMatch('/data-test="dashboard-active-issues">\s*2\s*</');
+        expect($html)->toMatch('/data-test="dashboard-active-warnings">\s*1 warnings\s*</');
+        expect($html)->toMatch('/data-test="dashboard-active-errors">\s*1 errors\s*</');
+    } finally {
+        Carbon::setTestNow();
+    }
+});
+
+it('counts active issues regardless of age and links to the active issues filter', function () {
+    Carbon::setTestNow(Carbon::parse('2026-05-14 12:00:00', 'UTC'));
+    try {
+        $user = User::factory()->create();
+        $source = MonitoredSource::create([
+            'key' => 'hb:dash-old-active',
+            'name' => 'Dashboard Old Active Source',
+        ]);
+
+        $run = DatasetComparisonRun::create([
+            'source_id' => $source->id,
+            'status' => 'completed',
+            'current_snapshot_id' => null,
+            'previous_snapshot_id' => null,
+            'summary' => null,
+            'started_at' => now()->subDays(30),
+            'finished_at' => now()->subDays(30),
+        ]);
+
+        $oldOpen = DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'dash_old_active',
+            'severity' => 'warning',
+            'status' => DatasetIssue::STATUS_OPEN,
+            'message' => 'DASHBOARD_OLD_ACTIVE_OPEN',
+        ]);
+        $oldOpen->forceFill(['created_at' => now()->subDays(30)])->save();
+
+        DatasetIssue::create([
+            'monitored_source_id' => $source->id,
+            'dataset_comparison_run_id' => $run->id,
+            'issue_type' => 'dash_old_inactive',
+            'severity' => 'error',
+            'status' => DatasetIssue::STATUS_RESOLVED,
+            'message' => 'DASHBOARD_OLD_RESOLVED',
+        ]);
+
+        $html = $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSeeText('Active issues')
+            ->assertDontSeeText('Active issues (7 days)')
+            ->getContent();
+
+        expect($html)->toMatch('/data-test="dashboard-active-issues">\s*1\s*</');
+        expect($html)->toMatch('/data-test="dashboard-active-warnings">\s*1 warnings\s*</');
+        expect($html)->toContain('href="'.route('issues.index', ['issue_status' => DatasetIssue::FILTER_ACTIVE]).'"');
+        expect($html)->toContain('data-test="dashboard-drill-active-issues"');
+    } finally {
+        Carbon::setTestNow();
+    }
+});
+
+it('does not link active issue drilldowns when there are no active issues', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dash-zero-active-drill',
+        'name' => 'Dashboard Zero Active Drill Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'dash_zero_active',
+        'severity' => 'warning',
+        'status' => DatasetIssue::STATUS_IGNORED,
+        'message' => 'DASHBOARD_ONLY_IGNORED',
+    ]);
+
+    $html = $this->actingAs($user)
+        ->get('/dashboard')
+        ->assertOk()
+        ->getContent();
+
+    expect($html)->toMatch('/data-test="dashboard-active-issues">\s*0\s*</');
+    expect($html)->toContain('data-test="dashboard-active-issues-none"');
+    expect($html)->not->toContain('data-test="dashboard-drill-active-issues"');
+    expect($html)->toContain('data-test="dashboard-active-info-none"');
+    expect($html)->toContain('data-test="dashboard-active-warnings-none"');
+    expect($html)->not->toContain('data-test="dashboard-drill-active-warnings"');
+});
+
+it('shows an empty state for recent active issues when only ignored or resolved issues exist', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dash-inactive-only',
+        'name' => 'Dashboard Inactive Only Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'dash_inactive_only',
+        'severity' => 'info',
+        'status' => DatasetIssue::STATUS_RESOLVED,
+        'message' => 'DASHBOARD_INACTIVE_ONLY_ISSUE',
+    ]);
+
+    $this->actingAs($user)
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertSee('data-test="dashboard-recent-issues-empty"', false)
+        ->assertSeeText('No active issues')
+        ->assertSeeText('Ignored and resolved issues are still available')
+        ->assertDontSeeText('DASHBOARD_INACTIVE_ONLY_ISSUE');
 });
 
 it('orders recent comparison runs newest first by run id', function () {

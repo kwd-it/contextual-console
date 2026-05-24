@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Issue review status workflow** on the cross-source **Issues** page: internal users can mark dataset issues as `open`, `acknowledged`, `ignored`, or `resolved`, filter by review status, and update status from a simple server-rendered form. Newly detected issues default to `open`; issue detection, severity, and `issue_type` behaviour are unchanged. Repeated detections still create separate issue rows (no deduplication or auto-resolve).
 
+### Changed
+
+- **Dashboard monitoring** now focuses on **active** issues (`open` and `acknowledged`): the summary card counts all active issues (not limited to seven days), drilldown links go to `issue_status=active` (hidden when the count is zero), and the recent issues list excludes `ignored` and `resolved` issues. Removed the **Sources with runs** summary tile to keep the dashboard grid compact.
+- **Issues bulk review** on `/issues`: when filters are applied, update all matching issues to a chosen review status (`open`, `acknowledged`, `ignored`, or `resolved`) in one action, with a separate bulk panel that states how many rows match the filters (not only the newest 100 shown). The issues list shows total matches and when the table is truncated. The **Active** review-status filter (`issue_status=active`) and single-status filters are unchanged. The dashboard active issues card shows info, warning, and error severity breakdowns.
+
 ## [0.8.1] - 2026-05-17
 
 Dashboard and UI refinement: clearer overview sections, development drilldowns, and shared styling tokens. Presentation and navigation only; ingest and detection behaviour unchanged.
