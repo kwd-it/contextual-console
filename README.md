@@ -14,7 +14,7 @@ This project is early-stage but usable for manually ingesting and reviewing chan
 
 The **first deployment-ready monitoring release** was **v0.4.0**; **v0.5.0** builds on that baseline with dashboard and navigation polish, explicit scheduler timezone defaults, and broader passive plot field tracking. **v0.6.0** adds optional daily SQLite backups to S3-compatible object storage; **v0.6.1** adds the S3 filesystem adapter dependency required for those uploads. **v0.7.0** adds a first dashboard summary, cross-source Issues and Changes pages with basic filters, comparison run detail for any past run (with human-readable plot labels where snapshot data allows), navigation and styling polish, and initial dashboard drilldown links. **v0.8.0** shows Housebuilder Pack **`last_modified_by`** on plot rows as **Last modified by: {label}** when the endpoint supplies it—display-only snapshot metadata, not change detection or an audit trail. **v0.8.1** refines the dashboard and UI: Recent Changes and Development overview sections, development drilldown pages (plots, recent changes, recent issues), development label fallback from plot URLs when snapshot development fields are missing, shared design tokens, icons, badges, a more compact layout, automatic dark mode and a System / Light / Dark theme selector—presentation and navigation only. See `CHANGELOG.md`.
 
-- **Monitored sources** (`MonitoredSource`): identify feeds by stable `key`, with a configured endpoint and optional HTTP ingest settings.
+- **Monitored sources** (`MonitoredSource`): identify feeds by stable `key`, with a configured endpoint and optional HTTP ingest settings. Optional `display_name` provides a cleaner UI label (for example **Wyatt Homes**); when unset, the UI falls back to `name`. Source keys and ingest behaviour are unchanged.
 - **HTTP JSON plot ingest**: read-only GET via `php artisan contextual-console:run-http-plot-source`.
 - **Auth header values from env** (optional): `auth_header_name` + `auth_token_env_key` send a full header value from environment (nothing secret stored in DB).
 - **Wrapped JSON list payloads** (optional): unwrap list responses via `http_json_items_key`.
@@ -178,6 +178,7 @@ Very large responses may hit the HTTP client default timeout; prefer smaller res
 
 ```php
 \App\Core\Models\MonitoredSource::where('key', 'wyatt:housebuilder')->update([
+    'display_name' => 'Wyatt Homes',
     'endpoint_url' => 'https://www.wyatthomes.co.uk/wp-json/contextualwp-housebuilder/v1/plots',
     'http_pagination_mode' => 'page_per_page',
     'http_page_param' => 'page',
@@ -185,6 +186,12 @@ Very large responses may hit the HTTP client default timeout; prefer smaller res
     'http_per_page' => 100,
     'http_max_pages' => 10,
 ]);
+```
+
+For an existing local row, set the display label without changing the source key:
+
+```php
+\App\Core\Models\MonitoredSource::where('key', 'wyatt:housebuilder')->update(['display_name' => 'Wyatt Homes']);
 ```
 
 Example (no real credentials):

@@ -27,7 +27,7 @@
                             <select name="source">
                                 <option value="">All sources</option>
                                 @foreach ($sources as $s)
-                                    <option value="{{ $s->id }}" @selected($filters['source_id'] === $s->id)>{{ $s->name }}</option>
+                                    <option value="{{ $s->id }}" @selected($filters['source_id'] === $s->id)>{{ $s->display_label }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -124,7 +124,7 @@
                                         </td>
                                         <td>
                                             @if ($source !== null)
-                                                <a href="{{ route('sources.show', $source) }}">{{ $source->name }}</a>
+                                                <a href="{{ route('sources.show', $source) }}">{{ $source->display_label }}</a>
                                             @else
                                                 <span class="muted">—</span>
                                             @endif

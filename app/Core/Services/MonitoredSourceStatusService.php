@@ -108,7 +108,7 @@ class MonitoredSourceStatusService
             $summaries[] = [
                 'source_id' => (int) $source->id,
                 'source_key' => (string) $source->key,
-                'source_name' => (string) $source->name,
+                'source_name' => $source->display_label,
                 'latest_run_id' => $runId === null ? null : (int) $runId,
                 'latest_run_status' => $run?->status,
                 'latest_run_started_at' => $run?->started_at,

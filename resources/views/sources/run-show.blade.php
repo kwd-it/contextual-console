@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — Comparison run #{{ $run->id }} — {{ $source->name }}</title>
+        <title>Contextual Console — Comparison run #{{ $run->id }} — {{ $source->display_label }}</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -11,12 +11,12 @@
             @include('sources._dashboard-nav')
 
             <div class="muted cc-back">
-                <a href="{{ route('sources.show', $source) }}">← {{ $source->name }}</a>
+                <a href="{{ route('sources.show', $source) }}">← {{ $source->display_label }}</a>
             </div>
 
             <header class="cc-page-header">
                 <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'run'])<span>Comparison run #{{ $run->id }}</span></h1>
-                <p class="cc-page-sub">Daily snapshot comparison for {{ $source->name }}. Counts and rows below reflect differences between that run's captured dataset and the previous snapshot.</p>
+                <p class="cc-page-sub">Daily snapshot comparison for {{ $source->display_label }}. Counts and rows below reflect differences between that run's captured dataset and the previous snapshot.</p>
                 <p class="cc-source-meta muted mono">Source key: {{ $source->key }}</p>
             </header>
 

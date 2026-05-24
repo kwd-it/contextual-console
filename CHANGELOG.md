@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Monitored source display labels**: optional `display_name` on `MonitoredSource` rows provides a cleaner UI label (for example **Wyatt Homes** instead of **Wyatt Homes Housebuilder**). When unset, the UI falls back to `name`. Source keys, ingest behaviour, and endpoint configuration are unchanged. Existing environments can set `display_name` via Tinker (see README Wyatt example).
+
 - **Issue review status workflow** on the cross-source **Issues** page: internal users can mark dataset issues as `open`, `acknowledged`, `ignored`, or `resolved`, filter by review status, and update status from a simple server-rendered form. Newly detected issues default to `open`; issue detection, severity, and `issue_type` behaviour are unchanged. Repeated detections still create separate issue rows (no deduplication or auto-resolve).
 
 ### Changed

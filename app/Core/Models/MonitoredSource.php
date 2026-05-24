@@ -2,6 +2,7 @@
 
 namespace App\Core\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -10,6 +11,7 @@ class MonitoredSource extends Model
     protected $fillable = [
         'key',
         'name',
+        'display_name',
         'endpoint_url',
         'auth_header_name',
         'auth_token_env_key',
@@ -46,5 +48,21 @@ class MonitoredSource extends Model
     public function runs(): HasMany
     {
         return $this->hasMany(DatasetComparisonRun::class, 'source_id');
+    }
+
+    /**
+     * User-facing label for UI; falls back to {@see self::$name} when unset.
+     */
+    protected function displayLabel(): Attribute
+    {
+        return Attribute::get(function (): string {
+            $displayName = trim((string) ($this->display_name ?? ''));
+
+            if ($displayName !== '') {
+                return $displayName;
+            }
+
+            return (string) ($this->name ?? '');
+        });
     }
 }

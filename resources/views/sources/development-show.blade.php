@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — {{ $developmentLabel }} ({{ $source->name }})</title>
+        <title>Contextual Console — {{ $developmentLabel }} ({{ $source->display_label }})</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -14,13 +14,13 @@
                 <a href="{{ route('dashboard.index') }}" data-test="development-back-dashboard">← Dashboard</a>
             </div>
             <div class="muted cc-back">
-                <a href="{{ route('sources.show', $source) }}" data-test="development-back-source">← {{ $source->name }}</a>
+                <a href="{{ route('sources.show', $source) }}" data-test="development-back-source">← {{ $source->display_label }}</a>
             </div>
 
             <header class="cc-page-header" data-test="development-detail-header">
                 <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'development'])<span>{{ $developmentLabel }}</span></h1>
                 <p class="cc-page-sub">
-                    Plots in this development from <strong>{{ $source->name }}</strong>’s latest completed or baseline snapshot.
+                    Plots in this development from <strong>{{ $source->display_label }}</strong>’s latest completed or baseline snapshot.
                 </p>
                 @if ($latestRun !== null)
                     <p class="muted mono cc-source-meta" data-test="development-detail-run-meta">
@@ -51,7 +51,7 @@
                         <div class="cc-empty" data-test="development-empty-not-found">
                             <p class="cc-empty-title">Development not found</p>
                             <p class="muted">
-                                “{{ $developmentLabel }}” does not appear in the latest snapshot for {{ $source->name }}.
+                                “{{ $developmentLabel }}” does not appear in the latest snapshot for {{ $source->display_label }}.
                                 Check the name on the <a href="{{ route('dashboard.index') }}">dashboard</a> development overview.
                             </p>
                         </div>
@@ -111,7 +111,7 @@
                 <div class="cc-card-header">
                     <h2 id="hdr-development-recent-changes" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'change'])<span>Recent changes for this development</span></h2>
                     <p class="cc-card-desc">
-                        Latest field-level changes for plots in this development on {{ $source->name }} (newest first).
+                        Latest field-level changes for plots in this development on {{ $source->display_label }} (newest first).
                     </p>
                 </div>
                 <div class="cc-card-body">
@@ -186,7 +186,7 @@
                 <div class="cc-card-header">
                     <h2 id="hdr-development-recent-issues" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Recent issues for this development</span></h2>
                     <p class="cc-card-desc">
-                        Latest validation and comparison issues for plots in this development on {{ $source->name }} (newest first).
+                        Latest validation and comparison issues for plots in this development on {{ $source->display_label }} (newest first).
                     </p>
                 </div>
                 <div class="cc-card-body">

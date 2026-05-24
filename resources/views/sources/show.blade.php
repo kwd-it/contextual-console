@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — {{ $source->name }}</title>
+        <title>Contextual Console — {{ $source->display_label }}</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -15,7 +15,7 @@
             </div>
 
             <header class="cc-page-header">
-                <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'source'])<span>{{ $source->name }}</span></h1>
+                <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'source'])<span>{{ $source->display_label }}</span></h1>
                 <p class="cc-page-sub">Comparison runs, detected plot data changes, and issues for this source (from daily dataset snapshots).</p>
                 <p class="cc-source-meta muted mono">Source key: {{ $source->key }}</p>
             </header>

@@ -129,7 +129,7 @@
                                     @endphp
                                     <tr data-test="dashboard-development-overview-row">
                                         <td>
-                                            <a href="{{ route('sources.show', $devSource) }}" data-test="dashboard-development-overview-source-link">{{ $devSource->name }}</a>
+                                            <a href="{{ route('sources.show', $devSource) }}" data-test="dashboard-development-overview-source-link">{{ $devSource->display_label }}</a>
                                         </td>
                                         <td data-test="dashboard-development-overview-development">
                                             <a
@@ -189,7 +189,7 @@
                                         </td>
                                         <td>
                                             @if ($src !== null)
-                                                <a href="{{ route('sources.show', $src) }}">{{ $src->name }}</a>
+                                                <a href="{{ route('sources.show', $src) }}">{{ $src->display_label }}</a>
                                             @else
                                                 <span class="muted">—</span>
                                             @endif
@@ -269,7 +269,7 @@
                                         <td class="mono cc-time">{{ $change->changed_at?->toDateTimeString() ?? '—' }}</td>
                                         <td>
                                             @if ($source !== null)
-                                                <a href="{{ route('sources.show', $source) }}">{{ $source->name }}</a>
+                                                <a href="{{ route('sources.show', $source) }}">{{ $source->display_label }}</a>
                                             @else
                                                 <span class="muted">—</span>
                                             @endif
@@ -358,7 +358,7 @@
                                         <td>{{ $issue->message }}</td>
                                         <td>
                                             @if ($issueSource !== null)
-                                                <a href="{{ route('sources.show', $issueSource) }}">{{ $issueSource->name }}</a>
+                                                <a href="{{ route('sources.show', $issueSource) }}">{{ $issueSource->display_label }}</a>
                                             @else
                                                 <span class="muted">—</span>
                                             @endif
