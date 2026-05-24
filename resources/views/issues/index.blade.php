@@ -23,7 +23,7 @@
                 @if (session('status'))
                     <p class="cc-flash" role="status">{{ session('status') }}</p>
                 @endif
-                <form class="cc-filter-form" method="get" action="{{ route('issues.index') }}" aria-label="Filter issues">
+                <form class="cc-filter-form cc-filter-form--issues" method="get" action="{{ route('issues.index') }}" aria-label="Filter issues">
                     <div class="cc-filter-form__fields">
                         <label>
                             Source
@@ -49,15 +49,6 @@
                                 <option value="">All severities</option>
                                 @foreach ($severityOptions as $opt)
                                     <option value="{{ $opt }}" @selected($filters['severity'] === $opt)>{{ $opt }}</option>
-                                @endforeach
-                            </select>
-                        </label>
-                        <label>
-                            Issue type
-                            <select name="issue_type">
-                                <option value="">All types</option>
-                                @foreach ($issueTypeOptions as $opt)
-                                    <option value="{{ $opt }}" @selected($filters['issue_type'] === $opt)>{{ $opt }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -88,16 +79,13 @@
                         <table class="cc-table">
                             <thead>
                                 <tr>
-                                    <th>Status</th>
                                     <th>Severity</th>
-                                    <th>Issue type</th>
                                     <th>Source</th>
-                                    <th>Source key</th>
                                     <th>Run</th>
                                     <th>Entity</th>
-                                    <th>Field</th>
                                     <th>Message</th>
                                     <th>Recorded</th>
+                                    <th>Review status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -123,8 +111,64 @@
                                         );
 
                                         $recordedAt = $issue->created_at?->toDateTimeString() ?? '-';
+
+                                        $messageMetaParts = [];
+                                        if (! empty($issue->issue_type)) {
+                                            $messageMetaParts[] = $issue->issue_type;
+                                        }
+                                        if (! empty($issue->field)) {
+                                            $messageMetaParts[] = 'field: '.$issue->field;
+                                        }
                                     @endphp
                                     <tr>
+                                        <td class="mono">
+                                            @include('sources._dashboard-severity-badge', ['severity' => $issue->severity, 'label' => $issue->severity])
+                                        </td>
+                                        <td>
+                                            @if ($source !== null)
+                                                <a href="{{ route('sources.show', $source) }}">{{ $source->name }}</a>
+                                            @else
+                                                <span class="muted">—</span>
+                                            @endif
+                                            <div class="cc-details muted mono">Issue id: {{ $issue->id }}</div>
+                                        </td>
+                                        <td class="mono">
+                                            @if ($source !== null && $run !== null)
+                                                <a href="{{ route('sources.runs.show', [$source, $run]) }}">{{ $issue->dataset_comparison_run_id }}</a>
+                                            @else
+                                                {{ $issue->dataset_comparison_run_id }}
+                                            @endif
+                                            @if ($issue->dataset_snapshot_id !== null)
+                                                <div class="cc-details muted">Snapshot id: {{ $issue->dataset_snapshot_id }}</div>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if (($issue->entity_type ?? null) === 'plot' && $issue->entity_id !== null && $issue->entity_id !== '')
+                                                <div class="cc-entity-display">
+                                                    @if ($issuePlotMeta !== null && $issuePlotMeta['plot_label'] !== null)
+                                                        <div class="cc-entity-display__primary">{{ $issuePlotMeta['plot_label'] }}</div>
+                                                    @endif
+                                                    @if ($issuePlotMeta !== null && $issuePlotMeta['development'] !== null)
+                                                        <div class="cc-entity-display__secondary muted">{{ $issuePlotMeta['development'] }}</div>
+                                                    @endif
+                                                    @if ($issuePlotMeta !== null && $issuePlotMeta['last_modified_by'] !== null)
+                                                        <div class="cc-entity-display__secondary muted">Last modified by: {{ $issuePlotMeta['last_modified_by'] }}</div>
+                                                    @endif
+                                                    <div class="cc-entity-display__tech muted mono">
+                                                        Technical ID: {{ $issue->entity_type }}:{{ $issue->entity_id }}
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <span class="mono">{{ $entityLabel }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            {{ $issue->message }}
+                                            @if ($messageMetaParts !== [])
+                                                <div class="cc-details muted mono">{{ implode(' · ', $messageMetaParts) }}</div>
+                                            @endif
+                                        </td>
+                                        <td class="mono cc-time">{{ $recordedAt }}</td>
                                         <td>
                                             <form class="cc-issue-status-form" method="post" action="{{ route('issues.update-status', $issue) }}">
                                                 @csrf
@@ -158,58 +202,6 @@
                                                 <button type="submit">Save</button>
                                             </form>
                                         </td>
-                                        <td class="mono">
-                                            @include('sources._dashboard-severity-badge', ['severity' => $issue->severity, 'label' => $issue->severity])
-                                        </td>
-                                        <td class="mono">{{ $issue->issue_type }}</td>
-                                        <td>
-                                            @if ($source !== null)
-                                                <a href="{{ route('sources.show', $source) }}">{{ $source->name }}</a>
-                                            @else
-                                                <span class="muted">—</span>
-                                            @endif
-                                            <div class="cc-details muted mono">Issue id: {{ $issue->id }}</div>
-                                        </td>
-                                        <td class="mono">
-                                            @if ($source !== null)
-                                                {{ $source->key }}
-                                            @else
-                                                —
-                                            @endif
-                                        </td>
-                                        <td class="mono">
-                                            @if ($source !== null && $run !== null)
-                                                <a href="{{ route('sources.runs.show', [$source, $run]) }}">{{ $issue->dataset_comparison_run_id }}</a>
-                                            @else
-                                                {{ $issue->dataset_comparison_run_id }}
-                                            @endif
-                                            @if ($issue->dataset_snapshot_id !== null)
-                                                <div class="cc-details muted">Snapshot id: {{ $issue->dataset_snapshot_id }}</div>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if (($issue->entity_type ?? null) === 'plot' && $issue->entity_id !== null && $issue->entity_id !== '')
-                                                <div class="cc-entity-display">
-                                                    @if ($issuePlotMeta !== null && $issuePlotMeta['plot_label'] !== null)
-                                                        <div class="cc-entity-display__primary">{{ $issuePlotMeta['plot_label'] }}</div>
-                                                    @endif
-                                                    @if ($issuePlotMeta !== null && $issuePlotMeta['development'] !== null)
-                                                        <div class="cc-entity-display__secondary muted">{{ $issuePlotMeta['development'] }}</div>
-                                                    @endif
-                                                    @if ($issuePlotMeta !== null && $issuePlotMeta['last_modified_by'] !== null)
-                                                        <div class="cc-entity-display__secondary muted">Last modified by: {{ $issuePlotMeta['last_modified_by'] }}</div>
-                                                    @endif
-                                                    <div class="cc-entity-display__tech muted mono">
-                                                        Technical ID: {{ $issue->entity_type }}:{{ $issue->entity_id }}
-                                                    </div>
-                                                </div>
-                                            @else
-                                                <span class="mono">{{ $entityLabel }}</span>
-                                            @endif
-                                        </td>
-                                        <td class="mono">{{ $issue->field ?? '-' }}</td>
-                                        <td>{{ $issue->message }}</td>
-                                        <td class="mono cc-time">{{ $recordedAt }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

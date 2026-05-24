@@ -748,6 +748,30 @@
         font-size: 0.8125rem;
         font-weight: 500;
     }
+    .cc-filter-form--issues .cc-filter-form__fields {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px 16px;
+        align-items: end;
+    }
+    .cc-filter-form--issues .cc-filter-form__fields label {
+        min-width: 0;
+    }
+    .cc-filter-form--issues .cc-filter-form select,
+    .cc-filter-form--issues .cc-filter-form input[type="date"] {
+        width: 100%;
+        min-width: 0;
+    }
+    @media (max-width: 1100px) {
+        .cc-filter-form--issues .cc-filter-form__fields {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+    @media (max-width: 640px) {
+        .cc-filter-form--issues .cc-filter-form__fields {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
     .cc-flash {
         margin: 0;
         padding: 12px 18px;

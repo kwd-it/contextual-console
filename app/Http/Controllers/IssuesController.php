@@ -66,7 +66,6 @@ class IssuesController extends Controller
             'issueLimit' => self::ISSUE_LIMIT,
             'sources' => $sources,
             'severityOptions' => $severityOptions,
-            'issueTypeOptions' => $issueTypeOptions,
             'issueStatusOptions' => DatasetIssue::STATUSES,
             'filters' => $filters,
             'filtersActive' => $this->issueFiltersActive($filters),

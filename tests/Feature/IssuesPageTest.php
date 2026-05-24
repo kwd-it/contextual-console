@@ -31,7 +31,7 @@ it('links to the issues page from the sources index navigation', function () {
         ->assertSee('href="'.$href.'"', false);
 });
 
-it('shows issues from multiple sources with source names and keys', function () {
+it('shows issues from multiple sources with source names', function () {
     $user = User::factory()->create();
 
     $sourceA = MonitoredSource::create([
@@ -60,9 +60,9 @@ it('shows issues from multiple sources with source names and keys', function () 
         ->get('/issues')
         ->assertOk()
         ->assertSeeText('Issues Multi Source A')
-        ->assertSeeText('hb:issues-multi-a')
         ->assertSeeText('Issues Multi Source B')
-        ->assertSeeText('hb:issues-multi-b');
+        ->assertDontSeeText('hb:issues-multi-a')
+        ->assertDontSeeText('hb:issues-multi-b');
 });
 
 it('lists newest issues first by recorded time', function () {
@@ -179,7 +179,8 @@ it('shows snapshot-derived plot labels and keeps technical ids visible', functio
         ->assertSeeText('Charminster Farm')
         ->assertSeeText('Technical ID: plot:14')
         ->assertSeeText('Issue id: '.(string) $plotIssue->id)
-        ->assertSeeText('Plot status is invalid.');
+        ->assertSeeText('Plot status is invalid.')
+        ->assertSeeText('invalid_value');
 });
 
 it('filters issues by source via GET query', function () {
@@ -386,7 +387,7 @@ it('filters issues by created_at date range via GET query', function () {
         ->assertDontSeeText('ISSUES_FILTER_DATE_LATE');
 });
 
-it('retains selected issue filters in the filter form and shows a clear link', function () {
+it('retains selected visible issue filters in the filter form and shows a clear link', function () {
     $user = User::factory()->create();
     $source = MonitoredSource::create([
         'key' => 'hb:issues-filter-retain',
@@ -416,7 +417,6 @@ it('retains selected issue filters in the filter form and shows a clear link', f
         ->get(route('issues.index', [
             'source' => $source->id,
             'severity' => 'warning',
-            'issue_type' => 'issues_retain_type',
             'date_from' => '2026-05-01',
             'date_to' => '2026-05-31',
         ]))
@@ -427,9 +427,61 @@ it('retains selected issue filters in the filter form and shows a clear link', f
 
     expect($html)->toMatch('/<option value="'.$source->id.'"[^>]*\bselected\b/');
     expect($html)->toMatch('/<option value="warning"[^>]*\bselected\b/');
-    expect($html)->toMatch('/<option value="issues_retain_type"[^>]*\bselected\b/');
     expect($html)->toContain('name="date_from" value="2026-05-01"');
     expect($html)->toContain('name="date_to" value="2026-05-31"');
+    expect($html)->not->toMatch('/<form[^>]*cc-filter-form[^>]*>[\s\S]*name="issue_type"/');
+});
+
+it('shows a simplified review-focused issues table and filter form', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-simplified-ui',
+        'name' => 'Issues Simplified UI Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_simplified_type',
+        'field' => 'status',
+        'severity' => 'warning',
+        'message' => 'ISSUES_SIMPLIFIED_UI_MARKER',
+    ]);
+
+    $html = $this->actingAs($user)
+        ->get('/issues')
+        ->assertOk()
+        ->assertSeeText('ISSUES_SIMPLIFIED_UI_MARKER')
+        ->assertSeeText('issues_simplified_type')
+        ->assertSeeText('field: status')
+        ->getContent();
+
+    expect($html)->toContain('<th>Severity</th>');
+    expect($html)->toContain('<th>Source</th>');
+    expect($html)->toContain('<th>Run</th>');
+    expect($html)->toContain('<th>Entity</th>');
+    expect($html)->toContain('<th>Message</th>');
+    expect($html)->toContain('<th>Recorded</th>');
+    expect($html)->toContain('<th>Review status</th>');
+    expect($html)->not->toContain('<th>Status</th>');
+    expect($html)->toMatch('/<th>Recorded<\/th>[\s\S]*<th>Review status<\/th>/');
+    expect($html)->not->toContain('<th>Issue type</th>');
+    expect($html)->not->toContain('<th>Source key</th>');
+    expect($html)->not->toContain('<th>Field</th>');
+    expect($html)->toContain('cc-filter-form--issues');
+    expect($html)->toContain('name="issue_status"');
+    expect($html)->not->toMatch('/<form[^>]*cc-filter-form[^>]*>[\s\S]*name="issue_type"/');
 });
 
 it('shows each issue review status on the issues page', function () {
