@@ -3,6 +3,7 @@
 use App\Core\Models\DatasetComparisonRun;
 use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
+use App\Domains\Housebuilder\Services\PlotDatasetChangeLogIssueCreator;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
 use App\Models\User;
 use Carbon\Carbon;
@@ -144,6 +145,50 @@ it('links run ids to the existing comparison run detail page', function () {
         ->get('/issues')
         ->assertOk()
         ->assertSee('href="'.$href.'"', false);
+});
+
+it('shows old and new values for plot status and price change issues', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-change-detail',
+        'name' => 'Issues Change Detail Source',
+    ]);
+
+    $baseline = [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ];
+    $second = [
+        ['id' => 1, 'price' => 110_000, 'status' => 'reserved'],
+    ];
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, $baseline);
+    $run2 = $service->run($source, $second);
+    $run2->refresh();
+
+    $statusIssue = DatasetIssue::query()
+        ->where('dataset_comparison_run_id', $run2->id)
+        ->where('issue_type', PlotDatasetChangeLogIssueCreator::ISSUE_TYPE_PLOT_STATUS_CHANGED)
+        ->firstOrFail();
+
+    $priceIssue = DatasetIssue::query()
+        ->where('dataset_comparison_run_id', $run2->id)
+        ->where('issue_type', PlotDatasetChangeLogIssueCreator::ISSUE_TYPE_PLOT_PRICE_CHANGED)
+        ->firstOrFail();
+
+    expect($statusIssue->context['old_value'])->toBe('available');
+    expect($statusIssue->context['new_value'])->toBe('reserved');
+    expect($priceIssue->context['old_value'])->toBe('100000');
+    expect($priceIssue->context['new_value'])->toBe('110000');
+
+    $this->actingAs($user)
+        ->get('/issues')
+        ->assertOk()
+        ->assertSeeText('Plot status changed.')
+        ->assertSeeText('available -> reserved')
+        ->assertSeeText('Plot price changed.')
+        ->assertSeeText('100000 -> 110000')
+        ->assertSee('data-test="issue-change-detail"', false);
 });
 
 it('shows snapshot-derived plot labels and keeps technical ids visible', function () {

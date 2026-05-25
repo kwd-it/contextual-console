@@ -4,6 +4,7 @@ use App\Core\Models\ChangeLog;
 use App\Core\Models\DatasetComparisonRun;
 use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
+use App\Domains\Housebuilder\Services\PlotDatasetChangeLogIssueCreator;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -252,6 +253,38 @@ it('shows issues and changes for an older run when that run is not the latest', 
         ->assertOk()
         ->assertSeeText('Plot data changes on this run')
         ->assertSeeText((string) $oldRunChangeNewValue);
+});
+
+it('shows old and new values for plot status and price change issues on the run detail page', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:run-detail-change-issues',
+        'name' => 'Run Detail Change Issues Source',
+    ]);
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ]);
+    $run2 = $service->run($source, [
+        ['id' => 1, 'price' => 110_000, 'status' => 'reserved'],
+    ]);
+    $run2->refresh();
+
+    expect(DatasetIssue::query()
+        ->where('dataset_comparison_run_id', $run2->id)
+        ->where('issue_type', PlotDatasetChangeLogIssueCreator::ISSUE_TYPE_PLOT_STATUS_CHANGED)
+        ->exists())->toBeTrue();
+
+    $this->actingAs($user)
+        ->get(route('sources.runs.show', [$source, $run2]))
+        ->assertOk()
+        ->assertSeeText('Issues on this run')
+        ->assertSeeText('Plot status changed.')
+        ->assertSeeText('available -> reserved')
+        ->assertSeeText('Plot price changed.')
+        ->assertSeeText('100000 -> 110000')
+        ->assertSee('data-test="issue-change-detail"', false);
 });
 
 it('shows snapshot-derived plot title and development on the run detail page when available', function () {

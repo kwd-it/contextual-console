@@ -232,6 +232,7 @@
                                         </td>
                                         <td>
                                             {{ $issue->message }}
+                                            @include('issues._issue-change-detail', ['issue' => $issue])
                                             @if ($messageMetaParts !== [])
                                                 <div class="cc-details muted mono">{{ implode(' · ', $messageMetaParts) }}</div>
                                             @endif

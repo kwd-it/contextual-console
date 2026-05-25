@@ -165,7 +165,10 @@
                                             @endif
                                         </td>
                                         <td class="mono">{{ $issue->field ?? '-' }}</td>
-                                        <td>{{ $issue->message }}</td>
+                                        <td>
+                                            {{ $issue->message }}
+                                            @include('issues._issue-change-detail', ['issue' => $issue])
+                                        </td>
                                         <td class="mono">{{ $contextLabel }}</td>
                                     </tr>
                                 @endforeach

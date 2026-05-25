@@ -34,7 +34,8 @@ it('creates a warning issue when a plot is removed from the source (presence new
         ->firstOrFail();
 
     expect($issue->severity)->toBe('warning');
-    expect($issue->context)->toHaveKeys(['change_log_id', 'old_value', 'new_value']);
+    expect($issue->context)->toHaveKeys(['change_log_id', 'field', 'old_value', 'new_value']);
+    expect($issue->context['field'])->toBe('presence');
     expect($issue->context['new_value'])->toBeNull();
 });
 
@@ -62,7 +63,10 @@ it('creates an info issue for status change', function () {
         ->firstOrFail();
 
     expect($issue->severity)->toBe('info');
-    expect($issue->context)->toHaveKeys(['change_log_id', 'old_value', 'new_value']);
+    expect($issue->context)->toHaveKeys(['change_log_id', 'field', 'old_value', 'new_value']);
+    expect($issue->context['field'])->toBe('status');
+    expect($issue->context['old_value'])->toBe('available');
+    expect($issue->context['new_value'])->toBe('reserved');
 });
 
 it('creates an info issue for price change', function () {
@@ -89,7 +93,10 @@ it('creates an info issue for price change', function () {
         ->firstOrFail();
 
     expect($issue->severity)->toBe('info');
-    expect($issue->context)->toHaveKeys(['change_log_id', 'old_value', 'new_value']);
+    expect($issue->context)->toHaveKeys(['change_log_id', 'field', 'old_value', 'new_value']);
+    expect($issue->context['field'])->toBe('price');
+    expect($issue->context['old_value'])->toBe('100000');
+    expect($issue->context['new_value'])->toBe('110000');
 });
 
 it('does not create issues for newly tracked plot fields (title, bedrooms, development, house_type, url)', function () {

@@ -58,6 +58,7 @@ class PlotDatasetChangeLogIssueCreator
                 'message' => $issue['message'],
                 'context' => [
                     'change_log_id' => $log->id,
+                    'field' => $log->field,
                     'old_value' => $log->old_value,
                     'new_value' => $log->new_value,
                 ],
