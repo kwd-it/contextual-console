@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ChangesController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IssuesController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SourceStatusController;
 use Illuminate\Support\Facades\Route;
 
@@ -50,4 +51,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/sources/{source}/runs/{run}', [SourceStatusController::class, 'showRun'])
         ->name('sources.runs.show')
         ->scopeBindings();
+
+    Route::get('/profile', [ProfileController::class, 'edit'])
+        ->name('profile.edit');
+
+    Route::put('/profile', [ProfileController::class, 'update'])
+        ->name('profile.update');
 });

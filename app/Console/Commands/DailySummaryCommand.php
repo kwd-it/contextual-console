@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Mail\ContextualConsoleDailySummaryMail;
+use App\Models\User;
 use App\Support\DailyMonitoringSummaryBuilder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
@@ -35,14 +36,32 @@ class DailySummaryCommand extends Command
         $this->line($report->toPlainText());
 
         if ((bool) $this->option('email')) {
-            $to = (string) config('contextual_console.daily_summary_to', '');
-            if (trim($to) === '') {
-                $this->error('Daily summary email requested, but no recipient is configured. Set CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO.');
+            $subscribers = User::query()
+                ->where('daily_summary_enabled', true)
+                ->whereNotNull('daily_summary_email')
+                ->where('daily_summary_email', '!=', '')
+                ->orderBy('id')
+                ->get();
 
-                return self::FAILURE;
+            if ($subscribers->isNotEmpty()) {
+                foreach ($subscribers as $subscriber) {
+                    $to = trim((string) $subscriber->daily_summary_email);
+                    if ($to === '') {
+                        continue;
+                    }
+
+                    Mail::send((new ContextualConsoleDailySummaryMail($report))->to($to));
+                }
+            } else {
+                $to = trim((string) config('contextual_console.daily_summary_to', ''));
+                if ($to === '') {
+                    $this->error('Daily summary email requested, but no recipient is configured. Set CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO.');
+
+                    return self::FAILURE;
+                }
+
+                Mail::send((new ContextualConsoleDailySummaryMail($report))->to($to));
             }
-
-            Mail::send((new ContextualConsoleDailySummaryMail($report))->to($to));
         }
 
         return self::SUCCESS;

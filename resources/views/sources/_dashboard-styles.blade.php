@@ -757,6 +757,54 @@
     .cc-filter-form--issues .cc-filter-form__fields label {
         min-width: 0;
     }
+    .cc-profile-form__fields {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    .cc-profile-form__fields label:not(.cc-profile-form__checkbox) {
+        width: 100%;
+        max-width: 28rem;
+        text-transform: none;
+        letter-spacing: normal;
+        font-size: 0.8125rem;
+    }
+    .cc-profile-form__fields input[type="email"] {
+        width: 100%;
+        padding: 7px 10px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--cc-text);
+        background: var(--cc-surface);
+        border: 1px solid var(--cc-border-strong);
+        border-radius: var(--cc-radius-sm);
+        box-sizing: border-box;
+    }
+    .cc-filter-form.cc-profile-form label.cc-profile-form__checkbox {
+        display: inline-flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        width: auto;
+        max-width: none;
+        text-transform: none;
+        letter-spacing: normal;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--cc-text);
+    }
+    .cc-filter-form.cc-profile-form label.cc-profile-form__checkbox input[type="checkbox"] {
+        width: 1rem;
+        height: 1rem;
+        margin: 0;
+        flex-shrink: 0;
+    }
+    .cc-profile-form__error {
+        margin: 0;
+        font-size: 0.8125rem;
+        color: var(--cc-danger, #b91c1c);
+    }
     .cc-issues-bulk-panel {
         margin: 0;
         padding: 16px 18px;

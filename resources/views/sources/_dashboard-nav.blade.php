@@ -4,6 +4,7 @@
     $sourcesActive = in_array($routeName, ['sources.index', 'sources.show', 'sources.runs.show', 'sources.developments.show'], true);
     $changesActive = $routeName === 'changes.index';
     $issuesActive = $routeName === 'issues.index';
+    $profileActive = in_array($routeName, ['profile.edit', 'profile.update'], true);
 @endphp
 <div class="cc-app-bar">
     <div class="cc-brand">
@@ -31,6 +32,12 @@
             class="cc-nav__link {{ $issuesActive ? 'cc-nav__link--current' : '' }}"
             @if ($issuesActive) aria-current="page" @endif
         ><span class="cc-icon-label">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Issues</span></span></a>
+        <a
+            href="{{ route('profile.edit') }}"
+            class="cc-nav__link {{ $profileActive ? 'cc-nav__link--current' : '' }}"
+            @if ($profileActive) aria-current="page" @endif
+            data-test="nav-profile"
+        ><span>Email reports</span></a>
         <label class="cc-theme" for="cc-theme-select">
             <span class="cc-theme__label" id="cc-theme-label">Theme</span>
             <select

@@ -7,6 +7,7 @@ use App\Core\Models\MonitoredSource;
 use App\Core\Services\SourceRunFailedIssueService;
 use App\Domains\Housebuilder\Services\PlotDatasetChangeLogIssueCreator;
 use App\Mail\ContextualConsoleDailySummaryMail;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -136,6 +137,63 @@ it('fails clearly with --email when recipient is missing', function () {
     expect($exitCode)->toBe(1);
     expect($output)->toContain('Daily summary email requested, but no recipient is configured.');
     Mail::assertNothingSent();
+});
+
+it('sends email with --email to subscribed users', function () {
+    Mail::fake();
+    config()->set('contextual_console.daily_summary_to', 'ops@example.test');
+
+    User::factory()->create([
+        'daily_summary_enabled' => true,
+        'daily_summary_email' => 'alice@example.test',
+    ]);
+    User::factory()->create([
+        'daily_summary_enabled' => true,
+        'daily_summary_email' => 'bob@example.test',
+    ]);
+    User::factory()->create([
+        'daily_summary_enabled' => false,
+        'daily_summary_email' => 'ignored@example.test',
+    ]);
+
+    $exitCode = Artisan::call('contextual-console:daily-summary', ['--email' => true]);
+
+    expect($exitCode)->toBe(0);
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, 2);
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, fn ($mail) => $mail->hasTo('alice@example.test'));
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, fn ($mail) => $mail->hasTo('bob@example.test'));
+});
+
+it('does not send email with --email to the fallback env recipient when subscribed users exist', function () {
+    Mail::fake();
+    config()->set('contextual_console.daily_summary_to', 'ops@example.test');
+
+    User::factory()->create([
+        'daily_summary_enabled' => true,
+        'daily_summary_email' => 'subscriber@example.test',
+    ]);
+
+    Artisan::call('contextual-console:daily-summary', ['--email' => true]);
+
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, 1);
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, fn ($mail) => $mail->hasTo('subscriber@example.test'));
+    Mail::assertNotSent(ContextualConsoleDailySummaryMail::class, fn ($mail) => $mail->hasTo('ops@example.test'));
+});
+
+it('falls back to CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO with --email only when no users are subscribed', function () {
+    Mail::fake();
+    config()->set('contextual_console.daily_summary_to', 'ops@example.test');
+
+    User::factory()->create([
+        'daily_summary_enabled' => false,
+        'daily_summary_email' => null,
+    ]);
+
+    $exitCode = Artisan::call('contextual-console:daily-summary', ['--email' => true]);
+
+    expect($exitCode)->toBe(0);
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, 1);
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, fn ($mail) => $mail->hasTo('ops@example.test'));
 });
 
 it('excludes older runs outside the lookback window', function () {
