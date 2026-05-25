@@ -115,8 +115,14 @@ it('sends email with --email when recipient is configured', function () {
     expect($output)->toContain('Daily monitoring summary');
     expect($output)->toContain("Latest run in period: #{$run->id} completed");
     Mail::assertSent(ContextualConsoleDailySummaryMail::class, function ($mail) {
+        $html = view('emails.contextual-console.daily-summary-html', [
+            'report' => $mail->report,
+        ])->render();
+
         return $mail->hasTo('ops@example.test')
-            && str_contains($mail->summary, 'Daily monitoring summary');
+            && str_contains($mail->summary, 'Daily monitoring summary')
+            && str_contains($mail->summary, 'Mail Source')
+            && str_contains($html, 'Contextual Console');
     });
 });
 

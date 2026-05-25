@@ -25,14 +25,14 @@ class DailySummaryCommand extends Command
         }
 
         try {
-            $summary = $builder->build($hours);
+            $report = $builder->buildReport($hours);
         } catch (\InvalidArgumentException $e) {
             $this->error($e->getMessage());
 
             return self::FAILURE;
         }
 
-        $this->line($summary);
+        $this->line($report->toPlainText());
 
         if ((bool) $this->option('email')) {
             $to = (string) config('contextual_console.daily_summary_to', '');
@@ -42,7 +42,7 @@ class DailySummaryCommand extends Command
                 return self::FAILURE;
             }
 
-            Mail::send((new ContextualConsoleDailySummaryMail($summary))->to($to));
+            Mail::send((new ContextualConsoleDailySummaryMail($report))->to($to));
         }
 
         return self::SUCCESS;

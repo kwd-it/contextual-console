@@ -13,6 +13,11 @@ final class DailyMonitoringSummaryBuilder
 {
     public function build(int $hours): string
     {
+        return $this->buildReport($hours)->toPlainText();
+    }
+
+    public function buildReport(int $hours): DailyMonitoringSummaryReport
+    {
         if ($hours <= 0) {
             throw new \InvalidArgumentException('--hours must be a positive integer.');
         }
@@ -27,10 +32,12 @@ final class DailyMonitoringSummaryBuilder
         )));
 
         if ($periodLatestRunIds === []) {
-            return sprintf(
-                'No monitoring runs found in the last %d hour(s) (since %s).',
-                $hours,
-                DisplayTimestamp::format($cutoff),
+            return new DailyMonitoringSummaryReport(
+                emptyMessage: sprintf(
+                    'No monitoring runs found in the last %d hour(s) (since %s).',
+                    $hours,
+                    DisplayTimestamp::format($cutoff),
+                ),
             );
         }
 
@@ -63,14 +70,7 @@ final class DailyMonitoringSummaryBuilder
             ->get()
             ->groupBy('monitored_source_id');
 
-        $lines = [];
-        $lines[] = 'Daily monitoring summary';
-        $lines[] = sprintf(
-            'Period: last %d hour(s) (since %s)',
-            $hours,
-            DisplayTimestamp::format($cutoff),
-        );
-        $lines[] = '';
+        $sources = [];
 
         foreach ($runs as $periodLatestRun) {
             $source = $periodLatestRun->source;
@@ -99,55 +99,48 @@ final class DailyMonitoringSummaryBuilder
                 ->map(fn ($group) => $group->count())
                 ->all();
 
-            $lines[] = (string) $source->name;
-            $lines[] = sprintf('Source key: %s', (string) $source->key);
-            $lines[] = sprintf(
-                'Latest run in period: #%d %s',
-                (int) $periodLatestRun->id,
-                (string) $periodLatestRun->status,
-            );
-            $lines[] = sprintf(
-                '  finished %s',
-                DisplayTimestamp::format($periodLatestRun->finished_at),
-            );
-
-            if ($overallLatestRun !== null && (int) $overallLatestRun->id !== (int) $periodLatestRun->id) {
-                $lines[] = sprintf(
-                    'Overall latest run: #%d %s (finished %s)',
-                    (int) $overallLatestRun->id,
-                    (string) $overallLatestRun->status,
-                    DisplayTimestamp::format($overallLatestRun->finished_at),
-                );
-            }
-
-            $recoveryNote = $this->recoveryNote($periodLatestRun, $overallLatestRun);
-            if ($recoveryNote !== '') {
-                $lines[] = $recoveryNote;
-            }
-
-            $lines[] = sprintf(
-                'Changes: added=%d removed=%d changed=%d unchanged=%d',
-                $added,
-                $removed,
-                $changed,
-                $unchanged,
-            );
-            $lines[] = sprintf(
-                'Active issues: %d errors=%d warnings=%d info=%d',
-                $activeIssues->count(),
-                (int) ($severityCounts['error'] ?? 0),
-                (int) ($severityCounts['warning'] ?? 0),
-                (int) ($severityCounts['info'] ?? 0),
-            );
-
+            $issues = [];
             foreach ($activeIssues as $issue) {
-                $lines[] = $this->formatIssueLine($issue, $overallLatestRun);
+                $issues[] = $this->buildIssueLine($issue, $overallLatestRun);
             }
 
-            $lines[] = '';
+            $sources[] = new DailyMonitoringSummarySourceSection(
+                name: (string) $source->name,
+                sourceKey: (string) $source->key,
+                periodRunId: (int) $periodLatestRun->id,
+                periodRunStatus: (string) $periodLatestRun->status,
+                periodRunFinishedAt: DisplayTimestamp::format($periodLatestRun->finished_at),
+                overallRunId: $overallLatestRun !== null && (int) $overallLatestRun->id !== (int) $periodLatestRun->id
+                    ? (int) $overallLatestRun->id
+                    : null,
+                overallRunStatus: $overallLatestRun !== null && (int) $overallLatestRun->id !== (int) $periodLatestRun->id
+                    ? (string) $overallLatestRun->status
+                    : null,
+                overallRunFinishedAt: $overallLatestRun !== null && (int) $overallLatestRun->id !== (int) $periodLatestRun->id
+                    ? DisplayTimestamp::format($overallLatestRun->finished_at)
+                    : null,
+                recoveryNote: $this->recoveryNote($periodLatestRun, $overallLatestRun),
+                added: $added,
+                removed: $removed,
+                changed: $changed,
+                unchanged: $unchanged,
+                activeIssueCount: $activeIssues->count(),
+                errorCount: (int) ($severityCounts['error'] ?? 0),
+                warningCount: (int) ($severityCounts['warning'] ?? 0),
+                infoCount: (int) ($severityCounts['info'] ?? 0),
+                issues: $issues,
+            );
         }
 
-        return rtrim(implode(PHP_EOL, $lines));
+        return new DailyMonitoringSummaryReport(
+            emptyMessage: null,
+            periodLabel: sprintf(
+                'Period: last %d hour(s) (since %s)',
+                $hours,
+                DisplayTimestamp::format($cutoff),
+            ),
+            sources: $sources,
+        );
     }
 
     /**
@@ -197,29 +190,21 @@ final class DailyMonitoringSummaryBuilder
         );
     }
 
-    private function formatIssueLine(DatasetIssue $issue, ?DatasetComparisonRun $overallLatestRun): string
-    {
-        $label = sprintf('  - [%s]', (string) $issue->severity);
-
-        if ($issue->issue_type !== null && $issue->issue_type !== '') {
-            $label .= ' '.$issue->issue_type.':';
-        }
-
-        $label .= ' '.trim((string) $issue->message);
-
-        $transition = IssueChangeDetail::transitionLabel($issue);
-        if ($transition !== null) {
-            $label .= ' ('.$transition.')';
-        }
-
-        if ($issue->issue_type === SourceRunFailedIssueService::ISSUE_TYPE) {
-            $suffix = $this->sourceRunFailedSuffix($issue, $overallLatestRun);
-            if ($suffix !== '') {
-                $label .= ' '.$suffix;
-            }
-        }
-
-        return $label;
+    private function buildIssueLine(
+        DatasetIssue $issue,
+        ?DatasetComparisonRun $overallLatestRun,
+    ): DailyMonitoringSummaryIssueLine {
+        return new DailyMonitoringSummaryIssueLine(
+            severity: (string) $issue->severity,
+            issueType: $issue->issue_type !== null && $issue->issue_type !== ''
+                ? (string) $issue->issue_type
+                : null,
+            message: trim((string) $issue->message),
+            transition: IssueChangeDetail::transitionLabel($issue),
+            suffix: $issue->issue_type === SourceRunFailedIssueService::ISSUE_TYPE
+                ? $this->sourceRunFailedSuffix($issue, $overallLatestRun)
+                : '',
+        );
     }
 
     private function sourceRunFailedSuffix(
