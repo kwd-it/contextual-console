@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->boolean('daily_summary_enabled')->default(false)->after('password');
-            $table->string('daily_summary_email')->nullable()->after('daily_summary_enabled');
         });
     }
 
@@ -23,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['daily_summary_enabled', 'daily_summary_email']);
+            $table->dropColumn('daily_summary_enabled');
         });
     }
 };

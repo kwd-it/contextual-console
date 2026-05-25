@@ -757,6 +757,9 @@
     .cc-filter-form--issues .cc-filter-form__fields label {
         min-width: 0;
     }
+    .cc-profile-account-summary .cc-kv th {
+        text-align: left;
+    }
     .cc-profile-form__fields {
         display: flex;
         flex-direction: column;

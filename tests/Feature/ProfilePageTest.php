@@ -50,19 +50,35 @@ it('redirects unauthenticated users from the profile page to login', function ()
         ->assertRedirect(route('login'));
 });
 
-it('allows authenticated users to view the email preferences profile page', function () {
-    $user = User::factory()->create();
+it('allows authenticated users to view the profile page with account and email preferences', function () {
+    $user = User::factory()->create([
+        'name' => 'Alex Operator',
+        'email' => 'alex@example.test',
+    ]);
 
     $this->actingAs($user)
         ->get(route('profile.edit'))
         ->assertOk()
-        ->assertSeeText('Email reports')
+        ->assertSeeText('Profile')
+        ->assertSeeText('Personal account settings for the signed-in user.')
+        ->assertSeeText('Signed in as')
+        ->assertSeeText('Name')
+        ->assertSeeText('Login email')
+        ->assertSeeText('Alex Operator')
+        ->assertSeeText('alex@example.test')
+        ->assertSee('data-test="profile-user-name"', false)
+        ->assertSee('data-test="profile-user-email"', false)
+        ->assertSee('data-test="profile-account-summary"', false)
         ->assertSeeText('Daily summary email')
+        ->assertSeeText('When enabled, the daily monitoring summary is sent to your login email address shown above.')
+        ->assertSeeText('Send me the daily monitoring summary email')
+        ->assertDontSee('Summary email address', false)
+        ->assertDontSee('data-test="daily-summary-email"', false)
         ->assertSee('data-test="profile-form"', false)
         ->assertSee('href="'.route('profile.edit').'"', false);
 });
 
-it('shows the email reports link in the dashboard navigation', function () {
+it('shows the profile link in the dashboard navigation', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
@@ -70,19 +86,18 @@ it('shows the email reports link in the dashboard navigation', function () {
         ->assertOk()
         ->assertSee('data-test="nav-profile"', false)
         ->assertSee('href="'.route('profile.edit').'"', false)
-        ->assertSeeText('Email reports');
+        ->assertSeeText('Profile');
 });
 
-it('allows users to enable daily summary emails with a valid email address', function () {
+it('allows users to enable daily summary emails without a separate email address', function () {
     $user = User::factory()->create([
+        'email' => 'reports@example.test',
         'daily_summary_enabled' => false,
-        'daily_summary_email' => null,
     ]);
 
     $this->actingAs($user)
         ->put(route('profile.update'), [
             'daily_summary_enabled' => '1',
-            'daily_summary_email' => '  reports@example.test  ',
         ])
         ->assertRedirect(route('profile.edit'))
         ->assertSessionHas('status');
@@ -90,59 +105,20 @@ it('allows users to enable daily summary emails with a valid email address', fun
     $user->refresh();
 
     expect($user->daily_summary_enabled)->toBeTrue();
-    expect($user->daily_summary_email)->toBe('reports@example.test');
 });
 
 it('allows users to disable daily summary emails', function () {
     $user = User::factory()->create([
         'daily_summary_enabled' => true,
-        'daily_summary_email' => 'reports@example.test',
     ]);
 
     $this->actingAs($user)
-        ->put(route('profile.update'), [
-            'daily_summary_email' => 'reports@example.test',
-        ])
+        ->put(route('profile.update'), [])
         ->assertRedirect(route('profile.edit'));
 
     $user->refresh();
 
     expect($user->daily_summary_enabled)->toBeFalse();
-    expect($user->daily_summary_email)->toBeNull();
-});
-
-it('rejects invalid email when enabling daily summary emails', function () {
-    $user = User::factory()->create([
-        'daily_summary_enabled' => false,
-        'daily_summary_email' => null,
-    ]);
-
-    $this->actingAs($user)
-        ->from(route('profile.edit'))
-        ->put(route('profile.update'), [
-            'daily_summary_enabled' => '1',
-            'daily_summary_email' => 'not-an-email',
-        ])
-        ->assertRedirect(route('profile.edit'))
-        ->assertSessionHasErrors('daily_summary_email');
-
-    $user->refresh();
-
-    expect($user->daily_summary_enabled)->toBeFalse();
-    expect($user->daily_summary_email)->toBeNull();
-});
-
-it('rejects enabling daily summary emails without an email address', function () {
-    $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->from(route('profile.edit'))
-        ->put(route('profile.update'), [
-            'daily_summary_enabled' => '1',
-            'daily_summary_email' => '',
-        ])
-        ->assertRedirect(route('profile.edit'))
-        ->assertSessionHasErrors('daily_summary_email');
 });
 
 it('shows the preview daily summary email link when the preview route is available', function () {

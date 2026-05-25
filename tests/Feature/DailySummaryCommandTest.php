@@ -139,21 +139,21 @@ it('fails clearly with --email when recipient is missing', function () {
     Mail::assertNothingSent();
 });
 
-it('sends email with --email to subscribed users', function () {
+it('sends email with --email to subscribed users login email addresses', function () {
     Mail::fake();
     config()->set('contextual_console.daily_summary_to', 'ops@example.test');
 
     User::factory()->create([
         'daily_summary_enabled' => true,
-        'daily_summary_email' => 'alice@example.test',
+        'email' => 'alice@example.test',
     ]);
     User::factory()->create([
         'daily_summary_enabled' => true,
-        'daily_summary_email' => 'bob@example.test',
+        'email' => 'bob@example.test',
     ]);
     User::factory()->create([
         'daily_summary_enabled' => false,
-        'daily_summary_email' => 'ignored@example.test',
+        'email' => 'ignored@example.test',
     ]);
 
     $exitCode = Artisan::call('contextual-console:daily-summary', ['--email' => true]);
@@ -170,7 +170,7 @@ it('does not send email with --email to the fallback env recipient when subscrib
 
     User::factory()->create([
         'daily_summary_enabled' => true,
-        'daily_summary_email' => 'subscriber@example.test',
+        'email' => 'subscriber@example.test',
     ]);
 
     Artisan::call('contextual-console:daily-summary', ['--email' => true]);
@@ -186,7 +186,6 @@ it('falls back to CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO with --email only when no 
 
     User::factory()->create([
         'daily_summary_enabled' => false,
-        'daily_summary_email' => null,
     ]);
 
     $exitCode = Artisan::call('contextual-console:daily-summary', ['--email' => true]);

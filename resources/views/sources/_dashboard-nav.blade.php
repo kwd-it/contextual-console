@@ -37,7 +37,7 @@
             class="cc-nav__link {{ $profileActive ? 'cc-nav__link--current' : '' }}"
             @if ($profileActive) aria-current="page" @endif
             data-test="nav-profile"
-        ><span>Email reports</span></a>
+        ><span>Profile</span></a>
         <label class="cc-theme" for="cc-theme-select">
             <span class="cc-theme__label" id="cc-theme-label">Theme</span>
             <select

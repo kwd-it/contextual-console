@@ -38,14 +38,12 @@ class DailySummaryCommand extends Command
         if ((bool) $this->option('email')) {
             $subscribers = User::query()
                 ->where('daily_summary_enabled', true)
-                ->whereNotNull('daily_summary_email')
-                ->where('daily_summary_email', '!=', '')
                 ->orderBy('id')
                 ->get();
 
             if ($subscribers->isNotEmpty()) {
                 foreach ($subscribers as $subscriber) {
-                    $to = trim((string) $subscriber->daily_summary_email);
+                    $to = trim((string) $subscriber->email);
                     if ($to === '') {
                         continue;
                     }

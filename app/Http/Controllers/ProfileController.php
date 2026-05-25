@@ -17,33 +17,16 @@ class ProfileController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
-        $enabled = $request->boolean('daily_summary_enabled');
-
-        $emailRules = ['nullable', 'max:255'];
-        if ($enabled) {
-            $emailRules = ['required', 'email', 'max:255'];
-        }
-
-        $validated = $request->validate([
+        $request->validate([
             'daily_summary_enabled' => ['sometimes', 'boolean'],
-            'daily_summary_email' => $emailRules,
         ]);
 
-        $email = $validated['daily_summary_email'] ?? null;
-        if (is_string($email)) {
-            $email = trim($email);
-            if ($email === '') {
-                $email = null;
-            }
-        }
-
         $user = $request->user();
-        $user->daily_summary_enabled = $enabled;
-        $user->daily_summary_email = $enabled ? $email : null;
+        $user->daily_summary_enabled = $request->boolean('daily_summary_enabled');
         $user->save();
 
         return redirect()
             ->route('profile.edit')
-            ->with('status', 'Email report preferences saved.');
+            ->with('status', 'Daily summary preferences saved.');
     }
 }
