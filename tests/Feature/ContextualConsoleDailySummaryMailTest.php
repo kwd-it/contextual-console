@@ -51,9 +51,16 @@ it('renders html and plain text parts from the structured report', function () {
     expect($html)->toContain('Daily monitoring summary');
     expect($html)->toContain('HTML Mail Source');
     expect($html)->toContain('Latest run in period');
-    expect($html)->toContain('Changes:');
-    expect($html)->toContain('Active issues:');
+    expect($html)->toContain('>Added</th>');
+    expect($html)->toContain('>Removed</th>');
+    expect($html)->toContain('>Changed</th>');
+    expect($html)->toContain('>Unchanged</th>');
+    expect($html)->toContain('>Errors</th>');
+    expect($html)->toContain('>Warnings</th>');
+    expect($html)->toContain('>Info</th>');
+    expect($html)->toContain('>Total active issues</th>');
     expect($mail->summary)->toContain('Daily monitoring summary');
+    expect($mail->summary)->toContain('Changes: added=');
 });
 
 it('includes status and price change details in html and text', function () {
@@ -104,6 +111,35 @@ it('includes status and price change details in html and text', function () {
     $mail->assertSeeInText('plot_price_changed: Plot price changed. (100000 -> 110000)');
     expect($html)->toContain('available -&gt; reserved');
     expect($html)->toContain('100000 -&gt; 110000');
+    expect($html)->toContain('plot_status_changed');
+    expect($html)->toContain('plot_price_changed');
+    expect($html)->toContain('Issue details');
+});
+
+it('renders changes and active issue counts as labeled html grids', function () {
+    $source = MonitoredSource::create(['key' => 'hb:mail-grids', 'name' => 'Grid Mail Source']);
+    $snapshot = DatasetSnapshot::create(['source_id' => $source->id, 'payload' => []]);
+    DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'current_snapshot_id' => $snapshot->id,
+        'previous_snapshot_id' => null,
+        'status' => 'completed',
+        'summary' => ['added' => 2, 'removed' => 1, 'changed' => 3, 'unchanged' => 4],
+        'started_at' => now()->subHour(),
+        'finished_at' => now()->subHour()->addMinute(),
+    ]);
+
+    $html = dailySummaryHtml(dailySummaryMailFromBuilder());
+
+    expect($html)->toContain('>Added</th>');
+    expect($html)->toContain('>Removed</th>');
+    expect($html)->toContain('>Changed</th>');
+    expect($html)->toContain('>Unchanged</th>');
+    expect($html)->toContain('>Errors</th>');
+    expect($html)->toContain('>Warnings</th>');
+    expect($html)->toContain('>Info</th>');
+    expect($html)->toContain('>Total active issues</th>');
+    expect($html)->not->toContain('added=2 removed=1');
 });
 
 it('represents recovered failures clearly in html and text', function () {
@@ -188,6 +224,8 @@ it('marks a current source_run_failed issue as still failing in html and text', 
     $mail->assertSeeInText('source_run_failed: SOURCE_RUN_FAILED_CURRENT (still failing)');
     expect($html)->toContain('(still failing)');
     expect($html)->toContain('SOURCE_RUN_FAILED_CURRENT');
+    expect($html)->toContain('source_run_failed');
+    expect($html)->toContain('Issue details');
 });
 
 it('does not introduce mojibake or smart punctuation in rendered mail', function () {
