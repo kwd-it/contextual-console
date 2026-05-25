@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-05-25
+
+Daily summary email improvements, per-user summary preferences, clearer dashboard handling of recovered source failures, issue change details in the UI and email, local dev email preview, and updated project handover. Monitoring presentation and email delivery improved; plot dataset issue detection rules are unchanged.
+
+### Added
+
+- **HTML daily summary email** with a plain-text fallback body built from the same monitoring report.
+- **Local daily summary email preview** at `/dev/daily-summary-email-preview` (authenticated; registered only outside production).
+- **Profile page** (`/profile`) for the signed-in user: read-only name and login email display, plus a **Daily summary email** opt-in checkbox (`daily_summary_enabled`).
+- **Per-user daily summary delivery**: subscribed users receive the scheduled summary at their **login email** (`users.email`).
+- **Cursor project skills** for general workflow, no-mojibake UI text, and monitoring investigations (see `.cursor/skills-catalogue.md`).
+- **Project handover** (`docs/contextual-console-handover.md`) as the version-controlled operator handover; superseded generic workflow docs removed from the repo.
+
+### Changed
+
+- **Dashboard source failures**: distinguishes **current** failed runs from **recovered** failures (a later successful run for the same source). Recovered failures are no longer counted or listed as active dashboard problems.
+- **Recovered source run failures**: when a later run succeeds, older open `source_run_failed` issues for that source are resolved automatically and excluded from active dashboard and daily summary error counts.
+- **Issue rows**: show **old -> new** change details on Issues and related views where issue context includes those values.
+- **Daily summary content**: includes useful issue detail lines, change values, and recovered-failure context (not only counts).
+- **Daily summary HTML layout**: clearer labelled sections per source for changes and active issues.
+- **Daily summary recipients**: when one or more users are subscribed, email goes to each subscriber only; **`CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO`** is used only when no users are subscribed (see `docs/DEPLOYMENT.md` and `docs/contextual-console-handover.md`).
+
+### Notes
+
+- Plot-level dataset issue detection rules are unchanged.
+- After deploying, operators should opt in via **Profile** (or a controlled DB update) so production does not rely on the env fallback recipient long term.
+
 ## [0.9.0] - 2026-05-24
 
 Issue review workflow, active-issue dashboard summaries, bulk issue review, paginated Issues and Changes listings, monitored source display labels, and UI table polish. Review and presentation only; ingest, comparison, change detection, and issue detection rules are unchanged.
