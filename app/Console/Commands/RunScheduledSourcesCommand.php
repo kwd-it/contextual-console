@@ -7,6 +7,7 @@ use App\Core\Models\DatasetIssue;
 use App\Core\Models\DatasetSnapshot;
 use App\Core\Models\MonitoredSource;
 use App\Core\Services\HttpJsonSourceFetcher;
+use App\Core\Services\SourceRunFailedIssueService;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
 use App\Domains\Housebuilder\Services\PlotHttpIngestNormalizer;
 use Illuminate\Console\Command;
@@ -94,7 +95,7 @@ class RunScheduledSourcesCommand extends Command
                     'entity_type' => null,
                     'entity_id' => null,
                     'field' => null,
-                    'issue_type' => 'source_run_failed',
+                    'issue_type' => SourceRunFailedIssueService::ISSUE_TYPE,
                     'severity' => 'error',
                     'message' => "Scheduled source run failed for {$source->key}.",
                     'context' => [

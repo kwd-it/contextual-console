@@ -30,17 +30,33 @@
                     <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'check', 'class' => 'cc-stat-icon'])<span>Latest completed run</span></p>
                     <p class="cc-stat-card__value cc-stat-card__value--text" data-test="dashboard-latest-completed">
                         @if ($latestCompletedRunFinishedAt !== null)
-                            <span class="mono cc-time">{{ $latestCompletedRunFinishedAt->toDateTimeString() }}</span>
+                            <span class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($latestCompletedRunFinishedAt) }}</span>
                         @else
-                            <span class="muted">—</span>
+                            <span class="muted">-</span>
                         @endif
                     </p>
                     <p class="cc-stat-card__hint muted">Finished time (completed runs only)</p>
                 </article>
                 <article class="cc-stat-card">
-                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'cross', 'class' => 'cc-stat-icon'])<span>Failed runs (7 days)</span></p>
-                    <p class="cc-stat-card__value" data-test="dashboard-failed-runs-7d">{{ $failedRunsLast7Days }}</p>
-                    <p class="cc-stat-card__hint muted">Comparison or ingest failures</p>
+                    <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'cross', 'class' => 'cc-stat-icon'])<span>Run failures</span></p>
+                    <p class="cc-stat-card__value" data-test="dashboard-failed-runs-current">{{ $currentFailedRuns }}</p>
+                    <p class="cc-stat-card__hint muted" data-test="dashboard-failed-runs-hint">
+                        @if ($currentFailedRuns > 0)
+                            Latest run still failed for {{ $currentFailedRuns === 1 ? 'one source' : $currentFailedRuns.' sources' }}
+                        @elseif ($recoveredFailedRuns7d > 0)
+                            <span data-test="dashboard-failed-runs-recovered">{{ $recoveredFailedRuns7d }}</span> recovered in the last 7 days
+                        @else
+                            No current or recent run failures
+                        @endif
+                    </p>
+                    @if ($recoveredFailedRuns7d > 0 && $currentFailedRuns > 0)
+                        <p class="cc-stat-card__hint muted"><span data-test="dashboard-failed-runs-recovered">{{ $recoveredFailedRuns7d }}</span> recovered in the last 7 days</p>
+                    @endif
+                    @if ($currentFailedRuns > 0)
+                        <p class="cc-stat-card__action">
+                            <a href="{{ route('sources.index') }}" data-test="dashboard-drill-failed-sources">View sources</a>
+                        </p>
+                    @endif
                 </article>
                 <article class="cc-stat-card cc-stat-card--issues-summary">
                     <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'issue', 'class' => 'cc-stat-icon'])<span>Active issues</span></p>
@@ -191,7 +207,7 @@
                                             @if ($src !== null)
                                                 <a href="{{ route('sources.show', $src) }}">{{ $src->display_label }}</a>
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
                                         </td>
                                         <td>
@@ -203,7 +219,7 @@
                                                 @include('sources._dashboard-status-badge', ['status' => $run->status, 'label' => $run->status])
                                             @endif
                                         </td>
-                                        <td class="mono cc-time">{{ $run->finished_at?->toDateTimeString() ?? '—' }}</td>
+                                        <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($run->finished_at) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -266,12 +282,12 @@
                                         );
                                     @endphp
                                     <tr data-test="dashboard-recent-change-row">
-                                        <td class="mono cc-time">{{ $change->changed_at?->toDateTimeString() ?? '—' }}</td>
+                                        <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($change->changed_at) }}</td>
                                         <td>
                                             @if ($source !== null)
                                                 <a href="{{ route('sources.show', $source) }}">{{ $source->display_label }}</a>
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
                                         </td>
                                         <td>
@@ -289,15 +305,15 @@
                                             @endif
                                         </td>
                                         <td class="mono">{{ $change->field }}</td>
-                                        <td class="mono">{{ $change->old_value ?? '—' }}</td>
-                                        <td class="mono">{{ $change->new_value ?? '—' }}</td>
+                                        <td class="mono">{{ $change->old_value ?? '-' }}</td>
+                                        <td class="mono">{{ $change->new_value ?? '-' }}</td>
                                         <td class="mono">
                                             @if ($source !== null && $run !== null)
                                                 <a href="{{ route('sources.runs.show', [$source, $run]) }}">{{ $change->dataset_comparison_run_id }}</a>
                                             @elseif ($change->dataset_comparison_run_id !== null)
                                                 {{ $change->dataset_comparison_run_id }}
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -360,7 +376,7 @@
                                             @if ($issueSource !== null)
                                                 <a href="{{ route('sources.show', $issueSource) }}">{{ $issueSource->display_label }}</a>
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
                                         </td>
                                         <td class="mono">
@@ -369,7 +385,7 @@
                                             @elseif ($issueRun !== null)
                                                 {{ $issueRun->id }}
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
                                         </td>
                                     </tr>

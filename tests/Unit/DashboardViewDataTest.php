@@ -21,7 +21,8 @@ it('returns the dashboard view variable contract', function () {
             'summaryDateFrom',
             'totalSources',
             'latestCompletedRunFinishedAt',
-            'failedRunsLast7Days',
+            'currentFailedRuns',
+            'recoveredFailedRuns7d',
             'activeIssuesCount',
             'activeInfosCount',
             'activeWarningsCount',
@@ -133,4 +134,120 @@ it('excludes ignored and resolved issues from dashboard recent active issues', f
     expect($data['recentIssues'])->toHaveCount(1);
     expect($data['recentIssues']->first()?->message)->toBe('active-issue');
     expect($data['hasInactiveIssues'])->toBeTrue();
+});
+
+it('counts current and recovered failed runs separately for the last seven days', function () {
+    Carbon::setTestNow(Carbon::parse('2026-05-14 12:00:00', 'UTC'));
+    try {
+        $recoveredSource = MonitoredSource::create([
+            'key' => 'hb:dash-failed-recovered',
+            'name' => 'Recovered Failure Source',
+        ]);
+        $activeSource = MonitoredSource::create([
+            'key' => 'hb:dash-failed-active',
+            'name' => 'Active Failure Source',
+        ]);
+
+        $recoveredFailure = DatasetComparisonRun::create([
+            'source_id' => $recoveredSource->id,
+            'status' => 'failed',
+            'current_snapshot_id' => null,
+            'previous_snapshot_id' => null,
+            'summary' => null,
+            'started_at' => now()->subDays(2),
+            'finished_at' => now()->subDays(2),
+        ]);
+        DatasetComparisonRun::create([
+            'source_id' => $recoveredSource->id,
+            'status' => 'completed',
+            'current_snapshot_id' => null,
+            'previous_snapshot_id' => null,
+            'summary' => null,
+            'started_at' => now()->subDay(),
+            'finished_at' => now()->subDay(),
+        ]);
+
+        DatasetComparisonRun::create([
+            'source_id' => $activeSource->id,
+            'status' => 'failed',
+            'current_snapshot_id' => null,
+            'previous_snapshot_id' => null,
+            'summary' => null,
+            'started_at' => now()->subHour(),
+            'finished_at' => now()->subHour(),
+        ]);
+
+        $data = app(DashboardViewData::class)->forIndex();
+
+        expect($data['currentFailedRuns'])->toBe(1)
+            ->and($data['recoveredFailedRuns7d'])->toBe(1)
+            ->and($recoveredFailure->id)->toBeLessThan(
+                DatasetComparisonRun::query()->where('source_id', $recoveredSource->id)->max('id'),
+            );
+    } finally {
+        Carbon::setTestNow();
+    }
+});
+
+it('counts a latest failed run as current even when it is older than seven days', function () {
+    Carbon::setTestNow(Carbon::parse('2026-05-14 12:00:00', 'UTC'));
+    try {
+        $source = MonitoredSource::create([
+            'key' => 'hb:dash-failed-stale-latest',
+            'name' => 'Stale Latest Failure Source',
+        ]);
+
+        DatasetComparisonRun::create([
+            'source_id' => $source->id,
+            'status' => 'failed',
+            'current_snapshot_id' => null,
+            'previous_snapshot_id' => null,
+            'summary' => null,
+            'started_at' => now()->subDays(30),
+            'finished_at' => now()->subDays(30),
+        ]);
+
+        $data = app(DashboardViewData::class)->forIndex();
+
+        expect($data['currentFailedRuns'])->toBe(1)
+            ->and($data['recoveredFailedRuns7d'])->toBe(0);
+    } finally {
+        Carbon::setTestNow();
+    }
+});
+
+it('does not count recovered failed runs older than seven days', function () {
+    Carbon::setTestNow(Carbon::parse('2026-05-14 12:00:00', 'UTC'));
+    try {
+        $source = MonitoredSource::create([
+            'key' => 'hb:dash-failed-stale-recovered',
+            'name' => 'Stale Recovered Failure Source',
+        ]);
+
+        DatasetComparisonRun::create([
+            'source_id' => $source->id,
+            'status' => 'failed',
+            'current_snapshot_id' => null,
+            'previous_snapshot_id' => null,
+            'summary' => null,
+            'started_at' => now()->subDays(30),
+            'finished_at' => now()->subDays(30),
+        ]);
+        DatasetComparisonRun::create([
+            'source_id' => $source->id,
+            'status' => 'completed',
+            'current_snapshot_id' => null,
+            'previous_snapshot_id' => null,
+            'summary' => null,
+            'started_at' => now()->subDays(29),
+            'finished_at' => now()->subDays(29),
+        ]);
+
+        $data = app(DashboardViewData::class)->forIndex();
+
+        expect($data['currentFailedRuns'])->toBe(0)
+            ->and($data['recoveredFailedRuns7d'])->toBe(0);
+    } finally {
+        Carbon::setTestNow();
+    }
 });

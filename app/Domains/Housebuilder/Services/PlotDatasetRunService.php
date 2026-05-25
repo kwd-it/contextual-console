@@ -6,6 +6,7 @@ use App\Core\Models\DatasetComparisonRun;
 use App\Core\Models\DatasetIssue;
 use App\Core\Models\DatasetSnapshot;
 use App\Core\Models\MonitoredSource;
+use App\Core\Services\SourceRunFailedIssueService;
 use Illuminate\Support\Carbon;
 
 class PlotDatasetRunService
@@ -15,6 +16,7 @@ class PlotDatasetRunService
         private PlotDatasetPresenceChangeLogger $presenceLogger,
         private PlotDatasetIssueDetector $issueDetector,
         private PlotDatasetChangeLogIssueCreator $changeLogIssueCreator,
+        private SourceRunFailedIssueService $sourceRunFailedIssueService,
     ) {}
 
     /**
@@ -50,6 +52,7 @@ class PlotDatasetRunService
             ]);
 
             $this->persistIssues($source, $currentSnapshot, $run, $payload);
+            $this->sourceRunFailedIssueService->resolveSupersededForSuccessfulRun($source, $run);
 
             return $run;
         }
@@ -84,6 +87,7 @@ class PlotDatasetRunService
 
         $this->persistIssues($source, $currentSnapshot, $run, $payload);
         $this->changeLogIssueCreator->createForRun($run);
+        $this->sourceRunFailedIssueService->resolveSupersededForSuccessfulRun($source, $run);
 
         return $run;
     }

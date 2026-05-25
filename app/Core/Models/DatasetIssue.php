@@ -2,6 +2,7 @@
 
 namespace App\Core\Models;
 
+use App\Core\Services\SourceRunFailedIssueService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -82,7 +83,30 @@ class DatasetIssue extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->whereIn('status', self::ACTIVE_STATUSES);
+        return $query
+            ->whereIn('status', self::ACTIVE_STATUSES)
+            ->where(function (Builder $q) {
+                $q->where(function (Builder $qNormal) {
+                    $qNormal->whereNull('issue_type')
+                        ->orWhere('issue_type', '!=', SourceRunFailedIssueService::ISSUE_TYPE);
+                })
+                    ->orWhere(function (Builder $q2) {
+                        $q2->where('issue_type', SourceRunFailedIssueService::ISSUE_TYPE)
+                            ->whereExists(function ($sub) {
+                                $sub->selectRaw('1')
+                                    ->from('dataset_comparison_runs as issue_runs')
+                                    ->whereColumn('issue_runs.id', 'dataset_issues.dataset_comparison_run_id')
+                                    ->where('issue_runs.status', 'failed')
+                                    ->whereRaw(
+                                        'issue_runs.id = (
+                                            select max(latest_runs.id)
+                                            from dataset_comparison_runs as latest_runs
+                                            where latest_runs.source_id = issue_runs.source_id
+                                        )',
+                                    );
+                            });
+                    });
+            });
     }
 
     /**

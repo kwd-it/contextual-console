@@ -29,7 +29,8 @@ final class DashboardViewData
      *   summaryDateFrom: string,
      *   totalSources: int,
      *   latestCompletedRunFinishedAt: ?Carbon,
-     *   failedRunsLast7Days: int,
+     *   currentFailedRuns: int,
+     *   recoveredFailedRuns7d: int,
      *   activeIssuesCount: int,
      *   activeInfosCount: int,
      *   activeWarningsCount: int,
@@ -64,16 +65,7 @@ final class DashboardViewData
             ->whereNotNull('finished_at')
             ->max('finished_at');
 
-        $failedRunsLast7Days = DatasetComparisonRun::query()
-            ->where('status', 'failed')
-            ->where(function ($q) use ($since) {
-                $q->where('finished_at', '>=', $since)
-                    ->orWhere(function ($q2) use ($since) {
-                        $q2->whereNull('finished_at')
-                            ->where('created_at', '>=', $since);
-                    });
-            })
-            ->count();
+        [$currentFailedRuns, $recoveredFailedRuns7d] = $this->failedRunCounts($since);
 
         $activeIssuesQuery = fn () => DatasetIssue::query()->active();
 
@@ -132,7 +124,8 @@ final class DashboardViewData
             'latestCompletedRunFinishedAt' => $latestCompletedRunFinishedAt !== null
                 ? Carbon::parse($latestCompletedRunFinishedAt)
                 : null,
-            'failedRunsLast7Days' => $failedRunsLast7Days,
+            'currentFailedRuns' => $currentFailedRuns,
+            'recoveredFailedRuns7d' => $recoveredFailedRuns7d,
             'activeIssuesCount' => $activeIssuesCount,
             'activeInfosCount' => $activeInfosCount,
             'activeWarningsCount' => $activeWarningsCount,
@@ -146,6 +139,51 @@ final class DashboardViewData
             'hasInactiveIssues' => $hasInactiveIssues,
             'developmentOverviewGroups' => $developmentOverviewGroups,
         ];
+    }
+
+    /**
+     * @return array{0: int, 1: int}
+     */
+    private function failedRunCounts(Carbon $since): array
+    {
+        $latestRunIdsBySourceId = DatasetComparisonRun::query()
+            ->select('source_id', DB::raw('max(id) as latest_run_id'))
+            ->groupBy('source_id')
+            ->pluck('latest_run_id', 'source_id');
+
+        $currentFailedRuns = $latestRunIdsBySourceId->isEmpty()
+            ? 0
+            : DatasetComparisonRun::query()
+                ->whereIn('id', $latestRunIdsBySourceId->values())
+                ->where('status', 'failed')
+                ->count();
+
+        $recoveredFailedRuns7d = DatasetComparisonRun::query()
+            ->where('status', 'failed')
+            ->where(function ($q) use ($since) {
+                $this->applyRunWithinSince($q, $since);
+            })
+            ->whereExists(function ($q) {
+                $q->selectRaw('1')
+                    ->from('dataset_comparison_runs as later_runs')
+                    ->whereColumn('later_runs.source_id', 'dataset_comparison_runs.source_id')
+                    ->whereColumn('later_runs.id', '>', 'dataset_comparison_runs.id')
+                    ->whereIn('later_runs.status', ['completed', 'baseline']);
+            })
+            ->count();
+
+        return [$currentFailedRuns, $recoveredFailedRuns7d];
+    }
+
+    private function applyRunWithinSince($query, Carbon $since): void
+    {
+        $query->where(function ($q) use ($since) {
+            $q->where('finished_at', '>=', $since)
+                ->orWhere(function ($q2) use ($since) {
+                    $q2->whereNull('finished_at')
+                        ->where('created_at', '>=', $since);
+                });
+        });
     }
 
     /**

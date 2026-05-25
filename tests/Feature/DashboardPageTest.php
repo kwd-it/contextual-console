@@ -117,7 +117,7 @@ it('shows helpful empty states when there is little or no data', function () {
         ->getContent();
 
     expect($html)->toMatch('/data-test="dashboard-total-sources">\s*0\s*</');
-    expect($html)->toMatch('/data-test="dashboard-failed-runs-7d">\s*0\s*</');
+    expect($html)->toMatch('/data-test="dashboard-failed-runs-current">\s*0\s*</');
     expect($html)->toContain('data-test="dashboard-active-issues-none"');
     expect($html)->not->toContain('data-test="dashboard-drill-active-issues"');
     expect($html)->toMatch('/data-test="dashboard-active-issues">\s*0\s*</');
@@ -143,25 +143,21 @@ it('renders summary counts and recent activity with links', function () {
     $service->run($active, [
         ['id' => 1, 'price' => 100_000, 'status' => 'available'],
     ]);
-    $latestRun = $service->run($active, [
-        ['id' => 1, 'price' => 110_000, 'status' => 'reserved'],
-    ]);
-    $latestRun->refresh();
 
-    DatasetComparisonRun::create([
+    $failedRun = DatasetComparisonRun::create([
         'source_id' => $active->id,
         'status' => 'failed',
         'current_snapshot_id' => null,
         'previous_snapshot_id' => null,
         'summary' => null,
-        'started_at' => now()->subMinute(),
-        'finished_at' => now(),
+        'started_at' => now()->subMinutes(3),
+        'finished_at' => now()->subMinutes(2),
     ]);
 
-    $failedRun = DatasetComparisonRun::query()
-        ->where('source_id', $active->id)
-        ->where('status', 'failed')
-        ->firstOrFail();
+    $latestRun = $service->run($active, [
+        ['id' => 1, 'price' => 110_000, 'status' => 'reserved'],
+    ]);
+    $latestRun->refresh();
 
     $failedHref = route('sources.runs.show', [$active, $failedRun]);
     $latestRunHref = route('sources.runs.show', [$active, $latestRun]);
@@ -201,7 +197,8 @@ it('renders summary counts and recent activity with links', function () {
         ->getContent();
 
     expect($html)->toMatch('/data-test="dashboard-total-sources">\s*2\s*</');
-    expect($html)->toMatch('/data-test="dashboard-failed-runs-7d">\s*1\s*</');
+    expect($html)->toMatch('/data-test="dashboard-failed-runs-current">\s*0\s*</');
+    expect($html)->toContain('data-test="dashboard-failed-runs-recovered">1</');
     expect($html)->toMatch('/data-test="dashboard-active-issues">\s*4\s*</');
     expect($html)->toMatch('/data-test="dashboard-active-warnings">\s*1 warnings\s*</');
     expect($html)->toMatch('/data-test="dashboard-active-errors">\s*1 errors\s*</');
@@ -788,6 +785,198 @@ it('shows an empty state for recent active issues when only ignored or resolved 
         ->assertSeeText('No active issues')
         ->assertSeeText('Ignored and resolved issues are still available')
         ->assertDontSeeText('DASHBOARD_INACTIVE_ONLY_ISSUE');
+});
+
+it('does not count a recovered source_run_failed issue as an active dashboard error', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dash-recovered-run-failed-issue',
+        'name' => 'Dashboard Recovered Run Failed Issue Source',
+    ]);
+
+    $failedRun = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subDay(),
+        'finished_at' => now()->subDay(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $failedRun->id,
+        'issue_type' => 'source_run_failed',
+        'severity' => 'error',
+        'message' => 'DASHBOARD_RECOVERED_SOURCE_RUN_FAILED',
+    ]);
+
+    DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now(),
+        'finished_at' => now(),
+    ]);
+
+    $html = $this->actingAs($user)
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertDontSeeText('DASHBOARD_RECOVERED_SOURCE_RUN_FAILED')
+        ->getContent();
+
+    expect($html)->toMatch('/data-test="dashboard-active-issues">\s*0\s*</');
+    expect($html)->toMatch('/data-test="dashboard-active-errors">\s*0 errors\s*</');
+    expect($html)->toContain('data-test="dashboard-active-issues-none"');
+    expect($html)->not->toContain('ÔÇö');
+});
+
+it('counts a current source_run_failed issue as an active dashboard error when the latest run failed', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dash-current-run-failed-issue',
+        'name' => 'Dashboard Current Run Failed Issue Source',
+    ]);
+
+    DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subDays(2),
+        'finished_at' => now()->subDays(2),
+    ]);
+
+    $failedRun = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $failedRun->id,
+        'issue_type' => 'source_run_failed',
+        'severity' => 'error',
+        'message' => 'DASHBOARD_CURRENT_SOURCE_RUN_FAILED',
+    ]);
+
+    $html = $this->actingAs($user)
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertSeeText('DASHBOARD_CURRENT_SOURCE_RUN_FAILED')
+        ->getContent();
+
+    expect($html)->toMatch('/data-test="dashboard-active-issues">\s*1\s*</');
+    expect($html)->toMatch('/data-test="dashboard-active-errors">\s*1 errors\s*</');
+    expect($html)->toContain('data-test="dashboard-drill-active-errors"');
+});
+
+it('shows a current failed run count when the latest run for a source failed', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dash-failed-current',
+        'name' => 'Dashboard Current Failure Source',
+    ]);
+
+    DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subDays(2),
+        'finished_at' => now()->subDays(2),
+    ]);
+    DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    $html = $this->actingAs($user)
+        ->get('/dashboard')
+        ->assertOk()
+        ->getContent();
+
+    expect($html)->toMatch('/data-test="dashboard-failed-runs-current">\s*1\s*</');
+    expect($html)->toContain('data-test="dashboard-drill-failed-sources"');
+    expect($html)->not->toContain('data-test="dashboard-failed-runs-recovered"');
+});
+
+it('shows a stale latest failed run as a current failure on the dashboard', function () {
+    Carbon::setTestNow(Carbon::parse('2026-05-14 12:00:00', 'UTC'));
+    try {
+        $user = User::factory()->create();
+        $source = MonitoredSource::create([
+            'key' => 'hb:dash-failed-stale',
+            'name' => 'Dashboard Stale Failure Source',
+        ]);
+
+        DatasetComparisonRun::create([
+            'source_id' => $source->id,
+            'status' => 'failed',
+            'current_snapshot_id' => null,
+            'previous_snapshot_id' => null,
+            'summary' => null,
+            'started_at' => now()->subDays(30),
+            'finished_at' => now()->subDays(30),
+        ]);
+
+        $html = $this->actingAs($user)
+            ->get('/dashboard')
+            ->assertOk()
+            ->getContent();
+
+        expect($html)->toMatch('/data-test="dashboard-failed-runs-current">\s*1\s*</');
+        expect($html)->toContain('Latest run still failed for one source');
+    } finally {
+        Carbon::setTestNow();
+    }
+});
+
+it('formats dashboard timestamps in the schedule timezone', function () {
+    config(['app.schedule_timezone' => 'Europe/London']);
+
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:dash-display-time',
+        'name' => 'Dashboard Display Time Source',
+    ]);
+
+    $finishedAt = Carbon::parse('2026-05-14 05:42:00', 'UTC');
+    DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => $finishedAt->copy()->subMinute(),
+        'finished_at' => $finishedAt,
+    ]);
+
+    $html = $this->actingAs($user)
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertSee('2026-05-14 06:42:00', false)
+        ->assertDontSee('2026-05-14 05:42:00', false)
+        ->getContent();
+
+    expect($html)->not->toContain('ÔÇö');
 });
 
 it('orders recent comparison runs newest first by run id', function () {
