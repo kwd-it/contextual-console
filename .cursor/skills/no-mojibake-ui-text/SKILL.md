@@ -1,9 +1,10 @@
 ---
 name: no-mojibake-ui-text
 description: >-
-  Prevents smart punctuation, Unicode arrows, em dashes, and mojibake in
-  user-visible strings. Use when editing UI text, Blade templates, tests,
-  command output, emails, Markdown, seed data, or any user-visible strings.
+  Blocking check for smart punctuation, Unicode arrows, em dashes, and
+  mojibake in user-visible strings. Use when editing UI text, Blade templates,
+  tests, command output, emails, Markdown, seed data, or any user-visible
+  strings. Do not report task completion until the grep check is clean.
 ---
 
 # No Mojibake UI Text
@@ -43,17 +44,21 @@ Also avoid inserting these directly:
 - Unicode arrow `→`
 - Smart quotes `“` `”` `‘` `’`
 
-## Before finishing
+## Blocking verification (required before completion)
 
-1. Check changed or staged files for mojibake or smart punctuation.
-2. Replace any hits with safe ASCII before reporting completion.
+This skill is a **blocking** step, not advisory guidance. Cursor must actively run the grep check on changed user-visible files before reporting a task complete. **Do not say the task is done** if mojibake, smart punctuation, Unicode arrows, em dashes, or unsafe separators remain.
 
-Suggested check (staged changes):
+**Touched files must be clean** in Blade, Markdown, emails, tests, command output, and UI copy -- even when the bad text was already present before the current edit.
+
+### Check command
+
+Use the same pattern for both cases:
 
 ```bash
-git diff --cached | grep -E "ÔÇö|ÔåÆ|├ö|┬À|—|→|“|”|‘|’"
+grep -E "ÔÇö|ÔåÆ|├ö|┬À|—|→|“|”|‘|’"
 ```
 
-For unstaged or all working-tree changes, run the same pattern against `git diff` or specific file paths.
+- **Staged changes:** pipe `git diff --cached` into that grep before finishing.
+- **Unstaged or mixed changes:** pipe `git diff` (or grep specific touched paths) when nothing is staged.
 
-If grep finds anything, fix the source strings (do not leave the bad characters in place) and re-run the check until clean.
+**Any grep match is a blocking issue.** Fix the source strings (do not leave bad characters in place), then re-run the check until it exits with no output. Only then report completion.
