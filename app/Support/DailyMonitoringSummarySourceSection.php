@@ -10,6 +10,9 @@ final class DailyMonitoringSummarySourceSection
     public function __construct(
         public readonly string $name,
         public readonly string $sourceKey,
+        public readonly ?string $sourceShowUrl = null,
+        public readonly ?string $periodRunShowUrl = null,
+        public readonly ?string $overallRunShowUrl = null,
         public readonly int $periodRunId,
         public readonly string $periodRunStatus,
         public readonly string $periodRunFinishedAt,

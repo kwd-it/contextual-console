@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Core\Models\DatasetComparisonRun;
 use App\Core\Models\DatasetIssue;
+use App\Core\Models\MonitoredSource;
 use App\Core\Services\SourceRunFailedIssueService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -101,12 +102,20 @@ final class DailyMonitoringSummaryBuilder
 
             $issues = [];
             foreach ($activeIssues as $issue) {
-                $issues[] = $this->buildIssueLine($issue, $overallLatestRun);
+                $issues[] = $this->buildIssueLine($issue, $source, $overallLatestRun);
             }
 
+            $overallRunDiffers = $overallLatestRun !== null
+                && (int) $overallLatestRun->id !== (int) $periodLatestRun->id;
+
             $sources[] = new DailyMonitoringSummarySourceSection(
-                name: (string) $source->name,
+                name: $source->display_label,
                 sourceKey: (string) $source->key,
+                sourceShowUrl: route('sources.show', $source, absolute: true),
+                periodRunShowUrl: route('sources.runs.show', [$source, $periodLatestRun], absolute: true),
+                overallRunShowUrl: $overallRunDiffers
+                    ? route('sources.runs.show', [$source, $overallLatestRun], absolute: true)
+                    : null,
                 periodRunId: (int) $periodLatestRun->id,
                 periodRunStatus: (string) $periodLatestRun->status,
                 periodRunFinishedAt: DisplayTimestamp::format($periodLatestRun->finished_at),
@@ -192,8 +201,11 @@ final class DailyMonitoringSummaryBuilder
 
     private function buildIssueLine(
         DatasetIssue $issue,
+        MonitoredSource $source,
         ?DatasetComparisonRun $overallLatestRun,
     ): DailyMonitoringSummaryIssueLine {
+        $runId = $issue->dataset_comparison_run_id;
+
         return new DailyMonitoringSummaryIssueLine(
             severity: (string) $issue->severity,
             issueType: $issue->issue_type !== null && $issue->issue_type !== ''
@@ -204,6 +216,10 @@ final class DailyMonitoringSummaryBuilder
             suffix: $issue->issue_type === SourceRunFailedIssueService::ISSUE_TYPE
                 ? $this->sourceRunFailedSuffix($issue, $overallLatestRun)
                 : '',
+            issueShowUrl: route('issues.show', $issue, absolute: true),
+            runShowUrl: $runId !== null
+                ? route('sources.runs.show', [$source, $runId], absolute: true)
+                : null,
         );
     }
 

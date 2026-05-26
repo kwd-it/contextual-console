@@ -10,6 +10,8 @@ final class DailyMonitoringSummaryIssueLine
         public readonly string $message,
         public readonly ?string $transition,
         public readonly string $suffix,
+        public readonly ?string $issueShowUrl = null,
+        public readonly ?string $runShowUrl = null,
     ) {}
 
     public function toPlainTextLine(): string

@@ -63,6 +63,34 @@ it('renders html and plain text parts from the structured report', function () {
     expect($mail->summary)->toContain('Changes: added=');
 });
 
+it('uses the source display label in the email heading and plain text', function () {
+    $source = MonitoredSource::create([
+        'key' => 'wyatt:housebuilder',
+        'name' => 'Wyatt Homes Housebuilder',
+        'display_name' => 'Wyatt Homes',
+    ]);
+    $snapshot = DatasetSnapshot::create(['source_id' => $source->id, 'payload' => []]);
+    DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'current_snapshot_id' => $snapshot->id,
+        'previous_snapshot_id' => null,
+        'status' => 'completed',
+        'summary' => ['added' => 0, 'removed' => 0, 'changed' => 0, 'unchanged' => 0],
+        'started_at' => now()->subHour(),
+        'finished_at' => now()->subHour()->addMinute(),
+    ]);
+
+    $mail = dailySummaryMailFromBuilder();
+    $html = dailySummaryHtml($mail);
+
+    $mail->assertSeeInText('Wyatt Homes');
+    $mail->assertSeeInText('Source key: wyatt:housebuilder');
+    $mail->assertDontSeeInText('Wyatt Homes Housebuilder');
+    expect($html)->toContain('Wyatt Homes');
+    expect($html)->toContain('Source key: wyatt:housebuilder');
+    expect($html)->not->toContain('Wyatt Homes Housebuilder');
+});
+
 it('includes status and price change details in html and text', function () {
     $source = MonitoredSource::create(['key' => 'hb:mail-change', 'name' => 'Change Mail Source']);
     $snapshot = DatasetSnapshot::create(['source_id' => $source->id, 'payload' => []]);
@@ -285,6 +313,82 @@ it('includes a distinct html body via the mailable content definition', function
     expect($content->html)->toBe('emails.contextual-console.daily-summary-html');
     expect($content->text)->toBeNull();
     expect(dailySummaryHtml($mail))->toContain('<!DOCTYPE html>');
+});
+
+it('includes absolute console links for sources, runs, and issues in html', function () {
+    config()->set('app.url', 'https://console.example.test');
+
+    $source = MonitoredSource::create(['key' => 'hb:mail-links', 'name' => 'Link Mail Source']);
+    $snapshot = DatasetSnapshot::create(['source_id' => $source->id, 'payload' => []]);
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'current_snapshot_id' => $snapshot->id,
+        'previous_snapshot_id' => null,
+        'status' => 'completed',
+        'summary' => ['added' => 0, 'removed' => 0, 'changed' => 1, 'unchanged' => 0],
+        'started_at' => now()->subHour(),
+        'finished_at' => now()->subHour()->addMinute(),
+    ]);
+
+    $issue = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => $snapshot->id,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => PlotDatasetChangeLogIssueCreator::ISSUE_TYPE_PLOT_STATUS_CHANGED,
+        'severity' => 'info',
+        'message' => 'Plot status changed.',
+        'context' => [
+            'field' => 'status',
+            'old_value' => 'available',
+            'new_value' => 'reserved',
+        ],
+    ]);
+
+    $html = dailySummaryHtml(dailySummaryMailFromBuilder());
+    $sourceHref = route('sources.show', $source, absolute: true);
+    $runHref = route('sources.runs.show', [$source, $run], absolute: true);
+    $issueHref = route('issues.show', $issue, absolute: true);
+
+    expect($html)->toContain('href="'.$sourceHref.'"');
+    expect($html)->toContain('href="'.$runHref.'"');
+    expect($html)->toContain('href="'.$issueHref.'"');
+    expect($html)->toContain('View issue');
+    expect($html)->toContain('View run');
+});
+
+it('does not add issue or run urls to plain text output', function () {
+    config()->set('app.url', 'https://console.example.test');
+
+    $source = MonitoredSource::create(['key' => 'hb:mail-plain-links', 'name' => 'Plain Link Source']);
+    $snapshot = DatasetSnapshot::create(['source_id' => $source->id, 'payload' => []]);
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'current_snapshot_id' => $snapshot->id,
+        'previous_snapshot_id' => null,
+        'status' => 'completed',
+        'summary' => ['added' => 0, 'removed' => 0, 'changed' => 1, 'unchanged' => 0],
+        'started_at' => now()->subHour(),
+        'finished_at' => now()->subHour()->addMinute(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => $snapshot->id,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => PlotDatasetChangeLogIssueCreator::ISSUE_TYPE_PLOT_STATUS_CHANGED,
+        'severity' => 'info',
+        'message' => 'Plot status changed.',
+        'context' => [
+            'field' => 'status',
+            'old_value' => 'available',
+            'new_value' => 'reserved',
+        ],
+    ]);
+
+    $mail = dailySummaryMailFromBuilder();
+
+    $mail->assertSeeInText('plot_status_changed: Plot status changed. (available -> reserved)');
+    expect($mail->summary)->not->toContain('https://console.example.test');
 });
 
 it('renders the generated summary verbatim as the plain text body', function () {

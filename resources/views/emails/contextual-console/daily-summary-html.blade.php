@@ -28,7 +28,13 @@
                                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:16px;border:1px solid #e0e0e0;border-radius:4px;">
                                     <tr>
                                         <td style="padding:14px 16px;background-color:#f9f9f9;border-bottom:1px solid #e0e0e0;">
-                                            <p style="margin:0 0 4px 0;font-size:16px;font-weight:bold;color:#111111;">{{ $source->name }}</p>
+                                            <p style="margin:0 0 4px 0;font-size:16px;font-weight:bold;color:#111111;">
+                                                @if ($source->sourceShowUrl !== null)
+                                                    <a href="{{ $source->sourceShowUrl }}" style="color:#1a5fb4;text-decoration:underline;">{{ $source->name }}</a>
+                                                @else
+                                                    {{ $source->name }}
+                                                @endif
+                                            </p>
                                             <p style="margin:0;font-size:12px;color:#666666;">Source key: {{ $source->sourceKey }}</p>
                                         </td>
                                     </tr>
@@ -36,7 +42,12 @@
                                         <td style="padding:14px 16px;">
                                             <p style="margin:0 0 8px 0;font-size:13px;color:#333333;">
                                                 <strong>Latest run in period:</strong>
-                                                #{{ $source->periodRunId }} {{ $source->periodRunStatus }}
+                                                @if ($source->periodRunShowUrl !== null)
+                                                    <a href="{{ $source->periodRunShowUrl }}" style="color:#1a5fb4;text-decoration:underline;">#{{ $source->periodRunId }}</a>
+                                                @else
+                                                    #{{ $source->periodRunId }}
+                                                @endif
+                                                {{ $source->periodRunStatus }}
                                             </p>
                                             <p style="margin:0 0 12px 0;font-size:13px;color:#555555;">
                                                 Finished {{ $source->periodRunFinishedAt }}
@@ -44,7 +55,12 @@
                                             @if ($source->overallRunId !== null)
                                                 <p style="margin:0 0 12px 0;font-size:13px;color:#333333;">
                                                     <strong>Overall latest run:</strong>
-                                                    #{{ $source->overallRunId }} {{ $source->overallRunStatus }}
+                                                    @if ($source->overallRunShowUrl !== null)
+                                                        <a href="{{ $source->overallRunShowUrl }}" style="color:#1a5fb4;text-decoration:underline;">#{{ $source->overallRunId }}</a>
+                                                    @else
+                                                        #{{ $source->overallRunId }}
+                                                    @endif
+                                                    {{ $source->overallRunStatus }}
                                                     (finished {{ $source->overallRunFinishedAt }})
                                                 </p>
                                             @endif
@@ -98,12 +114,31 @@
                                                                 @if ($issue->issueType !== null)
                                                                     <p style="margin:0 0 4px 0;font-size:12px;color:#666666;">{{ $issue->issueType }}</p>
                                                                 @endif
-                                                                <p style="margin:0 0 4px 0;font-size:13px;color:#111111;">{{ $issue->message }}</p>
+                                                                <p style="margin:0 0 4px 0;font-size:13px;color:#111111;">
+                                                                    @if ($issue->issueShowUrl !== null)
+                                                                        <a href="{{ $issue->issueShowUrl }}" style="color:#1a5fb4;text-decoration:underline;">{{ $issue->message }}</a>
+                                                                    @else
+                                                                        {{ $issue->message }}
+                                                                    @endif
+                                                                </p>
                                                                 @if ($issue->transition !== null)
                                                                     <p style="margin:0 0 4px 0;font-size:12px;color:#555555;">{{ $issue->transition }}</p>
                                                                 @endif
                                                                 @if ($issue->suffix !== '')
-                                                                    <p style="margin:0;font-size:12px;color:#555555;font-style:italic;">{{ $issue->suffix }}</p>
+                                                                    <p style="margin:0 0 4px 0;font-size:12px;color:#555555;font-style:italic;">{{ $issue->suffix }}</p>
+                                                                @endif
+                                                                @if ($issue->issueShowUrl !== null || $issue->runShowUrl !== null)
+                                                                    <p style="margin:0;font-size:12px;color:#555555;">
+                                                                        @if ($issue->issueShowUrl !== null)
+                                                                            <a href="{{ $issue->issueShowUrl }}" style="color:#1a5fb4;text-decoration:underline;">View issue</a>
+                                                                        @endif
+                                                                        @if ($issue->issueShowUrl !== null && $issue->runShowUrl !== null)
+                                                                            <span style="color:#999999;"> | </span>
+                                                                        @endif
+                                                                        @if ($issue->runShowUrl !== null)
+                                                                            <a href="{{ $issue->runShowUrl }}" style="color:#1a5fb4;text-decoration:underline;">View run</a>
+                                                                        @endif
+                                                                    </p>
                                                                 @endif
                                                             </td>
                                                         </tr>
