@@ -5,6 +5,7 @@ use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
 use App\Core\Services\MonitoredSourceStatusService;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
+use App\Support\SourceHealthSummary;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -49,6 +50,9 @@ it('returns a monitored source with no runs', function () {
     expect($summary['error_count'])->toBe(0);
     expect($summary['warning_count'])->toBe(0);
     expect($summary['info_count'])->toBe(0);
+
+    expect($summary['health_key'])->toBe(SourceHealthSummary::KEY_NOT_RUN_YET);
+    expect($summary['health_label'])->toBe('Not run yet');
 });
 
 it('returns latest baseline run status', function () {
@@ -78,6 +82,9 @@ it('returns latest baseline run status', function () {
     expect($summary['removed'])->toBe(0);
     expect($summary['changed'])->toBe(0);
     expect($summary['unchanged'])->toBe(0);
+
+    expect($summary['health_key'])->toBe(SourceHealthSummary::KEY_HEALTHY);
+    expect($summary['health_label'])->toBe('Healthy');
 });
 
 it('returns latest completed run summary counts', function () {
@@ -113,6 +120,9 @@ it('returns latest completed run summary counts', function () {
     expect($summary['removed'])->toBe((int) ($run2->summary['removed'] ?? 0));
     expect($summary['changed'])->toBe((int) ($run2->summary['changed'] ?? 0));
     expect($summary['unchanged'])->toBe((int) ($run2->summary['unchanged'] ?? 0));
+
+    expect($summary['health_key'])->toBe(SourceHealthSummary::KEY_HEALTHY);
+    expect($summary['health_label'])->toBe('Healthy');
 });
 
 it('returns issue counts for the latest run', function () {
@@ -148,6 +158,9 @@ it('returns issue counts for the latest run', function () {
     expect($summary['error_count'])->toBe($expectedErrors);
     expect($summary['warning_count'])->toBe($expectedWarnings);
     expect($summary['info_count'])->toBe($expectedInfos);
+
+    expect($summary['health_key'])->toBe(SourceHealthSummary::KEY_NEEDS_REVIEW);
+    expect($summary['health_label'])->toBe('Needs review');
 });
 
 it('does not count issues from older runs', function () {
@@ -191,6 +204,42 @@ it('does not count issues from older runs', function () {
     expect($summary['error_count'])->toBe(0);
     expect($summary['warning_count'])->toBe(0);
     expect($summary['info_count'])->toBe(2);
+
+    expect($summary['health_key'])->toBe(SourceHealthSummary::KEY_HEALTHY);
+    expect($summary['health_label'])->toBe('Healthy');
+});
+
+it('returns failing health when the latest run failed', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:failed-health',
+        'name' => 'Failed Health Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'source_run_failed',
+        'severity' => 'error',
+        'message' => 'Source run failed',
+        'context' => ['reason' => 'boom'],
+    ]);
+
+    $summaries = app(MonitoredSourceStatusService::class)->summaries();
+    $summary = summaryFor($summaries, $source->key);
+
+    expect($summary['health_key'])->toBe(SourceHealthSummary::KEY_FAILING);
+    expect($summary['health_label'])->toBe('Failing');
 });
 
 it('handles multiple sources independently', function () {

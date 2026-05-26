@@ -33,6 +33,7 @@
                             <thead>
                                 <tr>
                                     <th>Source</th>
+                                    <th>Health</th>
                                     <th>Latest run</th>
                                     <th>Finished</th>
                                     <th>Changes</th>
@@ -42,6 +43,9 @@
                             <tbody>
                                 @foreach ($summaries as $s)
                                     @php
+                                        $healthKey = $s['health_key'] ?? '';
+                                        $healthLabel = $s['health_label'] ?? '';
+
                                         $latestStatus = $s['latest_run_status'] ?? null;
                                         $latestStatusLabel = $latestStatus ?? 'none';
 
@@ -77,8 +81,14 @@
                                             <a href="{{ route('sources.show', $s['source_id']) }}">{{ $s['source_name'] ?? '' }}</a>
                                             <div class="cc-details muted">
                                                 Current snapshot: {{ $s['current_snapshot_id'] ?? '-' }}
-                                                · Previous snapshot: {{ $s['previous_snapshot_id'] ?? '-' }}
+                                                - Previous snapshot: {{ $s['previous_snapshot_id'] ?? '-' }}
                                             </div>
+                                        </td>
+                                        <td>
+                                            @include('sources._source-health-badge', [
+                                                'healthKey' => $healthKey,
+                                                'label' => $healthLabel,
+                                            ])
                                         </td>
                                         <td>
                                             @if (($s['latest_run_id'] ?? null) !== null)

@@ -37,6 +37,7 @@ it('shows a source with no runs', function () {
         ->assertOk()
         ->assertSeeText($source->name)
         ->assertDontSeeText($source->key)
+        ->assertSeeText('Not run yet')
         ->assertSeeText('none')
         ->assertSeeText('0');
 });
@@ -429,6 +430,34 @@ it('shows latest completed run summary and issue counts', function () {
     if ($warningIssues > 0) {
         $resp->assertSeeText("warning={$warningIssues}");
     }
+
+    $resp->assertSeeText('Needs review');
+});
+
+it('shows healthy label for a completed run with no error or warning issues', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:page-healthy',
+        'name' => 'Page Healthy Source',
+    ]);
+
+    $service = app(PlotDatasetRunService::class);
+    $service->run($source, [
+        ['id' => 1, 'price' => 100_000, 'status' => 'available'],
+    ]);
+    $run2 = $service->run($source, [
+        ['id' => 1, 'price' => 110_000, 'status' => 'reserved'],
+    ]);
+    $run2->refresh();
+
+    expect($run2->status)->toBe('completed');
+    expect(DatasetIssue::query()->where('dataset_comparison_run_id', $run2->id)->whereIn('severity', ['error', 'warning'])->count())->toBe(0);
+
+    $this->actingAs($user)
+        ->get('/sources')
+        ->assertOk()
+        ->assertSeeText($source->name)
+        ->assertSeeText('Healthy');
 });
 
 it('shows a failed latest run safely on the source list page', function () {
@@ -473,7 +502,8 @@ it('shows a failed latest run safely on the source list page', function () {
         ->assertSeeText('added=0')
         ->assertSeeText('removed=0')
         ->assertSeeText('changed=0')
-        ->assertSeeText('unchanged=0');
+        ->assertSeeText('unchanged=0')
+        ->assertSeeText('Failing');
 });
 
 it('shows an operational sources table without the source key column', function () {
@@ -509,6 +539,7 @@ it('shows an operational sources table without the source key column', function 
         ->getContent();
 
     expect($html)->toContain('<th>Source</th>');
+    expect($html)->toContain('<th>Health</th>');
     expect($html)->toContain('<th>Latest run</th>');
     expect($html)->not->toContain('<th>Source key</th>');
     expect($html)->not->toContain('hb:sources-table-ui');

@@ -5,6 +5,7 @@ namespace App\Core\Services;
 use App\Core\Models\DatasetComparisonRun;
 use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
+use App\Support\SourceHealthSummary;
 use Illuminate\Support\Facades\DB;
 
 class MonitoredSourceStatusService
@@ -27,7 +28,9 @@ class MonitoredSourceStatusService
      *   issue_count: int,
      *   error_count: int,
      *   warning_count: int,
-     *   info_count: int
+     *   info_count: int,
+     *   health_key: string,
+     *   health_label: string
      * }>
      */
     public function summaries(): array
@@ -105,7 +108,7 @@ class MonitoredSourceStatusService
             $issueCount = (int) ($runId === null ? 0 : ($issueCountsByRunId[$runId] ?? 0));
             $severityCounts = $runId === null ? [] : ($severityCountsByRunId[$runId] ?? []);
 
-            $summaries[] = [
+            $row = [
                 'source_id' => (int) $source->id,
                 'source_key' => (string) $source->key,
                 'source_name' => $source->display_label,
@@ -124,6 +127,12 @@ class MonitoredSourceStatusService
                 'warning_count' => (int) ($severityCounts['warning'] ?? 0),
                 'info_count' => (int) ($severityCounts['info'] ?? 0),
             ];
+
+            $health = SourceHealthSummary::forSummary($row);
+            $row['health_key'] = $health['key'];
+            $row['health_label'] = $health['label'];
+
+            $summaries[] = $row;
         }
 
         return $summaries;
