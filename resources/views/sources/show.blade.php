@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — {{ $source->display_label }}</title>
+        <title>Contextual Console - {{ $source->display_label }}</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -19,6 +19,25 @@
                 <p class="cc-page-sub">Comparison runs, detected plot data changes, and issues for this source (from daily dataset snapshots).</p>
                 <p class="cc-source-meta muted mono">Source key: {{ $source->key }}</p>
             </header>
+
+            @if (session('status'))
+                <p class="cc-flash cc-flash--page" role="status" data-test="source-status-flash">{{ session('status') }}</p>
+            @endif
+
+            @if (filled($source->endpoint_url))
+                <section class="cc-card" aria-labelledby="hdr-run-now">
+                    <div class="cc-card-header">
+                        <h2 class="cc-card-title" id="hdr-run-now">@include('sources._dashboard-icon', ['name' => 'run'])<span>Run now</span></h2>
+                        <p class="cc-card-desc">Fetch live plot data from this source endpoint now and run a comparison for this source only.</p>
+                    </div>
+                    <div class="cc-card-body cc-card-body--padded">
+                        <form class="cc-run-now-form" method="post" action="{{ route('sources.run-now', $source) }}" data-test="source-run-now-form">
+                            @csrf
+                            <button type="submit" class="cc-btn-primary" data-test="source-run-now-submit">Run now</button>
+                        </form>
+                    </div>
+                </section>
+            @endif
 
             {{-- Latest run summary --}}
             <section class="cc-card" aria-labelledby="hdr-latest-summary">

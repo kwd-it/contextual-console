@@ -4,12 +4,9 @@ namespace App\Console\Commands;
 
 use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
-use App\Core\Services\HttpJsonSourceFetcher;
-use App\Domains\Housebuilder\Services\PlotDatasetRunService;
-use App\Domains\Housebuilder\Services\PlotHttpIngestNormalizer;
+use App\Core\Services\HttpMonitoredSourceRunService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use RuntimeException;
 
 class RunHttpPlotSourceCommand extends Command
 {
@@ -18,7 +15,7 @@ class RunHttpPlotSourceCommand extends Command
 
     protected $description = 'Run a Housebuilder plot monitored source from an HTTP JSON endpoint configured on the source.';
 
-    public function handle(HttpJsonSourceFetcher $fetcher, PlotHttpIngestNormalizer $payloadNormalizer, PlotDatasetRunService $service): int
+    public function handle(HttpMonitoredSourceRunService $runner): int
     {
         $sourceKey = (string) $this->argument('sourceKey');
 
@@ -29,16 +26,19 @@ class RunHttpPlotSourceCommand extends Command
             return self::FAILURE;
         }
 
-        try {
-            $payload = $payloadNormalizer->normalize($source, $fetcher->fetch($source));
-        } catch (RuntimeException $e) {
-            $this->error($e->getMessage());
+        if (! $runner->isEligible($source)) {
+            $this->error("Monitored source '{$source->key}' is missing endpoint_url.");
 
             return self::FAILURE;
         }
 
-        $run = $service->run($source, $payload);
-        $run->refresh();
+        $run = $runner->run($source);
+
+        if ($run->status === 'failed') {
+            $this->error("Source run failed. run_id: {$run->id} status: failed");
+
+            return self::FAILURE;
+        }
 
         $this->line("source: {$source->key} ({$source->name})");
         $this->line("run_id: {$run->id}");

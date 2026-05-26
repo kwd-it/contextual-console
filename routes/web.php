@@ -47,6 +47,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/sources/{source}', [SourceStatusController::class, 'show'])
         ->name('sources.show');
 
+    Route::post('/sources/{source}/run-now', [SourceStatusController::class, 'runNow'])
+        ->name('sources.run-now');
+
     Route::get('/sources/{source}/developments/{development}', [SourceStatusController::class, 'showDevelopment'])
         ->name('sources.developments.show')
         ->where('development', '.*');

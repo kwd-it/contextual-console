@@ -8,8 +8,10 @@ use App\Core\Models\DatasetIssue;
 use App\Core\Models\DatasetSnapshot;
 use App\Core\Models\MonitoredSource;
 use App\Core\Services\MonitoredSourceStatusService;
+use App\Core\Services\HttpMonitoredSourceRunService;
 use App\Support\DevelopmentDetailViewData;
 use App\Support\PlotSnapshotDisplayLookup;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -20,6 +22,26 @@ class SourceStatusController extends Controller
         return view('sources.index', [
             'summaries' => $status->summaries(),
         ]);
+    }
+
+    public function runNow(MonitoredSource $source, HttpMonitoredSourceRunService $runner): RedirectResponse
+    {
+        abort_unless($runner->isEligible($source), 404);
+
+        $run = $runner->run($source);
+
+        if ($run->status === 'failed') {
+            return redirect()
+                ->route('sources.show', $source)
+                ->with(
+                    'status',
+                    "Run failed. Run #{$run->id} was recorded with status failed. Open the run detail page for more information.",
+                );
+        }
+
+        return redirect()
+            ->route('sources.show', $source)
+            ->with('status', "Run finished. Run #{$run->id} status: {$run->status}.");
     }
 
     public function show(MonitoredSource $source): View

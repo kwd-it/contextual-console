@@ -104,10 +104,10 @@ it('returns failure when the remote payload is invalid', function () {
 
     $this->artisan('contextual-console:run-http-plot-source', [
         'sourceKey' => $source->key,
-    ])->expectsOutputToContain('expected a JSON array')
-        ->assertExitCode(1);
+    ])->assertExitCode(1);
 
-    expect(DatasetComparisonRun::count())->toBe(0);
+    $failedRun = DatasetComparisonRun::query()->where('source_id', $source->id)->firstOrFail();
+    expect($failedRun->status)->toBe('failed');
     expect(DatasetSnapshot::count())->toBe(0);
 });
 

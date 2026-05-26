@@ -974,6 +974,39 @@
         background: var(--cc-surface-subtle);
         border-bottom: 1px solid var(--cc-border);
     }
+    .cc-flash--page {
+        margin-bottom: 22px;
+        border: 1px solid var(--cc-border);
+        border-radius: var(--cc-radius-sm);
+        background: var(--cc-accent-soft);
+    }
+    .cc-btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        padding: 8px 18px;
+        font-family: inherit;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        line-height: 1.4;
+        color: var(--cc-on-accent);
+        background: var(--cc-accent);
+        border: 1px solid var(--cc-accent);
+        border-radius: var(--cc-radius-sm);
+        box-shadow: 0 1px 2px var(--cc-accent-shadow);
+        cursor: pointer;
+    }
+    .cc-btn-primary:hover {
+        background: var(--cc-link-hover);
+        border-color: var(--cc-link-hover);
+    }
+    .cc-btn-primary:active {
+        transform: translateY(1px);
+    }
+    .cc-run-now-form {
+        margin: 0;
+    }
     .cc-issue-status-form {
         display: flex;
         flex-wrap: wrap;
