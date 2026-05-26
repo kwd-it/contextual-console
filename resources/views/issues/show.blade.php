@@ -18,6 +18,7 @@
                 $source = $issue->monitoredSource;
                 $run = $issue->datasetComparisonRun;
                 $typeExplanation = \App\Support\IssueTypeExplanation::forIssue($issue);
+                $suggestedCheck = \App\Support\IssueTypeSuggestedCheck::forIssue($issue);
                 $transition = \App\Support\IssueChangeDetail::transitionLabelForDisplay($issue);
                 $contextEntries = \App\Support\IssueContextDisplay::entries($issue);
 
@@ -123,6 +124,12 @@
                                 <tr>
                                     <th>Explanation</th>
                                     <td data-test="issue-type-explanation">{{ $typeExplanation }}</td>
+                                </tr>
+                            @endif
+                            @if ($suggestedCheck !== null)
+                                <tr>
+                                    <th>What to check next</th>
+                                    <td data-test="issue-suggested-check">{{ $suggestedCheck }}</td>
                                 </tr>
                             @endif
                             @if (! empty($issue->field))
