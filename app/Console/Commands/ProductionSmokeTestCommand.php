@@ -48,6 +48,8 @@ class ProductionSmokeTestCommand extends Command
             MonitoredSource::query()->whereNotNull('endpoint_url')->where('endpoint_url', '!=', '')->exists()
         );
 
+        $failed = $this->checkMonitoredSourceAuthEnvKeys($failed);
+
         $failed = $this->checkRequired(
             $failed,
             'Daily summary recipient is set',
@@ -61,6 +63,27 @@ class ProductionSmokeTestCommand extends Command
         );
 
         return $failed ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function checkMonitoredSourceAuthEnvKeys(bool $alreadyFailed): bool
+    {
+        $envKeys = MonitoredSource::query()
+            ->whereNotNull('auth_token_env_key')
+            ->where('auth_token_env_key', '!=', '')
+            ->pluck('auth_token_env_key')
+            ->map(fn (mixed $key): string => trim((string) $key))
+            ->filter(fn (string $key): bool => $key !== '')
+            ->unique()
+            ->values();
+
+        foreach ($envKeys as $envKey) {
+            $value = env($envKey);
+            $available = is_string($value) && trim($value) !== '';
+            $label = "Monitored source auth env available ({$envKey})";
+            $alreadyFailed = $this->checkRequired($alreadyFailed, $label, $available);
+        }
+
+        return $alreadyFailed;
     }
 
     private function checkRequired(bool $alreadyFailed, string $label, bool $passes): bool
@@ -77,7 +100,7 @@ class ProductionSmokeTestCommand extends Command
     }
 
     /**
-     * @param callable(): bool $fn
+     * @param  callable(): bool  $fn
      */
     private function checkThrowable(bool $alreadyFailed, string $label, callable $fn): bool
     {

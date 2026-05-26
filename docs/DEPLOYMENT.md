@@ -194,10 +194,13 @@ This app primarily stores snapshots/runs/issues in the **database**. Only run th
 php artisan storage:link
 ```
 
-8. **Cache config/routes/views**:
+8. **Cache routes/views** (do **not** run `config:cache`):
+
+Monitored sources resolve HTTP auth header **values** from `.env` at runtime via `env(auth_token_env_key)`. After `php artisan config:cache`, Laravel only exposes env vars that were baked into cached config files, so `env('WYATT_CONTEXTUALWP_AUTH')` and similar keys return empty even when `.env` is correct. Scheduled and manual HTTP source runs then fail auth until you run `php artisan config:clear`.
+
+Until auth lookup is redesigned, **skip `php artisan config:cache`** on production deploys. `route:cache` and `view:cache` are safe to use.
 
 ```bash
-php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
@@ -384,6 +387,7 @@ This checks basic production readiness **without** calling external endpoints, s
 - an admin user exists
 - at least one monitored source exists
 - the monitored source has an endpoint URL
+- for each distinct `auth_token_env_key` on a monitored source, the named env var is non-empty at runtime (reports the **env var name only**, not the secret; catches missing values and `config:cache` breaking dynamic auth lookup)
 - `CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO` is set
 - `MAIL_FROM_ADDRESS` is set
 

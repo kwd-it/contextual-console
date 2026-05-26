@@ -60,6 +60,52 @@ it('fails when no monitored source endpoint exists', function () {
         ->assertExitCode(1);
 });
 
+it('fails when a monitored source auth env key is configured but unavailable', function () {
+    config()->set('app.url', 'https://contextual-console.example.test');
+    config()->set('contextual_console.daily_summary_to', 'ops@example.test');
+    config()->set('mail.from.address', 'no-reply@example.test');
+
+    unset($_ENV['CC_SMOKE_MISSING_AUTH']);
+    putenv('CC_SMOKE_MISSING_AUTH');
+
+    User::factory()->create();
+
+    MonitoredSource::create([
+        'key' => 'hb:smoke-missing-auth',
+        'name' => 'Smoke Missing Auth',
+        'endpoint_url' => 'https://example.test/endpoint',
+        'auth_header_name' => 'Authorization',
+        'auth_token_env_key' => 'CC_SMOKE_MISSING_AUTH',
+    ]);
+
+    $this->artisan('contextual-console:smoke-test')
+        ->expectsOutputToContain('[FAIL] Monitored source auth env available (CC_SMOKE_MISSING_AUTH)')
+        ->assertExitCode(1);
+});
+
+it('passes when a monitored source auth env key is configured and available', function () {
+    config()->set('app.url', 'https://contextual-console.example.test');
+    config()->set('contextual_console.daily_summary_to', 'ops@example.test');
+    config()->set('mail.from.address', 'no-reply@example.test');
+
+    $_ENV['CC_SMOKE_AUTH_OK'] = 'Basic dGVzdDp0b2tlbg==';
+    putenv('CC_SMOKE_AUTH_OK=Basic dGVzdDp0b2tlbg==');
+
+    User::factory()->create();
+
+    MonitoredSource::create([
+        'key' => 'hb:smoke-auth-ok',
+        'name' => 'Smoke Auth OK',
+        'endpoint_url' => 'https://example.test/endpoint',
+        'auth_header_name' => 'Authorization',
+        'auth_token_env_key' => 'CC_SMOKE_AUTH_OK',
+    ]);
+
+    $this->artisan('contextual-console:smoke-test')
+        ->expectsOutputToContain('[OK] Monitored source auth env available (CC_SMOKE_AUTH_OK)')
+        ->assertExitCode(0);
+});
+
 it('fails when daily summary recipient is missing', function () {
     config()->set('app.url', 'https://contextual-console.example.test');
     config()->set('contextual_console.daily_summary_to', '');

@@ -35,7 +35,7 @@ Implemented today:
 | **Local daily summary email preview** | Authenticated route in local/development only (see section 4) |
 | **Profile daily summary preference** | Per-user opt-in on Profile page (`daily_summary_enabled`) |
 | **Database backup command** | `contextual-console:backup-database` (SQLite file DB, S3-compatible disk) |
-| **Production smoke test command** | `contextual-console:smoke-test` (config checks, no external HTTP) |
+| **Production smoke test command** | `contextual-console:smoke-test` (config checks, no external HTTP; verifies each `auth_token_env_key` resolves via `env()` at runtime) |
 
 ## 4. Daily summary email behaviour
 
