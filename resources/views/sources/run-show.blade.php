@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — Comparison run #{{ $run->id }} — {{ $source->display_label }}</title>
+        <title>Contextual Console - Comparison run #{{ $run->id }} - {{ $source->display_label }}</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -52,11 +52,11 @@
                             </tr>
                             <tr>
                                 <th>Started at</th>
-                                <td class="mono cc-time">{{ $run->started_at?->toDateTimeString() ?? '-' }}</td>
+                                <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($run->started_at) }}</td>
                             </tr>
                             <tr>
                                 <th>Finished at</th>
-                                <td class="mono cc-time">{{ $run->finished_at?->toDateTimeString() ?? '-' }}</td>
+                                <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($run->finished_at) }}</td>
                             </tr>
                             <tr>
                                 <th>Current snapshot id</th>
@@ -231,7 +231,7 @@
                                         <td class="mono">{{ $change->field }}</td>
                                         <td class="mono">{{ $change->old_value ?? '-' }}</td>
                                         <td class="mono">{{ $change->new_value ?? '-' }}</td>
-                                        <td class="mono cc-time">{{ $change->changed_at?->toDateTimeString() ?? '-' }}</td>
+                                        <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($change->changed_at) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>

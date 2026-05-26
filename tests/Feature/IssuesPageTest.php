@@ -1434,3 +1434,43 @@ it('redirects unauthenticated users from filtered /issues to /login', function (
     $this->get(route('issues.index', ['source' => $source->id]))
         ->assertRedirect(route('login'));
 });
+
+it('formats issues index timestamps in the schedule timezone', function () {
+    config(['app.schedule_timezone' => 'Europe/London']);
+
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:issues-display-time',
+        'name' => 'Issues Display Time Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'failed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    $recordedAt = Carbon::parse('2026-05-14 05:42:00', 'UTC');
+    $issue = DatasetIssue::create([
+        'monitored_source_id' => $source->id,
+        'dataset_snapshot_id' => null,
+        'dataset_comparison_run_id' => $run->id,
+        'issue_type' => 'issues_display_time',
+        'severity' => 'info',
+        'message' => 'ISSUES_DISPLAY_TIME_MARKER',
+    ]);
+    $issue->forceFill([
+        'created_at' => $recordedAt,
+        'updated_at' => $recordedAt,
+    ])->save();
+
+    $this->actingAs($user)
+        ->get('/issues')
+        ->assertOk()
+        ->assertSee('2026-05-14 06:42:00', false)
+        ->assertDontSee('2026-05-14 05:42:00', false);
+});

@@ -178,7 +178,7 @@
                                             $issue->entity_id,
                                         );
 
-                                        $recordedAt = $issue->created_at?->toDateTimeString() ?? '-';
+                                        $recordedAt = \App\Support\DisplayTimestamp::format($issue->created_at);
 
                                         $messageMetaParts = [];
                                         if (! empty($issue->issue_type)) {

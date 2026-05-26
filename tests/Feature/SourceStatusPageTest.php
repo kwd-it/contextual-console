@@ -6,6 +6,7 @@ use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -575,4 +576,37 @@ it('shows a failed latest run and its source_run_failed issue on the source deta
         ->assertSeeText((string) $issue->message)
         ->assertSee('href="'.$showHref.'"', false)
         ->assertSee('data-test="source-issue-message-link"', false);
+});
+
+it('formats source index and detail timestamps in the schedule timezone', function () {
+    config(['app.schedule_timezone' => 'Europe/London']);
+
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:source-display-time',
+        'name' => 'Source Display Time',
+    ]);
+
+    $finishedAt = Carbon::parse('2026-05-14 05:42:00', 'UTC');
+    DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => $finishedAt->copy()->subMinute(),
+        'finished_at' => $finishedAt,
+    ]);
+
+    $this->actingAs($user)
+        ->get('/sources')
+        ->assertOk()
+        ->assertSee('2026-05-14 06:42:00', false)
+        ->assertDontSee('2026-05-14 05:42:00', false);
+
+    $this->actingAs($user)
+        ->get(route('sources.show', $source))
+        ->assertOk()
+        ->assertSee('2026-05-14 06:42:00', false)
+        ->assertDontSee('2026-05-14 05:42:00', false);
 });

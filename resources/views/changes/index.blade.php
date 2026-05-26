@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — Plot data changes</title>
+        <title>Contextual Console - Plot data changes</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -114,14 +114,14 @@
                                             $change->entity_id,
                                         );
 
-                                        $changedAt = $change->changed_at?->toDateTimeString() ?? '-';
+                                        $changedAt = \App\Support\DisplayTimestamp::format($change->changed_at);
                                     @endphp
                                     <tr>
                                         <td>
                                             @if ($source !== null)
                                                 <a href="{{ route('sources.show', $source) }}">{{ $source->display_label }}</a>
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
                                         </td>
                                         <td>
@@ -157,7 +157,7 @@
                                             @elseif ($change->dataset_comparison_run_id !== null)
                                                 {{ $change->dataset_comparison_run_id }}
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
                                         </td>
                                     </tr>

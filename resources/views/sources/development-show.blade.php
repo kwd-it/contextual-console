@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — {{ $developmentLabel }} ({{ $source->display_label }})</title>
+        <title>Contextual Console - {{ $developmentLabel }} ({{ $source->display_label }})</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -20,13 +20,13 @@
             <header class="cc-page-header" data-test="development-detail-header">
                 <h1 class="cc-page-title">@include('sources._dashboard-icon', ['name' => 'development'])<span>{{ $developmentLabel }}</span></h1>
                 <p class="cc-page-sub">
-                    Plots in this development from <strong>{{ $source->display_label }}</strong>’s latest completed or baseline snapshot.
+                    Plots in this development from <strong>{{ $source->display_label }}</strong>'s latest completed or baseline snapshot.
                 </p>
                 @if ($latestRun !== null)
                     <p class="muted mono cc-source-meta" data-test="development-detail-run-meta">
                         Based on run #{{ $latestRun->id }}
                         @if ($latestRun->finished_at !== null)
-                            (finished {{ $latestRun->finished_at->toDateTimeString() }})
+                            (finished {{ \App\Support\DisplayTimestamp::format($latestRun->finished_at) }})
                         @endif
                     </p>
                 @endif
@@ -51,7 +51,7 @@
                         <div class="cc-empty" data-test="development-empty-not-found">
                             <p class="cc-empty-title">Development not found</p>
                             <p class="muted">
-                                “{{ $developmentLabel }}” does not appear in the latest snapshot for {{ $source->display_label }}.
+                                "{{ $developmentLabel }}" does not appear in the latest snapshot for {{ $source->display_label }}.
                                 Check the name on the <a href="{{ route('dashboard.index') }}">dashboard</a> development overview.
                             </p>
                         </div>
@@ -84,19 +84,19 @@
                                                     <div class="cc-entity-display__primary">{{ $plot['plot_label'] }}</div>
                                                 </div>
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
                                         </td>
                                         <td class="mono" data-test="development-plot-technical-id">{{ $plot['technical_id'] }}</td>
-                                        <td class="mono">{{ $plot['status'] ?? '—' }}</td>
-                                        <td class="mono">{{ $plot['price'] ?? '—' }}</td>
-                                        <td class="mono">{{ $plot['bedrooms'] ?? '—' }}</td>
-                                        <td>{{ $plot['house_type'] ?? '—' }}</td>
+                                        <td class="mono">{{ $plot['status'] ?? '-' }}</td>
+                                        <td class="mono">{{ $plot['price'] ?? '-' }}</td>
+                                        <td class="mono">{{ $plot['bedrooms'] ?? '-' }}</td>
+                                        <td>{{ $plot['house_type'] ?? '-' }}</td>
                                         <td>
                                             @if ($plot['url'] !== null)
                                                 <a href="{{ $plot['url'] }}" rel="noopener noreferrer" class="mono">{{ $plot['url'] }}</a>
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -149,7 +149,7 @@
                                         );
                                     @endphp
                                     <tr data-test="development-recent-change-row">
-                                        <td class="mono cc-time">{{ $change->changed_at?->toDateTimeString() ?? '—' }}</td>
+                                        <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($change->changed_at) }}</td>
                                         <td>
                                             @if (($change->entity_type ?? null) === 'plot' && $change->entity_id !== null && $change->entity_id !== '')
                                                 <div class="cc-entity-display">
@@ -161,17 +161,17 @@
                                                     </div>
                                                 </div>
                                             @else
-                                                <span class="mono">—</span>
+                                                <span class="mono">-</span>
                                             @endif
                                         </td>
                                         <td class="mono">{{ $change->field }}</td>
-                                        <td class="mono">{{ $change->old_value ?? '—' }}</td>
-                                        <td class="mono">{{ $change->new_value ?? '—' }}</td>
+                                        <td class="mono">{{ $change->old_value ?? '-' }}</td>
+                                        <td class="mono">{{ $change->new_value ?? '-' }}</td>
                                         <td class="mono">
                                             @if ($change->dataset_comparison_run_id !== null)
                                                 <a href="{{ route('sources.runs.show', [$source, $change->dataset_comparison_run_id]) }}" data-test="development-recent-change-run-link">{{ $change->dataset_comparison_run_id }}</a>
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -226,7 +226,7 @@
 
                                     @endphp
                                     <tr data-test="development-recent-issue-row">
-                                        <td class="mono cc-time">{{ $issue->created_at?->toDateTimeString() ?? '—' }}</td>
+                                        <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($issue->created_at) }}</td>
                                         <td>
                                             @if (($issue->entity_type ?? null) === 'plot' && $issue->entity_id !== null && $issue->entity_id !== '')
                                                 <div class="cc-entity-display">
@@ -238,7 +238,7 @@
                                                     </div>
                                                 </div>
                                             @else
-                                                <span class="mono">—</span>
+                                                <span class="mono">-</span>
                                             @endif
                                         </td>
                                         <td>
@@ -251,7 +251,7 @@
                                             @if ($issue->dataset_comparison_run_id !== null)
                                                 <a href="{{ route('sources.runs.show', [$source, $issue->dataset_comparison_run_id]) }}" data-test="development-recent-issue-run-link">{{ $issue->dataset_comparison_run_id }}</a>
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
                                         </td>
                                     </tr>

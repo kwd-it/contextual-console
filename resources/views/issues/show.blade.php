@@ -95,11 +95,11 @@
                             @endif
                             <tr>
                                 <th>Recorded at</th>
-                                <td class="mono cc-time">{{ $issue->created_at?->toDateTimeString() ?? '-' }}</td>
+                                <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($issue->created_at) }}</td>
                             </tr>
                             <tr>
                                 <th>Last updated</th>
-                                <td class="mono cc-time">{{ $issue->updated_at?->toDateTimeString() ?? '-' }}</td>
+                                <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($issue->updated_at) }}</td>
                             </tr>
                         </tbody>
                     </table>

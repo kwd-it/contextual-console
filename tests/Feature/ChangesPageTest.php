@@ -5,6 +5,7 @@ use App\Core\Models\DatasetComparisonRun;
 use App\Core\Models\MonitoredSource;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -474,7 +475,7 @@ it('filters changes by changed_at date range via GET query', function () {
         'field' => 'price',
         'old_value' => 'CHANGES_FILTER_DATE_EARLY',
         'new_value' => '1',
-        'changed_at' => Carbon\Carbon::parse('2026-05-01 12:00:00'),
+        'changed_at' => Carbon::parse('2026-05-01 12:00:00'),
     ]);
     ChangeLog::create([
         'entity_type' => 'plot',
@@ -483,7 +484,7 @@ it('filters changes by changed_at date range via GET query', function () {
         'field' => 'price',
         'old_value' => 'CHANGES_FILTER_DATE_MID',
         'new_value' => '2',
-        'changed_at' => Carbon\Carbon::parse('2026-05-10 12:00:00'),
+        'changed_at' => Carbon::parse('2026-05-10 12:00:00'),
     ]);
     ChangeLog::create([
         'entity_type' => 'plot',
@@ -492,7 +493,7 @@ it('filters changes by changed_at date range via GET query', function () {
         'field' => 'price',
         'old_value' => 'CHANGES_FILTER_DATE_LATE',
         'new_value' => '3',
-        'changed_at' => Carbon\Carbon::parse('2026-05-20 12:00:00'),
+        'changed_at' => Carbon::parse('2026-05-20 12:00:00'),
     ]);
 
     $this->actingAs($user)
@@ -530,7 +531,7 @@ it('retains selected change filters in the filter form and shows a clear link', 
         'field' => 'price',
         'old_value' => 'CHANGES_RETAIN_BODY',
         'new_value' => '1',
-        'changed_at' => Carbon\Carbon::parse('2026-05-10 10:00:00'),
+        'changed_at' => Carbon::parse('2026-05-10 10:00:00'),
     ]);
 
     $html = $this->actingAs($user)
@@ -792,4 +793,42 @@ it('preserves change filters in pagination links', function () {
         ->getContent();
 
     expect($html)->toMatch('/<a class="cc-pagination__link" href="[^"]*source='.$source->id.'[^"]*field=price[^"]*date_from=2026-01-01[^"]*date_to=2026-12-31[^"]*page=2[^"]*">2<\/a>/');
+});
+
+it('formats changes index timestamps in the schedule timezone', function () {
+    config(['app.schedule_timezone' => 'Europe/London']);
+
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:changes-display-time',
+        'name' => 'Changes Display Time Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => null,
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    $changedAt = Carbon::parse('2026-05-14 05:42:00', 'UTC');
+    $change = ChangeLog::create([
+        'entity_type' => 'plot',
+        'entity_id' => 1,
+        'dataset_comparison_run_id' => $run->id,
+        'field' => 'price',
+        'old_value' => '100000',
+        'new_value' => '110000',
+        'changed_at' => $changedAt,
+    ]);
+    $change->forceFill(['changed_at' => $changedAt])->save();
+
+    $this->actingAs($user)
+        ->get('/changes')
+        ->assertOk()
+        ->assertSee('2026-05-14 06:42:00', false)
+        ->assertDontSee('2026-05-14 05:42:00', false);
 });

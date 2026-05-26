@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — Data sources</title>
+        <title>Contextual Console - Data sources</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -46,7 +46,7 @@
                                         $latestStatusLabel = $latestStatus ?? 'none';
 
                                         $finishedAt = $s['latest_run_finished_at'] ?? null;
-                                        $finishedLabel = $finishedAt ? $finishedAt->toDateTimeString() : '-';
+                                        $finishedLabel = \App\Support\DisplayTimestamp::format($finishedAt);
 
                                         $issuesTotal = (int) ($s['issue_count'] ?? 0);
                                         $errors = (int) ($s['error_count'] ?? 0);
@@ -86,7 +86,7 @@
                                                     <a href="{{ route('sources.runs.show', [$s['source_id'], $s['latest_run_id']]) }}">Run {{ $s['latest_run_id'] }}</a>
                                                 </div>
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
                                             @include('sources._dashboard-status-badge', ['status' => $latestStatus ?? '', 'label' => $latestStatusLabel])
                                         </td>

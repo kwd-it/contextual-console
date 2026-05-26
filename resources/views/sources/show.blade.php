@@ -76,11 +76,11 @@
                                 </tr>
                                 <tr>
                                     <th>Started at</th>
-                                    <td class="mono cc-time">{{ $latestRun->started_at?->toDateTimeString() ?? '-' }}</td>
+                                    <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($latestRun->started_at) }}</td>
                                 </tr>
                                 <tr>
                                     <th>Finished at</th>
-                                    <td class="mono cc-time">{{ $latestRun->finished_at?->toDateTimeString() ?? '-' }}</td>
+                                    <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($latestRun->finished_at) }}</td>
                                 </tr>
                                 <tr>
                                     <th>Current snapshot id</th>
@@ -262,7 +262,7 @@
                                         <td class="mono">{{ $change->field }}</td>
                                         <td class="mono">{{ $change->old_value ?? '-' }}</td>
                                         <td class="mono">{{ $change->new_value ?? '-' }}</td>
-                                        <td class="mono cc-time">{{ $change->changed_at?->toDateTimeString() ?? '-' }}</td>
+                                        <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($change->changed_at) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -332,7 +332,7 @@
                                         <td>
                                             @include('sources._dashboard-status-badge', ['status' => $run->status, 'label' => $run->status])
                                         </td>
-                                        <td class="mono cc-time">{{ $run->finished_at?->toDateTimeString() ?? '-' }}</td>
+                                        <td class="mono cc-time">{{ \App\Support\DisplayTimestamp::format($run->finished_at) }}</td>
                                         <td>
                                             <div class="cc-stat-row mono">
                                                 <span class="cc-count-pill">added={{ $runAdded }}</span>
