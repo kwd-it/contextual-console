@@ -11,6 +11,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
+beforeEach(function () {
+    User::factory()->create(['daily_summary_enabled' => true]);
+});
+
 it('redirects unauthenticated users from /dashboard to /login', function () {
     $this->get('/dashboard')
         ->assertRedirect(route('login'));
@@ -1009,4 +1013,41 @@ it('orders recent comparison runs newest first by run id', function () {
         ->get('/dashboard')
         ->assertOk()
         ->assertSeeInOrder([(string) $newer->id, (string) $older->id]);
+});
+
+it('shows a fallback warning on the dashboard when no users are subscribed', function () {
+    User::query()->delete();
+    config()->set('contextual_console.daily_summary_to', 'ops@example.test');
+
+    $this->actingAs(User::factory()->create(['daily_summary_enabled' => false]))
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertSee('data-test="daily-summary-subscription-warning"', false)
+        ->assertSee('data-test-severity="fallback"', false)
+        ->assertSeeText('No user account is subscribed to daily summaries.')
+        ->assertSeeText('Emails can still use the fallback recipient')
+        ->assertSeeText('at least one operator should normally opt in from Profile.');
+});
+
+it('shows a stronger warning on the dashboard when no users are subscribed and no fallback is configured', function () {
+    User::query()->delete();
+    config()->set('contextual_console.daily_summary_to', null);
+
+    $this->actingAs(User::factory()->create(['daily_summary_enabled' => false]))
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertSee('data-test="daily-summary-subscription-warning"', false)
+        ->assertSee('data-test-severity="none"', false)
+        ->assertSee('cc-warning-banner--critical', false)
+        ->assertSeeText('No user account is subscribed to daily summaries and no fallback recipient is configured.')
+        ->assertSeeText('Scheduled summary emails will not be sent.');
+});
+
+it('does not show a daily summary subscription warning when at least one user is subscribed', function () {
+    config()->set('contextual_console.daily_summary_to', null);
+
+    $this->actingAs(User::factory()->create(['daily_summary_enabled' => false]))
+        ->get('/dashboard')
+        ->assertOk()
+        ->assertDontSee('data-test="daily-summary-subscription-warning"', false);
 });

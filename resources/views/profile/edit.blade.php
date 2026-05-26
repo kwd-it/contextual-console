@@ -40,6 +40,7 @@
                     <h2 class="cc-card-title" id="hdr-daily-summary"><span>Daily summary email</span></h2>
                     <p class="cc-card-desc">When enabled, the daily monitoring summary is sent to your login email address shown above.</p>
                 </div>
+                @include('_daily-summary-subscription-warning')
                 @if (session('status'))
                     <p class="cc-flash" role="status" data-test="profile-status">{{ session('status') }}</p>
                 @endif

@@ -17,6 +17,8 @@
                 </p>
             </header>
 
+            @include('_daily-summary-subscription-warning')
+
             <section class="cc-stat-grid" aria-label="Monitoring summary">
                 <article class="cc-stat-card">
                     <p class="cc-stat-card__label">@include('sources._dashboard-icon', ['name' => 'source', 'class' => 'cc-stat-icon'])<span>Monitored sources</span></p>

@@ -987,6 +987,24 @@
         border-radius: var(--cc-radius-sm);
         background: var(--cc-accent-soft);
     }
+    .cc-warning-banner {
+        margin: 0 0 22px;
+        padding: 12px 16px;
+        font-size: 0.8125rem;
+        line-height: 1.5;
+        border: 1px solid var(--cc-warning-border);
+        border-radius: var(--cc-radius-sm);
+        background: var(--cc-warning-bg);
+        color: var(--cc-warning-text);
+    }
+    .cc-warning-banner p {
+        margin: 0;
+    }
+    .cc-warning-banner--critical {
+        border-color: var(--cc-error-border);
+        background: var(--cc-error-bg);
+        color: var(--cc-error-text);
+    }
     .cc-btn-primary {
         display: inline-flex;
         align-items: center;

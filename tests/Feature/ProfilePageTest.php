@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Route;
 
 uses(RefreshDatabase::class);
 
+beforeEach(function () {
+    User::factory()->create(['daily_summary_enabled' => true]);
+});
+
 const PROFILE_PAGE_TEST_ENV = 'testing';
 
 /**
@@ -150,4 +154,37 @@ it('does not show the preview daily summary email link in production', function 
     } finally {
         restoreProfilePageTestApplicationState();
     }
+});
+
+it('shows a fallback warning on the profile page when no users are subscribed', function () {
+    User::query()->delete();
+    config()->set('contextual_console.daily_summary_to', 'ops@example.test');
+
+    $this->actingAs(User::factory()->create(['daily_summary_enabled' => false]))
+        ->get(route('profile.edit'))
+        ->assertOk()
+        ->assertSee('data-test="daily-summary-subscription-warning"', false)
+        ->assertSee('data-test-severity="fallback"', false)
+        ->assertSeeText('Emails can still use the fallback recipient');
+});
+
+it('shows a stronger warning on the profile page when no users are subscribed and no fallback is configured', function () {
+    User::query()->delete();
+    config()->set('contextual_console.daily_summary_to', null);
+
+    $this->actingAs(User::factory()->create(['daily_summary_enabled' => false]))
+        ->get(route('profile.edit'))
+        ->assertOk()
+        ->assertSee('data-test-severity="none"', false)
+        ->assertSee('cc-warning-banner--critical', false)
+        ->assertSeeText('Scheduled summary emails will not be sent.');
+});
+
+it('does not show a daily summary subscription warning when at least one user is subscribed', function () {
+    config()->set('contextual_console.daily_summary_to', null);
+
+    $this->actingAs(User::factory()->create(['daily_summary_enabled' => false]))
+        ->get(route('profile.edit'))
+        ->assertOk()
+        ->assertDontSee('data-test="daily-summary-subscription-warning"', false);
 });
