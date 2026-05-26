@@ -4,7 +4,7 @@
     $sourcesActive = in_array($routeName, ['sources.index', 'sources.show', 'sources.runs.show', 'sources.developments.show'], true);
     $changesActive = $routeName === 'changes.index';
     $issuesActive = in_array($routeName, ['issues.index', 'issues.show'], true);
-    $profileActive = in_array($routeName, ['profile.edit', 'profile.update'], true);
+    $profileActive = in_array($routeName, ['profile.edit', 'profile.update', 'profile.daily-summary-test-email'], true);
 @endphp
 <div class="cc-app-bar">
     <div class="cc-brand">

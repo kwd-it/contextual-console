@@ -1,7 +1,9 @@
 <?php
 
+use App\Mail\ContextualConsoleDailySummaryMail;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 
 uses(RefreshDatabase::class);
@@ -187,4 +189,113 @@ it('does not show a daily summary subscription warning when at least one user is
         ->get(route('profile.edit'))
         ->assertOk()
         ->assertDontSee('data-test="daily-summary-subscription-warning"', false);
+});
+
+it('shows the send test daily summary email form on the profile page', function () {
+    $this->actingAs(User::factory()->create())
+        ->get(route('profile.edit'))
+        ->assertOk()
+        ->assertSee('data-test="profile-daily-summary-test-email-form"', false)
+        ->assertSee('data-test="profile-daily-summary-test-email"', false)
+        ->assertSee('action="'.route('profile.daily-summary-test-email').'"', false)
+        ->assertSeeText('Send test email')
+        ->assertSeeText('Send the current daily summary to your login email address only.');
+});
+
+it('redirects unauthenticated users who post a daily summary test email to login', function () {
+    Mail::fake();
+
+    $this->post(route('profile.daily-summary-test-email'))
+        ->assertRedirect(route('login'));
+
+    Mail::assertNothingSent();
+});
+
+it('sends one daily summary test email to the logged-in user', function () {
+    Mail::fake();
+
+    $user = User::factory()->create(['email' => 'tester@example.test']);
+
+    $this->actingAs($user)
+        ->post(route('profile.daily-summary-test-email'))
+        ->assertRedirect(route('profile.edit'))
+        ->assertSessionHas('daily_summary_test_flash.type', 'success');
+
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, 1);
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, fn ($mail) => $mail->hasTo('tester@example.test'));
+});
+
+it('does not send a daily summary test email to the fallback recipient', function () {
+    Mail::fake();
+    config()->set('contextual_console.daily_summary_to', 'ops@example.test');
+
+    $user = User::factory()->create([
+        'email' => 'tester@example.test',
+        'daily_summary_enabled' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('profile.daily-summary-test-email'))
+        ->assertRedirect(route('profile.edit'));
+
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, 1);
+    Mail::assertNotSent(ContextualConsoleDailySummaryMail::class, fn ($mail) => $mail->hasTo('ops@example.test'));
+});
+
+it('does not send a daily summary test email to other subscribed users', function () {
+    Mail::fake();
+
+    User::factory()->create([
+        'email' => 'alice@example.test',
+        'daily_summary_enabled' => true,
+    ]);
+
+    $user = User::factory()->create([
+        'email' => 'tester@example.test',
+        'daily_summary_enabled' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('profile.daily-summary-test-email'))
+        ->assertRedirect(route('profile.edit'));
+
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, 1);
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, fn ($mail) => $mail->hasTo('tester@example.test'));
+    Mail::assertNotSent(ContextualConsoleDailySummaryMail::class, fn ($mail) => $mail->hasTo('alice@example.test'));
+});
+
+it('sends a daily summary test email when daily summary is disabled for the user', function () {
+    Mail::fake();
+
+    $user = User::factory()->create([
+        'email' => 'tester@example.test',
+        'daily_summary_enabled' => false,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('profile.daily-summary-test-email'))
+        ->assertRedirect(route('profile.edit'));
+
+    Mail::assertSent(ContextualConsoleDailySummaryMail::class, fn ($mail) => $mail->hasTo('tester@example.test'));
+});
+
+it('shows a success flash after sending a daily summary test email', function () {
+    Mail::fake();
+
+    $user = User::factory()->create(['email' => 'tester@example.test']);
+
+    $this->actingAs($user)
+        ->post(route('profile.daily-summary-test-email'))
+        ->assertRedirect(route('profile.edit'))
+        ->assertSessionHas('daily_summary_test_flash', [
+            'type' => 'success',
+            'message' => 'Test email sent to your login address. Delivery can take a few minutes; check spam if it does not appear.',
+        ]);
+
+    $this->actingAs($user)
+        ->get(route('profile.edit'))
+        ->assertOk()
+        ->assertSee('data-test="profile-daily-summary-test-flash"', false)
+        ->assertSee('data-test-flash-type="success"', false)
+        ->assertSee('cc-flash--success', false);
 });

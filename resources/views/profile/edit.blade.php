@@ -42,43 +42,80 @@
                 </div>
                 @include('_daily-summary-subscription-warning')
                 @if (session('status'))
-                    <p class="cc-flash" role="status" data-test="profile-status">{{ session('status') }}</p>
+                    <p class="cc-flash cc-flash--notice" role="status" data-test="profile-status">{{ session('status') }}</p>
                 @endif
-                <form
-                    class="cc-filter-form cc-profile-form"
-                    method="post"
-                    action="{{ route('profile.update') }}"
-                    aria-label="Daily summary email preferences"
-                    data-test="profile-form"
-                >
-                    @csrf
-                    @method('PUT')
-                    <div class="cc-profile-form__fields">
-                        <label class="cc-profile-form__checkbox">
-                            <input
-                                type="checkbox"
-                                name="daily_summary_enabled"
-                                value="1"
-                                data-test="daily-summary-enabled"
-                                @checked(old('daily_summary_enabled', $user->daily_summary_enabled))
-                            >
-                            <span>Send me the daily monitoring summary email</span>
-                        </label>
-                    </div>
-                    <div class="cc-filter-form__actions">
-                        <button type="submit" data-test="profile-save">Save preferences</button>
-                        @if (Route::has('dev.daily-summary-email-preview'))
-                            <a
-                                href="{{ route('dev.daily-summary-email-preview') }}"
-                                class="cc-filter-form__clear"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                data-test="profile-preview-daily-summary"
-                            >Preview daily summary email</a>
-                        @endif
-                    </div>
-                </form>
+                @if ($dailySummaryTestFlash = session('daily_summary_test_flash'))
+                    <p
+                        class="cc-flash cc-flash--{{ $dailySummaryTestFlash['type'] }}"
+                        role="status"
+                        data-test="profile-daily-summary-test-flash"
+                        data-test-flash-type="{{ $dailySummaryTestFlash['type'] }}"
+                    >{{ $dailySummaryTestFlash['message'] }}</p>
+                @endif
+                <div class="cc-profile-daily-summary">
+                    <form
+                        class="cc-profile-daily-summary__column cc-filter-form cc-profile-form"
+                        method="post"
+                        action="{{ route('profile.update') }}"
+                        aria-label="Daily summary email preferences"
+                        data-test="profile-form"
+                    >
+                        @csrf
+                        @method('PUT')
+                        <div class="cc-profile-form__fields">
+                            <label class="cc-profile-form__checkbox">
+                                <input
+                                    type="checkbox"
+                                    name="daily_summary_enabled"
+                                    value="1"
+                                    data-test="daily-summary-enabled"
+                                    @checked(old('daily_summary_enabled', $user->daily_summary_enabled))
+                                >
+                                <span>Send me the daily monitoring summary email</span>
+                            </label>
+                        </div>
+                        <div class="cc-filter-form__actions">
+                            <button type="submit" data-test="profile-save">Save preferences</button>
+                            @if (Route::has('dev.daily-summary-email-preview'))
+                                <a
+                                    href="{{ route('dev.daily-summary-email-preview') }}"
+                                    class="cc-filter-form__clear"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    data-test="profile-preview-daily-summary"
+                                >Preview daily summary email</a>
+                            @endif
+                        </div>
+                    </form>
+                    <form
+                        class="cc-profile-daily-summary__column cc-filter-form cc-profile-form"
+                        method="post"
+                        action="{{ route('profile.daily-summary-test-email') }}"
+                        aria-label="Send test daily summary email"
+                        data-test="profile-daily-summary-test-email-form"
+                    >
+                        @csrf
+                        <p class="cc-profile-daily-summary__help">Send the current daily summary to your login email address only.</p>
+                        <div class="cc-filter-form__actions">
+                            <button type="submit" data-test="profile-daily-summary-test-email" data-profile-test-email-submit>Send test email</button>
+                        </div>
+                    </form>
+                </div>
             </section>
         </div>
+        <script>
+            document.querySelectorAll('[data-profile-test-email-submit]').forEach(function (button) {
+                var form = button.closest('form');
+                if (!form) {
+                    return;
+                }
+
+                form.addEventListener('submit', function () {
+                    button.disabled = true;
+                    button.setAttribute('aria-busy', 'true');
+                    button.textContent = 'Sending...';
+                });
+            });
+        </script>
     </body>
 </html>

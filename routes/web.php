@@ -63,4 +63,7 @@ Route::middleware('auth')->group(function () {
 
     Route::put('/profile', [ProfileController::class, 'update'])
         ->name('profile.update');
+
+    Route::post('/profile/daily-summary-test-email', [ProfileController::class, 'sendDailySummaryTestEmail'])
+        ->name('profile.daily-summary-test-email');
 });
