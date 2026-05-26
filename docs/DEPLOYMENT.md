@@ -6,8 +6,34 @@ Scope and non-goals for this branch:
 
 - This is **not** CI/CD automation.
 - No queues-as-primary-ingest requirement, Docker, or provider tooling (Forge/Ploi/etc) is assumed here.
-- Scheduled jobs use Laravel’s **scheduler** plus a single **cron** entry on the server (see section 9).
+- Scheduled jobs use Laravel's **scheduler** plus a single **cron** entry on the server (see section 9).
 - Keep it small, practical, and easy to follow.
+
+For day-to-day monitoring (adding sources, investigating issues, daily summary setup), see [`OPERATIONS.md`](OPERATIONS.md).
+
+---
+
+## Production deployment checklist (every release)
+
+Run on the server after deploying new code (first-time VPS steps are in section 3):
+
+```bash
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan optimize:clear
+php artisan route:cache
+php artisan view:cache
+```
+
+**Do not run** `php artisan config:cache` while HTTP sources resolve `auth_token_env_key` values via runtime `env()` (see step 8 in section 3).
+
+Then verify:
+
+```bash
+php artisan contextual-console:smoke-test
+```
+
+Sign in to the dashboard and Profile; confirm sources and daily summary warnings look correct. Full operator steps: [`OPERATIONS.md`](OPERATIONS.md).
 
 ---
 
@@ -63,44 +89,54 @@ If you are using HTTPS (you should):
 
 ### Mail (daily summary email)
 
-The `contextual-console:daily-summary --email` command sends mail through Laravel’s mail stack. Set at least:
+The `contextual-console:daily-summary --email` command sends mail through Laravel's mail stack. Set at least:
 
-- **`MAIL_MAILER`**: e.g. `smtp` (or your provider’s mailer)
+- **`MAIL_MAILER`**: e.g. `smtp` (or your provider's mailer)
 - **`MAIL_HOST`**, **`MAIL_PORT`**
 - **`MAIL_USERNAME`**, **`MAIL_PASSWORD`** (if your provider requires them)
 - **`MAIL_SCHEME`**: e.g. `tls` or `ssl` when required by the provider
 - **`MAIL_FROM_ADDRESS`**, **`MAIL_FROM_NAME`**
 
-Align values with your provider’s documentation. Do not commit real credentials.
+Align values with your provider's documentation. Do not commit real credentials.
 
-### Daily summary recipient
+### Daily summary email
 
-- **`CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO`**: recipient email address for the scheduled daily summary (used when the scheduler runs `contextual-console:daily-summary --email`).
+The scheduler runs `contextual-console:daily-summary --email` daily (see section 9). Delivery uses Laravel mail (`MAIL_*` above).
+
+**Per-user opt-in (preferred):** users enable **Daily summary email** on **Profile** (`/profile`). Each subscribed user receives the summary at their **login email** (`users.email`).
+
+**Fallback recipient:** when **no** user is subscribed, email goes to **`CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO`**. Set this in production `.env` until operators opt in; do not commit a real address.
+
+**UI warnings:** if nobody is subscribed, the dashboard and Profile show a banner (fallback still possible, or critical if no fallback is configured). See [`OPERATIONS.md`](OPERATIONS.md).
+
+**Test email:** on Profile, **Send test email** sends the current report to the signed-in user only (not the fallback or other subscribers).
+
+**Smoke test:** `contextual-console:smoke-test` still expects `CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO` to be set even when subscribers exist.
 
 ### SQLite database backups (S3 / DigitalOcean Spaces)
 
 When the default connection is **SQLite** (file-based, not `:memory:`), the scheduled command `contextual-console:backup-database` creates a consistent copy using SQLite **`VACUUM INTO`**, gzip-compresses it, uploads it to a Laravel **filesystem disk**, then deletes local temp files. Old objects under the configured prefix can be pruned using a retention window.
 
-**Contextual Console–specific env (no secrets in these names):**
+**Contextual Console-specific env (no secrets in these names):**
 
 - **`CONTEXTUAL_CONSOLE_BACKUP_DISK`**: name of a disk in `config/filesystems.php` (default `s3`). Point this at any S3-compatible disk you define.
 - **`CONTEXTUAL_CONSOLE_BACKUP_PATH`**: object key prefix inside the bucket (default `database`). Leading/trailing slashes are trimmed.
 - **`CONTEXTUAL_CONSOLE_BACKUP_RETENTION_DAYS`**: delete remote backup files whose timestamp in the filename is older than this many days (default `30`). Set to `0` to skip pruning.
 
-**Standard Laravel / Flysystem S3 driver env** (set on the server; do not commit real values). For **DigitalOcean Spaces**, treat the space as a bucket and set the Spaces endpoint and region as your provider documents—for example:
+**Standard Laravel / Flysystem S3 driver env** (set on the server; do not commit real values). For **DigitalOcean Spaces**, treat the space as a bucket and set the Spaces endpoint and region as your provider documents - for example:
 
 - **`AWS_ACCESS_KEY_ID`**, **`AWS_SECRET_ACCESS_KEY`**: Spaces access key and secret.
-- **`AWS_DEFAULT_REGION`**: often a region slug such as `lon1` (follow DO’s Spaces docs for your region).
+- **`AWS_DEFAULT_REGION`**: often a region slug such as `lon1` (follow DO's Spaces docs for your region).
 - **`AWS_BUCKET`**: Space name.
 - **`AWS_ENDPOINT`**: regional endpoint URL, e.g. `https://lon1.digitaloceanspaces.com` (see [DigitalOcean Spaces documentation](https://docs.digitalocean.com/products/spaces/)).
 - **`AWS_URL`**: optional public CDN/base URL if you use one.
-- **`FILESYSTEM_DISK`**: leave as your app’s primary disk (`local` is fine); backups use **`CONTEXTUAL_CONSOLE_BACKUP_DISK`** only.
+- **`FILESYSTEM_DISK`**: leave as your app's primary disk (`local` is fine); backups use **`CONTEXTUAL_CONSOLE_BACKUP_DISK`** only.
 
 Ensure the PHP process user can read the live SQLite file and write under `storage/app/tmp/backups` during the run.
 
 ### ContextualWP / HTTP ingest auth (env only)
 
-For HTTP sources, `monitored_sources` stores only `auth_header_name` and `auth_token_env_key`. The environment variable named by `auth_token_env_key` must hold the **header value only** (for example a raw bearer token, or `Basic …` for Application Passwords). The header **name** (for example `Authorization`) is stored in `auth_header_name`; do not prefix the env value with `Authorization:`.
+For HTTP sources, `monitored_sources` stores only `auth_header_name` and `auth_token_env_key`. The environment variable named by `auth_token_env_key` must hold the **header value only** (for example a raw bearer token, or `Basic ...` for Application Passwords). The header **name** (for example `Authorization`) is stored in `auth_header_name`; do not prefix the env value with `Authorization:`.
 
 - Define that value in `.env` on the server
 - Do **not** store secrets in the database, code, docs, fixtures, or seeders
@@ -130,7 +166,7 @@ CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO=ops@example.com
 | `MAIL_*` | Provider-specific; required for emailed daily summary |
 | `CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO` | Inbox for the daily summary email |
 | `APP_SCHEDULE_TIMEZONE` | Optional; IANA zone for `routes/console.php` times (defaults to `Europe/London`) |
-| `CONTEXTUAL_CONSOLE_BACKUP_*` | Optional; SQLite backup disk, path prefix, retention (see “SQLite database backups” above); requires `AWS_*` (or equivalent) for the chosen S3 disk |
+| `CONTEXTUAL_CONSOLE_BACKUP_*` | Optional; SQLite backup disk, path prefix, retention (see "SQLite database backups" above); requires `AWS_*` (or equivalent) for the chosen S3 disk |
 | `WYATT_CONTEXTUALWP_AUTH` | Only if a source uses that env key; header **value** only |
 
 ---
@@ -188,19 +224,20 @@ php artisan migrate --force
 
 7. **Storage symlink** (only if actually needed)
 
-This app primarily stores snapshots/runs/issues in the **database**. Only run this if you are using Laravel’s `public/storage` convention (uploads/media/etc):
+This app primarily stores snapshots/runs/issues in the **database**. Only run this if you are using Laravel's `public/storage` convention (uploads/media/etc):
 
 ```bash
 php artisan storage:link
 ```
 
-8. **Cache routes/views** (do **not** run `config:cache`):
+8. **Clear and rebuild caches** (do **not** run `config:cache`):
 
 Monitored sources resolve HTTP auth header **values** from `.env` at runtime via `env(auth_token_env_key)`. After `php artisan config:cache`, Laravel only exposes env vars that were baked into cached config files, so `env('WYATT_CONTEXTUALWP_AUTH')` and similar keys return empty even when `.env` is correct. Scheduled and manual HTTP source runs then fail auth until you run `php artisan config:clear`.
 
-Until auth lookup is redesigned, **skip `php artisan config:cache`** on production deploys. `route:cache` and `view:cache` are safe to use.
+Until auth lookup is redesigned, **skip `php artisan config:cache`** on production deploys. Clear stale caches, then cache routes and views:
 
 ```bash
+php artisan optimize:clear
 php artisan route:cache
 php artisan view:cache
 ```
@@ -213,13 +250,14 @@ php artisan contextual-console:create-admin-user --name="Admin" --email="admin@e
 
 10. **Configure a monitored source**
 
-Create a `MonitoredSource` row (via DB client or your preferred admin workflow) with:
+Create a `MonitoredSource` row (via DB client or your preferred admin workflow). Field-by-field guide: [`OPERATIONS.md`](OPERATIONS.md). Minimum:
 
 - `key` (example: `hb:example`)
 - `name`
+- optional `display_name` (UI label)
 - `endpoint_url`
 - optionally `auth_header_name`
-- optionally `auth_token_env_key` (the env var name whose value is sent as the full header value)
+- optionally `auth_token_env_key` (the env var name whose value is sent as the full header value; set the value in `.env`)
 - optionally `http_json_items_key` (when the JSON body wraps the list in an object)
 - optionally `http_plot_payload_adapter` (set to `contextualwp_list_contexts` for ContextualWP-style list payloads)
 - optionally `http_pagination_mode` (set to `page_per_page` to fetch multiple pages and combine before ingest)
@@ -341,9 +379,9 @@ php artisan contextual-console:source-status
 
 The app registers schedule entries in `routes/console.php`:
 
-- **06:00** — `contextual-console:run-scheduled-sources` (HTTP source checks for sources that are due)
-- **06:30** — `contextual-console:daily-summary --email` (daily monitoring summary by email)
-- **06:45** — `contextual-console:backup-database` (SQLite-only: `VACUUM INTO`, gzip, upload to the configured S3-compatible disk, optional retention cleanup)
+- **06:00** - `contextual-console:run-scheduled-sources` (HTTP source checks for sources that are due)
+- **06:30** - `contextual-console:daily-summary --email` (daily monitoring summary by email)
+- **06:45** - `contextual-console:backup-database` (SQLite-only: `VACUUM INTO`, gzip, upload to the configured S3-compatible disk, optional retention cleanup)
 
 Those clock times use the **scheduler timezone** (`APP_SCHEDULE_TIMEZONE`, default `Europe/London`), not the PHP app timezone (`timezone` in `config/app.php`, which remains **UTC** for timestamps). This keeps stored times in UTC while running cron windows at the intended UK local time across GMT and BST. For a deployment aimed at another region, set `APP_SCHEDULE_TIMEZONE` to the appropriate IANA zone.
 
@@ -355,9 +393,9 @@ Laravel only runs the schedule when invoked; on the server, install a **single c
 
 ### `WYATT_CONTEXTUALWP_AUTH` from a WordPress Application Password (no secrets in git)
 
-WordPress Application Passwords authenticate with HTTP Basic auth. The **header value** Laravel sends is the string `Basic ` followed by Base64 of `wordpress_username:application_password` (the password is the full generated string, often with spaces—paste it exactly).
+WordPress Application Passwords authenticate with HTTP Basic auth. The **header value** Laravel sends is the string `Basic ` followed by Base64 of `wordpress_username:application_password` (the password is the full generated string, often with spaces - paste it exactly).
 
-1. Create an Application Password in WordPress for a suitable user (Users → your user → Application Passwords).
+1. Create an Application Password in WordPress for a suitable user (Users -> your user -> Application Passwords).
 2. On the **server** (SSH), build the value **without** storing it in the repository:
    - Prefer a one-off command where you substitute placeholders locally in your session, or pipe from a file you delete immediately after editing `.env`.
    - Example shape only (replace placeholders; do not commit this line):
@@ -366,7 +404,7 @@ WordPress Application Passwords authenticate with HTTP Basic auth. The **header 
 php -r "echo 'Basic ' . base64_encode('YOUR_WP_USERNAME:YOUR_APPLICATION_PASSWORD');"
 ```
 
-3. Put the **entire printed string** (starting with `Basic `) into `WYATT_CONTEXTUALWP_AUTH` in the server’s `.env`.
+3. Put the **entire printed string** (starting with `Basic `) into `WYATT_CONTEXTUALWP_AUTH` in the server's `.env`.
 4. Ensure the monitored source row uses `auth_header_name` `Authorization` and `auth_token_env_key` `WYATT_CONTEXTUALWP_AUTH` (header **name** in the database; **value** only in env).
 
 Never commit real usernames/passwords, command history containing them, or a populated `.env`.
@@ -404,7 +442,7 @@ php artisan contextual-console:backup-database
 ```
 
 - Use `--email` only when mail is configured and `CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO` is set; the scheduled job runs with `--email` at **06:30**.
-- **`contextual-console:backup-database`** only runs successfully when the default DB driver is SQLite and `DB_DATABASE` points at an existing file; it uploads `contextual-console-{Y-m-d-His}.sqlite.gz` under `CONTEXTUAL_CONSOLE_BACKUP_PATH`. On success the command prints `Backup complete: disk=… path=…`.
+- **`contextual-console:backup-database`** only runs successfully when the default DB driver is SQLite and `DB_DATABASE` points at an existing file; it uploads `contextual-console-{Y-m-d-His}.sqlite.gz` under `CONTEXTUAL_CONSOLE_BACKUP_PATH`. On success the command prints `Backup complete: disk=... path=...`.
 
 To confirm what Laravel would run and when:
 
@@ -421,13 +459,13 @@ cd /var/www/contextual-console
 php artisan contextual-console:backup-database
 ```
 
-**Confirm the object exists** (use your provider’s UI, or the AWS CLI against the same endpoint/region/bucket), under the prefix set by `CONTEXTUAL_CONSOLE_BACKUP_PATH` (default `database`). Filenames look like `contextual-console-2026-05-11-064512.sqlite.gz`.
+**Confirm the object exists** (use your provider's UI, or the AWS CLI against the same endpoint/region/bucket), under the prefix set by `CONTEXTUAL_CONSOLE_BACKUP_PATH` (default `database`). Filenames look like `contextual-console-2026-05-11-064512.sqlite.gz`.
 
 **Restore (high level):**
 
 1. Put the app in maintenance mode (or stop PHP-FPM / queue workers) so nothing writes to the database during replacement.
 2. Download the chosen `.sqlite.gz` from object storage to the server.
-3. Decompress, e.g. `gunzip -c contextual-console-….sqlite.gz > /path/to/restored.sqlite` (adjust paths).
+3. Decompress, e.g. `gunzip -c contextual-console-....sqlite.gz > /path/to/restored.sqlite` (adjust paths).
 4. Point **`DB_DATABASE`** at the restored file (or replace the existing file with the decompressed file, preserving ownership/permissions for the PHP user).
 5. Clear config cache if you changed `.env`: `php artisan config:clear`, then bring the app back up.
 

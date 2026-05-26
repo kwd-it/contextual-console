@@ -67,7 +67,7 @@ For Housebuilder plot datasets, the current flow is:
 Planned next steps (not yet implemented):
 
 - Broader use of change recording from real domain models and workflows.
-- Richer alerting and classification of issues beyond today’s listings.
+- Richer alerting and classification of issues beyond today's listings.
 - Checks for completeness and consistency of structured data.
 - Monitoring for sync/feed health.
 - Deeper reporting (saved views, exports, or notifications beyond the existing daily email).
@@ -83,9 +83,20 @@ Priorities will shift with the first production integrations.
 
 Default local database in `.env.example` is **SQLite**.
 
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | First private VPS deploy: Nginx, PHP-FPM, HTTPS, `.env`, cron, mail, backups |
+| [`docs/OPERATIONS.md`](docs/OPERATIONS.md) | Production deploy checklist, HTTP sources, investigating issues in the UI, daily summary setup |
+| [`docs/contextual-console-handover.md`](docs/contextual-console-handover.md) | Version-controlled handover: current features, scheduler, limitations |
+| [`CHANGELOG.md`](CHANGELOG.md) | Release history |
+
+Production deploys should run `php artisan optimize:clear`, `route:cache`, and `view:cache`, and should **not** run `config:cache` while source auth tokens are read from `.env` at runtime. See `docs/OPERATIONS.md`.
+
 ## Deployment (private VPS)
 
-See `docs/DEPLOYMENT.md` for a first private VPS deployment guide (Ubuntu LTS + Nginx + PHP-FPM, HTTPS, environment settings, Laravel scheduler cron, daily summary email env, creating the first admin user, configuring a real HTTP source, and running a manual ingest).
+See `docs/DEPLOYMENT.md` for a first private VPS deployment guide (Ubuntu LTS + Nginx + PHP-FPM, HTTPS, environment settings, Laravel scheduler cron, daily summary email env, creating the first admin user, configuring a real HTTP source, and running a manual ingest). Day-to-day operator tasks are in `docs/OPERATIONS.md`.
 
 ## Local development
 
@@ -157,7 +168,7 @@ Notes:
 To ingest real production data from a remote JSON endpoint (read-only), configure the monitored source with HTTP fields:
 
 - `endpoint_url`: full URL to a JSON endpoint (read-only GET).
-- `auth_header_name` + `auth_token_env_key` (optional): the **name** of the HTTP header (for example `Authorization`) and the **name** of an environment variable whose value is sent as that header’s **value only**, not a `Header-Name: …` line (for example use `Basic …` in env when `auth_header_name` is `Authorization`). Nothing secret is stored in the database.
+- `auth_header_name` + `auth_token_env_key` (optional): the **name** of the HTTP header (for example `Authorization`) and the **name** of an environment variable whose value is sent as that header's **value only**, not a `Header-Name: ...` line (for example use `Basic ...` in env when `auth_header_name` is `Authorization`). Nothing secret is stored in the database.
 - `http_json_items_key` (optional): when the JSON body is an **object** wrapping the list (not a top-level array), set this to the property that holds the array of plot records (for example `contexts` on ContextualWP `list_contexts` responses).
 - `http_plot_payload_adapter` (optional): `contextualwp_list_contexts` maps common ContextualWP / WordPress-style rows (for example `post_id`, `acf.price`) onto the plot fields the console compares (`id`, `price`, `status`). When this adapter is set and `http_json_items_key` is empty, the fetcher defaults the wrapper key to `contexts`.
 
@@ -246,8 +257,8 @@ If the env var referenced by `auth_token_env_key` is missing or empty, the comma
 - **CLI**: `php artisan contextual-console:source-status`
 - **Dashboard**: `/dashboard`: high-level counts and recent runs; drilldown links apply **basic filters** on Issues, Changes, or Sources where noted on the page.
 - **Sources list**: `/sources`: monitored sources and status-oriented summary.
-- **Source detail**: `/sources/{source}`: recent runs, latest run’s issues and changes, links to each run’s detail page.
-- **Run detail**: `/sources/{source}/runs/{run}`: that run’s issues and plot change rows (works for past runs, not only the latest).
+- **Source detail**: `/sources/{source}`: recent runs, latest run's issues and changes, links to each run's detail page.
+- **Run detail**: `/sources/{source}/runs/{run}`: that run's issues and plot change rows (works for past runs, not only the latest).
 
 To create an admin user locally (example placeholders only):
 

@@ -6,7 +6,7 @@
 
 The first product vertical is housebuilders (`app/Domains/Housebuilder`). Shared monitoring platform code lives under `app/Core`.
 
-For deployment steps and env var names (not values), see `docs/DEPLOYMENT.md`. For release history, see `CHANGELOG.md`.
+For deployment steps and env var names (not values), see `docs/DEPLOYMENT.md`. For day-to-day operator tasks (sources, issues, notifications), see `docs/OPERATIONS.md`. For release history, see `CHANGELOG.md`.
 
 ## 2. How to use this handover
 
@@ -22,20 +22,24 @@ Implemented today:
 
 | Area | Notes |
 |------|--------|
-| **Authenticated dashboard** | Summary counts, recent activity, drilldown links |
-| **Monitored sources** | List and per-source status |
-| **Source detail pages** | Latest run, developments, plots |
-| **Comparison run detail pages** | Any past run for a source |
+| **Authenticated dashboard** | Summary counts, recent activity, drilldown links, daily summary subscription warning when applicable |
+| **Monitored sources** | List with **source health** badges; per-source status |
+| **Source detail pages** | Latest run, developments, plots; **Run now** when `endpoint_url` is set; **failed run diagnostics** when the latest run failed |
+| **Comparison run detail pages** | Any past run for a source; issue links to issue detail |
+| **Issue detail pages** | `/issues/{issue}` with summary, context, suggested checks, status updates |
 | **Changes page** | Cross-source change log with filters |
-| **Issues page** | Review statuses; individual and **bulk** status updates |
-| **Development detail / drilldown** | Per-development plots, changes, and context |
+| **Issues page** | Review statuses; individual and **bulk** status updates; links to issue detail |
+| **Development detail / drilldown** | Per-development plots, changes, and context; issue links |
+| **Issue links** | Dashboard, sources, runs, developments, Issues list, emails (where applicable) |
 | **Scheduled source runs** | Daily `contextual-console:run-scheduled-sources` |
 | **Daily summary command and email** | `contextual-console:daily-summary` with optional `--email` |
 | **HTML daily summary email** | Source cards, latest run, labelled changes and active-issue tables, issue detail where present; plain text body from the same report |
 | **Local daily summary email preview** | Authenticated route in local/development only (see section 4) |
-| **Profile daily summary preference** | Per-user opt-in on Profile page (`daily_summary_enabled`) |
+| **Profile daily summary preference** | Per-user opt-in on Profile page (`daily_summary_enabled`); **Send test email** to login address only |
+| **UI timestamps** | Stored UTC; displayed in `APP_SCHEDULE_TIMEZONE` (default Europe/London) |
 | **Database backup command** | `contextual-console:backup-database` (SQLite file DB, S3-compatible disk) |
 | **Production smoke test command** | `contextual-console:smoke-test` (config checks, no external HTTP; verifies each `auth_token_env_key` resolves via `env()` at runtime) |
+| **Operator documentation** | `docs/OPERATIONS.md` (deploy checklist, sources, issue investigation, notifications) |
 
 ## 4. Daily summary email behaviour
 
@@ -46,7 +50,9 @@ Implemented today:
 - **Per-user subscription**: users with `daily_summary_enabled` receive one email each at their **login email** (`users.email`). No separate summary email field.
 - If **one or more** users are subscribed, **`CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO` is not used** for that run.
 - If **no** users are subscribed, **`CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO`** remains the fallback recipient (see `config/contextual_console.php`).
-- After deployment, **Kirk should opt in** via Profile (or a one-off DB update) so production does not rely on the env fallback long term. Other users should stay **unsubscribed** unless they choose to opt in.
+- **Subscription warnings** on dashboard and Profile when nobody is subscribed (fallback possible or critical if no fallback).
+- **Test email** on Profile sends the current report to the signed-in user's login email only (not fallback or other subscribers).
+- After deployment, at least one operator should **opt in via Profile** (or a controlled DB update) so production does not rely on the env fallback long term.
 
 ## 5. Profile / user preference behaviour
 
@@ -109,8 +115,9 @@ Investigation order when data looks wrong: **Console issue -> Housebuilder Pack 
 ## 10. Deployment / release notes
 
 - Run the **test suite** before deploy (`php artisan test` or project CI equivalent).
-- Run **`php artisan migrate`** after deploying branches that add migrations. The daily summary preferences work adds **`daily_summary_enabled`** on `users` (`2026_05_25_100000_add_daily_summary_preferences_to_users_table.php`).
-- After deploy, verify: **Profile** checkbox save, **preview route** absent in production / present locally, **`contextual-console:daily-summary --email`** with subscriber vs fallback behaviour, and scheduler cron still installed.
+- On each production deploy: **`php artisan optimize:clear`**, then **`route:cache`** and **`view:cache`**; **do not** run **`config:cache`** while source auth uses runtime `env()` (see `docs/DEPLOYMENT.md` and `docs/OPERATIONS.md`).
+- Run **`php artisan migrate`** after deploying branches that add migrations.
+- After deploy, verify: **Profile** checkbox and test email, **preview route** absent in production / present locally, **`contextual-console:daily-summary --email`** with subscriber vs fallback behaviour, **`contextual-console:smoke-test`**, and scheduler cron still installed.
 - **Version bumps and git tags** should be separate **release** commits/chores, not mixed into feature branches.
 - **Handover update** (this file) should land **before** the release/version bump commit when state has changed.
 
@@ -126,9 +133,9 @@ Investigation order when data looks wrong: **Console issue -> Housebuilder Pack 
 
 ## 12. Recommended next work
 
-1. Deploy and migrate current **daily summary / Profile / HTML email** improvements.
-2. **Opt Kirk in** to daily summaries after deploy (Profile UI or controlled DB update).
-3. **Verify** the next morning's scheduled email content and recipient list.
+1. Deploy using the checklist in **`docs/OPERATIONS.md`** / **`docs/DEPLOYMENT.md`**.
+2. Have operators **opt in** to daily summaries on Profile where appropriate.
+3. **Verify** the next scheduled email content and recipient list (and Profile test email after mail changes).
 4. Later: reduce or remove reliance on **`CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO`** once subscribers are stable.
 5. Later: full account/profile editing; per-source notification preferences.
 6. If preparing a wider release: improve contributor and open-source documentation (`README.md`, `LICENSE`, public deployment story).
