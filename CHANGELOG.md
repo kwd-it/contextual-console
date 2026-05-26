@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-26
+
+First **production-ready** release candidate after the **v0.10.x** daily monitoring stabilisation work. Operator workflows for issue investigation, source and run diagnostics, and daily summary notifications are suitable for production use. Ingest, comparison, change detection, and plot dataset issue detection rules are unchanged.
+
+### Issue review and diagnostics
+
+- **Issue detail pages** at `/issues/{issue}`: summary, context, review status updates, and **suggested issue checks** to make issue explanations more useful for operators.
+- **Issue links** from the dashboard, sources list, source detail, comparison run detail, development drilldown, and Issues list through to issue detail.
+- **Suggested issue checks** on issue detail (operator hints; for example check failed run details first for `source_run_failed` issues).
+
+### Source and run operations
+
+- **Manual Run now** on source detail when `endpoint_url` is set (browser-triggered HTTP ingest without SSH).
+- **Failed-run diagnostics** on source detail and comparison run detail when a run failed (operator-oriented context for investigation).
+- **Source health overview** on the sources list (health badges and status-oriented summary per source).
+
+### Daily summary notifications
+
+- **Daily summary emails** include links back to relevant Console pages (sources, runs, issues) where applicable.
+- **Subscription warning** when no users are subscribed to the daily summary (visible on Profile and related operator views).
+- **Send test email** on Profile: sends the current daily summary report to the signed-in user's login email only (not fallback or other subscribers).
+
+### Deployment, operations and documentation
+
+- **Production deploy guidance**: do **not** run `php artisan config:cache` while monitored sources resolve HTTP auth header **values** from `.env` at runtime via `auth_token_env_key` (see `docs/DEPLOYMENT.md` and `docs/OPERATIONS.md`).
+- **Production operations guide** added at `docs/OPERATIONS.md` (deploy checklist, HTTP sources, issue investigation, daily summary setup).
+- **Mojibake skill** (`.cursor/skills/no-mojibake-ui-text`) strengthened with blocking grep verification for user-visible strings.
+
+### Fixes
+
+- **Source HTTP auth**: avoid `config:cache` breaking runtime `env()` lookup for auth tokens (deploy and smoke-test guidance updated accordingly).
+- **UI timestamps**: displayed in the configured schedule timezone (`APP_SCHEDULE_TIMEZONE`, default **Europe/London**) instead of raw UTC; storage remains UTC.
+
+### Notes
+
+- Plot-level dataset issue detection rules are unchanged.
+- For day-to-day production operations, start with `docs/OPERATIONS.md`; first-time VPS setup remains in `docs/DEPLOYMENT.md`.
+
 ## [0.10.0] - 2026-05-25
 
 Daily summary email improvements, per-user summary preferences, clearer dashboard handling of recovered source failures, issue change details in the UI and email, local dev email preview, and updated project handover. Monitoring presentation and email delivery improved; plot dataset issue detection rules are unchanged.
@@ -91,7 +129,7 @@ Display support for Housebuilder Pack plot **modified-author** labels supplied b
 - When a Housebuilder Pack plots payload includes **`last_modified_by`**, Console **preserves** it on stored **`DatasetSnapshot`** rows (when present) and shows it on plot entity blocks as **Last modified by: {label}** (for example on **Changes**, **Issues**, source detail, and comparison run detail pages).
 - Labels are resolved via **`PlotSnapshotDisplayLookup`** from current or previous snapshot payloads, alongside existing title and development display fields.
 - **`last_modified_by` is display-only snapshot metadata**: it is **not** a tracked business field, **does not** create change logs or dataset issues, and changes to **`last_modified_by` alone** do not affect comparison summaries.
-- Wording uses **“Last modified by”** (not “Changed by”). Console compares snapshots over time; this label is **not** a full audit trail and **does not** imply the named person made the exact field change shown on the same row.
+- Wording uses **"Last modified by"** (not "Changed by"). Console compares snapshots over time; this label is **not** a full audit trail and **does not** imply the named person made the exact field change shown on the same row.
 
 ### Notes
 
@@ -111,7 +149,7 @@ Incremental improvements to the internal monitoring UI: a first cross-source das
 ### Source and run inspection
 
 - **Human-readable plot labels** (title and development where present in snapshots) on source dashboards and comparison run detail tables, alongside stable technical plot ids.
-- Comparison **run detail** pages (`/sources/{source}/runs/{run}`) remain accurate for **older runs**, not only the latest. Useful when reviewing historic issues and change rows for a given day’s comparison.
+- Comparison **run detail** pages (`/sources/{source}/runs/{run}`) remain accurate for **older runs**, not only the latest. Useful when reviewing historic issues and change rows for a given day's comparison.
 
 ### Cross-source pages
 
@@ -217,7 +255,7 @@ This is the **first deployment-ready monitoring release**.
 
 ### Notes
 
-- Very large Housebuilder Pack responses can exceed the Console HTTP client’s default timeout; addressing `limit`/pagination and timeouts is expected to be handled in the Pack (or follow-up Console work), not in this patch release.
+- Very large Housebuilder Pack responses can exceed the Console HTTP client's default timeout; addressing `limit`/pagination and timeouts is expected to be handled in the Pack (or follow-up Console work), not in this patch release.
 
 ## [0.2.1] - 2026-04-27
 
@@ -227,7 +265,7 @@ This is the **first deployment-ready monitoring release**.
 - Support for wrapped HTTP JSON list payloads via optional `http_json_items_key` on `MonitoredSource`.
 - Optional `http_plot_payload_adapter` with **`contextualwp_list_contexts`**, including default unwrapping of ContextualWP **`contexts`** payloads when that adapter is set and no items key is configured.
 - Mapping of common ContextualWP / WordPress / ACF-style fields onto Console plot fields (especially `id`, `price`, and `status`) for ingest and comparison, including safe handling of ACF select-style `value` / `label` shapes for status.
-- Support for **full HTTP auth header values** from environment variables for HTTP sources (for example WordPress Application Password **Basic** auth), with header names stored separately in the database—**never** commit live credentials; keep secrets in `.env` only.
+- Support for **full HTTP auth header values** from environment variables for HTTP sources (for example WordPress Application Password **Basic** auth), with header names stored separately in the database - **never** commit live credentials; keep secrets in `.env` only.
 
 ### Documentation
 
@@ -236,7 +274,7 @@ This is the **first deployment-ready monitoring release**.
 
 ### Notes
 
-- **ContextualWP core** remains generic. Housebuilder-specific plot dataset richness (for example full `price` / `status` in payloads) belongs in the **ContextualWP Housebuilder Pack**; today’s `list_contexts` responses may only expose summary fields (such as `id`, `title`, `description`, `last_updated`). Missing `price` / `status` **warnings** from the Console issue detector are therefore expected until a richer Housebuilder Pack endpoint is available.
+- **ContextualWP core** remains generic. Housebuilder-specific plot dataset richness (for example full `price` / `status` in payloads) belongs in the **ContextualWP Housebuilder Pack**; today's `list_contexts` responses may only expose summary fields (such as `id`, `title`, `description`, `last_updated`). Missing `price` / `status` **warnings** from the Console issue detector are therefore expected until a richer Housebuilder Pack endpoint is available.
 
 ## [0.2.0] - 2026-04-25
 
@@ -257,7 +295,7 @@ This is the **first deployment-ready monitoring release**.
 ### Added
 
 - Added/removed plots are now logged as presence changes using the stable domain change log contract (`entity_type=plot`, `entity_id` = canonical dataset plot `id`, `field=presence`).
-- A persisted per-source run flow now exists: `MonitoredSource` → `DatasetSnapshot` → `DatasetComparisonRun`, with stored comparison summaries on completed runs.
+- A persisted per-source run flow now exists: `MonitoredSource` -> `DatasetSnapshot` -> `DatasetComparisonRun`, with stored comparison summaries on completed runs.
 - Internal/dev artisan command to run a monitored plot source from a supplied JSON payload file: `contextual-console:run-plot-source {sourceKey} --file=/path/to/payload.json`.
 
 ### Changed
