@@ -3,7 +3,7 @@
     $dashboardActive = $routeName === 'dashboard.index';
     $sourcesActive = in_array($routeName, ['sources.index', 'sources.show', 'sources.runs.show', 'sources.developments.show'], true);
     $changesActive = $routeName === 'changes.index';
-    $issuesActive = $routeName === 'issues.index';
+    $issuesActive = in_array($routeName, ['issues.index', 'issues.show'], true);
     $profileActive = in_array($routeName, ['profile.edit', 'profile.update'], true);
 @endphp
 <div class="cc-app-bar">

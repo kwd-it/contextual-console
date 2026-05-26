@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — Dashboard</title>
+        <title>Contextual Console - Dashboard</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -108,7 +108,7 @@
                 <div class="cc-card-header">
                     <h2 id="hdr-development-overview" class="cc-card-title">@include('sources._dashboard-icon', ['name' => 'development'])<span>Development overview</span></h2>
                     <p class="cc-card-desc">
-                        Plot counts by development from each source’s latest completed or baseline snapshot (top groups by plot count).
+                        Plot counts by development from each source's latest completed or baseline snapshot (top groups by plot count).
                     </p>
                 </div>
                 <div class="cc-card-body">
@@ -371,7 +371,7 @@
                                                 @include('sources._dashboard-severity-badge', ['severity' => $issue->severity, 'label' => $issue->severity])
                                             @endif
                                         </td>
-                                        <td>{{ $issue->message }}</td>
+                                        <td><a href="{{ route('issues.show', $issue) }}" data-test="dashboard-recent-issue-link">{{ $issue->message }}</a></td>
                                         <td>
                                             @if ($issueSource !== null)
                                                 <a href="{{ route('sources.show', $issueSource) }}">{{ $issueSource->display_label }}</a>

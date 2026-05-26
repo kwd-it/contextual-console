@@ -224,7 +224,7 @@ it('shows snapshot-derived plot labels and keeps technical ids visible', functio
         ->assertSeeText('Plot 14, The Spetisbury')
         ->assertSeeText('Charminster Farm')
         ->assertSeeText('Technical ID: plot:14')
-        ->assertSeeText('Issue id: '.(string) $plotIssue->id)
+        ->assertSeeText('View issue #'.(string) $plotIssue->id)
         ->assertSeeText('Plot status is invalid.')
         ->assertSeeText('invalid_value');
 });

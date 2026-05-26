@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Contextual Console — Issues</title>
+        <title>Contextual Console - Issues</title>
         @include('sources._dashboard-styles')
     </head>
     <body>
@@ -196,9 +196,11 @@
                                             @if ($source !== null)
                                                 <a href="{{ route('sources.show', $source) }}">{{ $source->display_label }}</a>
                                             @else
-                                                <span class="muted">—</span>
+                                                <span class="muted">-</span>
                                             @endif
-                                            <div class="cc-details muted mono">Issue id: {{ $issue->id }}</div>
+                                            <div class="cc-details muted mono">
+                                                <a href="{{ route('issues.show', $issue) }}" data-test="issue-detail-link">View issue #{{ $issue->id }}</a>
+                                            </div>
                                         </td>
                                         <td class="mono">
                                             @if ($source !== null && $run !== null)
@@ -231,10 +233,10 @@
                                             @endif
                                         </td>
                                         <td>
-                                            {{ $issue->message }}
+                                            <a href="{{ route('issues.show', $issue) }}">{{ $issue->message }}</a>
                                             @include('issues._issue-change-detail', ['issue' => $issue])
                                             @if ($messageMetaParts !== [])
-                                                <div class="cc-details muted mono">{{ implode(' · ', $messageMetaParts) }}</div>
+                                                <div class="cc-details muted mono">{{ implode(' | ', $messageMetaParts) }}</div>
                                             @endif
                                         </td>
                                         <td class="mono cc-time">{{ $recordedAt }}</td>

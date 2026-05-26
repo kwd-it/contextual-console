@@ -19,6 +19,25 @@ class IssuesController extends Controller
 {
     private const int ISSUES_PER_PAGE = 100;
 
+    public function show(DatasetIssue $issue): View
+    {
+        $issue->load(['monitoredSource', 'datasetComparisonRun', 'datasetSnapshot']);
+
+        $plotLookup = $this->plotDisplayLookupForRunId($issue->dataset_comparison_run_id);
+        $plotMeta = $plotLookup->forPlotEntity(
+            $issue->entity_type !== null && $issue->entity_type !== ''
+                ? (string) $issue->entity_type
+                : null,
+            $issue->entity_id,
+        );
+
+        return view('issues.show', [
+            'issue' => $issue,
+            'plotMeta' => $plotMeta,
+            'issueStatusOptions' => DatasetIssue::STATUSES,
+        ]);
+    }
+
     public function index(Request $request): View
     {
         $sources = MonitoredSource::query()
@@ -74,6 +93,12 @@ class IssuesController extends Controller
         ]);
 
         $issue->update(['status' => $validated['status']]);
+
+        if ($request->input('return_to') === 'show') {
+            return redirect()
+                ->route('issues.show', $issue)
+                ->with('status', 'Issue status updated.');
+        }
 
         return redirect()
             ->route('issues.index', $this->issueIndexQueryFromRequest($request))
@@ -340,5 +365,16 @@ class IssuesController extends Controller
         }
 
         return $lookups;
+    }
+
+    private function plotDisplayLookupForRunId(?int $runId): PlotSnapshotDisplayLookup
+    {
+        if ($runId === null) {
+            return PlotSnapshotDisplayLookup::empty();
+        }
+
+        $lookups = $this->plotDisplayLookupsForRuns(collect([$runId]));
+
+        return $lookups[$runId] ?? PlotSnapshotDisplayLookup::empty();
     }
 }

@@ -44,6 +44,19 @@ it('returns null for non change-driven issues', function () {
     expect(IssueChangeDetail::transitionLabel($issue))->toBeNull();
 });
 
+it('formats transitions from context for non change-driven issues on detail display', function () {
+    $issue = new DatasetIssue([
+        'issue_type' => 'invalid_plot_status',
+        'context' => [
+            'old_value' => 'a',
+            'new_value' => 'b',
+        ],
+    ]);
+
+    expect(IssueChangeDetail::transitionLabel($issue))->toBeNull();
+    expect(IssueChangeDetail::transitionLabelForDisplay($issue))->toBe('a -> b');
+});
+
 it('uses the issue field column when context omits field', function () {
     $issue = new DatasetIssue([
         'issue_type' => PlotDatasetChangeLogIssueCreator::ISSUE_TYPE_PLOT_STATUS_CHANGED,

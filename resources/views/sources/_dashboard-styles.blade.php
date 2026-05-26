@@ -525,6 +525,13 @@
         line-height: 1.5;
         color: var(--cc-muted);
     }
+    .cc-context-value {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: inherit;
+        font-size: inherit;
+    }
     .cc-empty {
         margin: 0;
         padding: 32px 22px;
@@ -557,6 +564,7 @@
         font-weight: 600;
         color: var(--cc-muted);
         font-size: 0.8125rem;
+        text-align: left;
         background: var(--cc-table-header-bg);
     }
     .cc-kv td {
@@ -1002,6 +1010,41 @@
         cursor: pointer;
     }
     .cc-issue-status-form button:hover {
+        background: var(--cc-link-hover);
+        border-color: var(--cc-link-hover);
+    }
+    .cc-issue-review-form .cc-kv th,
+    .cc-issue-review-form .cc-kv td {
+        vertical-align: middle;
+    }
+    .cc-issue-review-form__controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+    }
+    .cc-issue-review-form__controls select {
+        min-width: 11rem;
+        padding: 7px 10px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--cc-text);
+        background: var(--cc-surface);
+        border: 1px solid var(--cc-border-strong);
+        border-radius: var(--cc-radius-sm);
+        box-sizing: border-box;
+    }
+    .cc-issue-review-form__controls button {
+        padding: 7px 14px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--cc-on-accent);
+        background: var(--cc-accent);
+        border: 1px solid var(--cc-accent);
+        border-radius: var(--cc-radius-sm);
+        cursor: pointer;
+    }
+    .cc-issue-review-form__controls button:hover {
         background: var(--cc-link-hover);
         border-color: var(--cc-link-hover);
     }

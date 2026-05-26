@@ -28,6 +28,24 @@ final class IssueChangeDetail
             return null;
         }
 
+        return self::transitionFromContext($issue);
+    }
+
+    /**
+     * Human-readable old -> new label when context stores a transition, including non change-driven issues.
+     */
+    public static function transitionLabelForDisplay(DatasetIssue $issue): ?string
+    {
+        $changeDriven = self::transitionLabel($issue);
+        if ($changeDriven !== null) {
+            return $changeDriven;
+        }
+
+        return self::transitionFromContext($issue);
+    }
+
+    private static function transitionFromContext(DatasetIssue $issue): ?string
+    {
         $context = is_array($issue->context) ? $issue->context : [];
         if (! array_key_exists('old_value', $context) && ! array_key_exists('new_value', $context)) {
             return null;

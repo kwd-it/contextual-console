@@ -32,6 +32,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/issues', [IssuesController::class, 'index'])
         ->name('issues.index');
 
+    Route::get('/issues/{issue}', [IssuesController::class, 'show'])
+        ->name('issues.show');
+
     Route::post('/issues/bulk-status', [IssuesController::class, 'bulkUpdateStatus'])
         ->name('issues.bulk-update-status');
 
