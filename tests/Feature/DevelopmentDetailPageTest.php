@@ -1,5 +1,6 @@
 <?php
 
+use App\Core\Models\DatasetIssue;
 use App\Core\Models\MonitoredSource;
 use App\Domains\Housebuilder\Services\PlotDatasetRunService;
 use App\Models\User;
@@ -357,6 +358,17 @@ it('shows recent issues for plots in the selected development only', function ()
 
     $slug = DevelopmentRouteSlug::encode('Alpha Fields');
 
+    $issue = DatasetIssue::query()
+        ->where('monitored_source_id', $source->id)
+        ->where('entity_type', 'plot')
+        ->where('entity_id', '1')
+        ->orderByDesc('id')
+        ->first();
+
+    expect($issue)->not->toBeNull();
+
+    $showHref = route('issues.show', $issue);
+
     $this->actingAs($user)
         ->get(route('sources.developments.show', [$source, $slug]))
         ->assertOk()
@@ -364,6 +376,8 @@ it('shows recent issues for plots in the selected development only', function ()
         ->assertSee('data-test="development-recent-issue-row"', false)
         ->assertSeeText('Alpha Plot')
         ->assertSeeText('status')
+        ->assertSee('href="'.$showHref.'"', false)
+        ->assertSee('data-test="development-recent-issue-message-link"', false)
         ->assertDontSeeText('Beta Plot')
         ->assertDontSeeText('sold');
 });

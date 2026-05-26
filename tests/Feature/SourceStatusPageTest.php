@@ -151,13 +151,17 @@ it('shows latest run issues on the detail page', function () {
 
     expect($issue)->not->toBeNull();
 
+    $showHref = route('issues.show', $issue);
+
     $this->actingAs($user)
         ->get(route('sources.show', $source))
         ->assertOk()
         ->assertSeeText('Issues on this run')
         ->assertSeeText((string) $issue->severity)
         ->assertSeeText((string) $issue->issue_type)
-        ->assertSeeText((string) $issue->message);
+        ->assertSeeText((string) $issue->message)
+        ->assertSee('href="'.$showHref.'"', false)
+        ->assertSee('data-test="source-issue-message-link"', false);
 });
 
 it('does not show old-run issues as latest-run issues', function () {
@@ -551,6 +555,8 @@ it('shows a failed latest run and its source_run_failed issue on the source deta
         'context' => ['reason' => 'timeout'],
     ]);
 
+    $showHref = route('issues.show', $issue);
+
     $this->actingAs($user)
         ->get(route('sources.show', $source))
         ->assertOk()
@@ -566,5 +572,7 @@ it('shows a failed latest run and its source_run_failed issue on the source deta
         ->assertSeeText('Issues on this run')
         ->assertSeeText((string) $issue->severity)
         ->assertSeeText((string) $issue->issue_type)
-        ->assertSeeText((string) $issue->message);
+        ->assertSeeText((string) $issue->message)
+        ->assertSee('href="'.$showHref.'"', false)
+        ->assertSee('data-test="source-issue-message-link"', false);
 });

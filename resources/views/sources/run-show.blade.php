@@ -166,7 +166,7 @@
                                         </td>
                                         <td class="mono">{{ $issue->field ?? '-' }}</td>
                                         <td>
-                                            {{ $issue->message }}
+                                            <a href="{{ route('issues.show', $issue) }}" data-test="run-issue-message-link">{{ $issue->message }}</a>
                                             @include('issues._issue-change-detail', ['issue' => $issue])
                                         </td>
                                         <td class="mono">{{ $contextLabel }}</td>

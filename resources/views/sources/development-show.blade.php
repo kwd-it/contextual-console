@@ -245,8 +245,8 @@
                                             @include('sources._dashboard-severity-badge', ['severity' => $issue->severity, 'label' => $issue->severity])
                                         </td>
                                         <td class="mono">{{ $issue->issue_type }}</td>
-                                        <td class="mono">{{ $issue->field ?? '—' }}</td>
-                                        <td>{{ $issue->message }}</td>
+                                        <td class="mono">{{ $issue->field ?? '-' }}</td>
+                                        <td><a href="{{ route('issues.show', $issue) }}" data-test="development-recent-issue-message-link">{{ $issue->message }}</a></td>
                                         <td class="mono">
                                             @if ($issue->dataset_comparison_run_id !== null)
                                                 <a href="{{ route('sources.runs.show', [$source, $issue->dataset_comparison_run_id]) }}" data-test="development-recent-issue-run-link">{{ $issue->dataset_comparison_run_id }}</a>

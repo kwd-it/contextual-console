@@ -113,13 +113,17 @@ it('shows issues linked to that run on the run detail page', function () {
         'context' => ['reason' => 'timeout'],
     ]);
 
+    $showHref = route('issues.show', $issue);
+
     $this->actingAs($user)
         ->get(route('sources.runs.show', [$source, $run]))
         ->assertOk()
         ->assertSeeText('Issues on this run')
         ->assertSeeText((string) $issue->severity)
         ->assertSeeText((string) $issue->issue_type)
-        ->assertSeeText((string) $issue->message);
+        ->assertSeeText((string) $issue->message)
+        ->assertSee('href="'.$showHref.'"', false)
+        ->assertSee('data-test="run-issue-message-link"', false);
 });
 
 it('shows change logs linked to that run on the run detail page', function () {
