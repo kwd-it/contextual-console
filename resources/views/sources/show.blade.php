@@ -123,6 +123,10 @@
                 </div>
             </section>
 
+            @if ($latestRunFailedDiagnostics !== null)
+                @include('sources._failed-run-diagnostics', ['diagnostics' => $latestRunFailedDiagnostics])
+            @endif
+
             {{-- Latest run issues (before changes and history for scan flow) --}}
             <section class="cc-card" aria-labelledby="hdr-latest-issues">
                 <div class="cc-card-header">

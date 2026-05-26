@@ -532,6 +532,13 @@
         font-family: inherit;
         font-size: inherit;
     }
+    .cc-failed-run-diagnostics__detail {
+        margin-top: 14px;
+    }
+    .cc-failed-run-diagnostics__actions {
+        margin: 14px 0 0;
+        font-size: 0.875rem;
+    }
     .cc-empty {
         margin: 0;
         padding: 32px 22px;

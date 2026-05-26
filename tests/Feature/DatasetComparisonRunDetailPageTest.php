@@ -111,7 +111,9 @@ it('shows issues linked to that run on the run detail page', function () {
         'issue_type' => 'source_run_failed',
         'severity' => 'error',
         'message' => 'Run-specific failure message',
-        'context' => ['reason' => 'timeout'],
+        'context' => [
+            'exception_message' => "Missing required auth header env value for key 'HB_PLOT_TOKEN'.",
+        ],
     ]);
 
     $showHref = route('issues.show', $issue);
@@ -119,12 +121,43 @@ it('shows issues linked to that run on the run detail page', function () {
     $this->actingAs($user)
         ->get(route('sources.runs.show', [$source, $run]))
         ->assertOk()
+        ->assertSee('data-test="failed-run-diagnostics"', false)
+        ->assertSeeText('Failed run diagnostics')
+        ->assertSeeText('This run failed before a new snapshot was created.')
+        ->assertSeeText('Failure detail')
+        ->assertSeeText("Missing required auth header env value for key 'HB_PLOT_TOKEN'.")
+        ->assertSeeText('View issue details')
+        ->assertSee('href="'.$showHref.'"', false)
+        ->assertSee('data-test="failed-run-diagnostics-issue-link"', false)
         ->assertSeeText('Issues on this run')
         ->assertSeeText((string) $issue->severity)
         ->assertSeeText((string) $issue->issue_type)
         ->assertSeeText((string) $issue->message)
-        ->assertSee('href="'.$showHref.'"', false)
         ->assertSee('data-test="run-issue-message-link"', false);
+});
+
+it('does not show failed run diagnostics on the run detail page for completed runs', function () {
+    $user = User::factory()->create();
+    $source = MonitoredSource::create([
+        'key' => 'hb:run-detail-completed',
+        'name' => 'Run Detail Completed Source',
+    ]);
+
+    $run = DatasetComparisonRun::create([
+        'source_id' => $source->id,
+        'status' => 'completed',
+        'current_snapshot_id' => null,
+        'previous_snapshot_id' => null,
+        'summary' => ['added' => 0, 'removed' => 0, 'changed' => 0, 'unchanged' => 0],
+        'started_at' => now()->subMinute(),
+        'finished_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('sources.runs.show', [$source, $run]))
+        ->assertOk()
+        ->assertDontSee('data-test="failed-run-diagnostics"', false)
+        ->assertDontSeeText('Failed run diagnostics');
 });
 
 it('shows change logs linked to that run on the run detail page', function () {

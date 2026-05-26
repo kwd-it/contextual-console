@@ -20,6 +20,10 @@
                 <p class="cc-source-meta muted mono">Source key: {{ $source->key }}</p>
             </header>
 
+            @if ($failedRunDiagnostics !== null)
+                @include('sources._failed-run-diagnostics', ['diagnostics' => $failedRunDiagnostics])
+            @endif
+
             <section class="cc-card" aria-labelledby="hdr-run-summary">
                 <div class="cc-card-header">
                     <h2 class="cc-card-title" id="hdr-run-summary">@include('sources._dashboard-icon', ['name' => 'run'])<span>Run overview</span></h2>

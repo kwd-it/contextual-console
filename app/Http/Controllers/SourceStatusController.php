@@ -10,6 +10,7 @@ use App\Core\Models\MonitoredSource;
 use App\Core\Services\MonitoredSourceStatusService;
 use App\Core\Services\HttpMonitoredSourceRunService;
 use App\Support\DevelopmentDetailViewData;
+use App\Support\FailedRunDiagnostics;
 use App\Support\PlotSnapshotDisplayLookup;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -136,6 +137,10 @@ class SourceStatusController extends Controller
             }
         }
 
+        $latestRunFailedDiagnostics = $latestRun !== null
+            ? FailedRunDiagnostics::forRun((string) $latestRun->status, $latestRunIssues)
+            : null;
+
         return view('sources.show', [
             'source' => $source,
             'recentRuns' => $recentRuns,
@@ -145,6 +150,7 @@ class SourceStatusController extends Controller
             'latestRunIssues' => $latestRunIssues,
             'latestRunChanges' => $latestRunChanges,
             'plotDisplayLookup' => $plotDisplayLookup,
+            'latestRunFailedDiagnostics' => $latestRunFailedDiagnostics,
         ]);
     }
 
@@ -205,6 +211,8 @@ class SourceStatusController extends Controller
             );
         }
 
+        $failedRunDiagnostics = FailedRunDiagnostics::forRun((string) $run->status, $runIssues);
+
         return view('sources.run-show', [
             'source' => $source,
             'run' => $run,
@@ -212,6 +220,7 @@ class SourceStatusController extends Controller
             'runChanges' => $runChanges,
             'severityCounts' => $severityCounts,
             'plotDisplayLookup' => $plotDisplayLookup,
+            'failedRunDiagnostics' => $failedRunDiagnostics,
         ]);
     }
 }
