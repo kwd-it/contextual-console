@@ -18,6 +18,8 @@ This file is the **version-controlled project handover** for Contextual Console.
 
 ## 3. Current project state
 
+**Current release: v1.1.0** (see `CHANGELOG.md`).
+
 Implemented today:
 
 | Area | Notes |
@@ -36,6 +38,12 @@ Implemented today:
 | **HTML daily summary email** | Source cards, latest run, labelled changes and active-issue tables, issue detail where present; plain text body from the same report |
 | **Local daily summary email preview** | Authenticated route in local/development only (see section 4) |
 | **Profile daily summary preference** | Per-user opt-in on Profile page (`daily_summary_enabled`); **Send test email** to login address only |
+| **Profile account settings** | Signed-in users can update **name** and **password** (current password required); login email is read-only |
+| **User roles** | **Admin** and **operator**; admin-only routes protected by middleware |
+| **Admin Users page** | `/admin/users` (admin only): create, edit, and delete users; list name, login email, role, daily summary subscription, and last sign-in; reset another user's password; login email is read-only after creation |
+| **Last sign-in tracking** | Updated on successful login; shown on the Admin Users page in the display timezone |
+| **Admin safety protections** | Blocks self-deletion, self-demotion, last admin deletion, and last admin demotion; an admin's own role is read-only on the Users page |
+| **User provisioning CLI** | `contextual-console:create-admin-user`, `contextual-console:promote-user-to-admin` |
 | **UI timestamps** | Stored UTC; displayed in `APP_SCHEDULE_TIMEZONE` (default Europe/London) |
 | **Database backup command** | `contextual-console:backup-database` (SQLite file DB, S3-compatible disk) |
 | **Production smoke test command** | `contextual-console:smoke-test` (config checks, no external HTTP; verifies each `auth_token_env_key` resolves via `env()` at runtime) |
@@ -56,9 +64,11 @@ Implemented today:
 
 ## 5. Profile / user preference behaviour
 
-- **Profile page** (`/profile`): shows **Name** and **Login email** (read-only display); **Daily summary email** checkbox controls only the signed-in user's `daily_summary_enabled`.
-- Saving preferences updates subscription only; email goes to the **login email**, not a separate address field.
-- **Not implemented**: password change, roles, admin user management UI, per-source notification preferences, or editing name/email from the UI.
+- **Profile page** (`/profile`): signed-in users can update **name** and **password** (current password required). **Login email** is read-only (set when the account is created).
+- **Daily summary email** checkbox controls only the signed-in user's `daily_summary_enabled`.
+- Saving preferences updates the subscription only; email goes to the **login email**, not a separate address field.
+- **Admins** can create, edit, and delete users, reset passwords, and manage daily summary subscriptions on the **Users** page (`/admin/users`). Login email is set at creation and is read-only in the UI.
+- **Not implemented**: invite emails, forgot-password flow, per-source notification preferences, or login email changes from the UI.
 
 ## 6. Monitoring and issue behaviour
 
@@ -117,27 +127,27 @@ Investigation order when data looks wrong: **Console issue -> Housebuilder Pack 
 - Run the **test suite** before deploy (`php artisan test` or project CI equivalent).
 - On each production deploy: **`php artisan optimize:clear`**, then **`route:cache`** and **`view:cache`**; **do not** run **`config:cache`** while source auth uses runtime `env()` (see `docs/DEPLOYMENT.md` and `docs/OPERATIONS.md`).
 - Run **`php artisan migrate`** after deploying branches that add migrations.
-- After deploy, verify: **Profile** checkbox and test email, **preview route** absent in production / present locally, **`contextual-console:daily-summary --email`** with subscriber vs fallback behaviour, **`contextual-console:smoke-test`**, and scheduler cron still installed.
+- After deployment, verify: **Profile** name and password and daily summary email checkbox, **Admin Users** page for admin accounts, **preview route** absent in production / present locally, **`contextual-console:daily-summary --email`** with subscriber vs fallback behaviour, **`contextual-console:smoke-test`**, and scheduler cron still installed.
 - **Version bumps and git tags** should be separate **release** commits/chores, not mixed into feature branches.
 - **Handover update** (this file) should land **before** the release/version bump commit when state has changed.
 
 ## 11. Known limitations / not yet implemented
 
+- No invite emails or self-service account registration
+- No forgot-password or password-reset email flow (admins can reset another user's password on the Users page; there is no emailed reset link)
 - No per-source email preferences or frequency options
 - No Slack / Microsoft Teams alerts
-- No admin UI to manage other users' notification preferences
-- No password or full profile editing beyond name/email display and daily summary opt-in
 - **`CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO`** env fallback still used when no subscribers (temporary operational bridge)
-- No formal role-based permissions beyond **authenticated access** to the app
+- No formal RBAC beyond **admin** and **operator** roles
 - Email branding is **text-only** (no logo image yet)
 
 ## 12. Recommended next work
 
 1. Deploy using the checklist in **`docs/OPERATIONS.md`** / **`docs/DEPLOYMENT.md`**.
-2. Have operators **opt in** to daily summaries on Profile where appropriate.
+2. Have operators **opt in** to daily summaries on Profile where appropriate; admins can manage subscriptions on the Users page when needed.
 3. **Verify** the next scheduled email content and recipient list (and Profile test email after mail changes).
 4. Later: reduce or remove reliance on **`CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO`** once subscribers are stable.
-5. Later: full account/profile editing; per-source notification preferences.
+5. Later: per-source notification preferences; invite or forgot-password email flows.
 6. If preparing a wider release: improve contributor and open-source documentation (`README.md`, `LICENSE`, public deployment story).
 
 ## 13. Cursor skills reference

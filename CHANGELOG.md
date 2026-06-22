@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-06-22
+
+Adds **admin user management** and **profile account controls** on top of the **v1.0.0** monitoring baseline. Ingest, comparison, change detection, and plot dataset issue detection rules are unchanged.
+
+### Admin user management
+
+- **Admin and operator roles**: admins can access account management; operators use the monitoring UI only.
+- **Admin Users page** at `/admin/users`: lists name, login email, role, daily summary subscription, and **last sign-in** in the display timezone.
+- **Create, edit, and delete users**: admins can add accounts, update name and role, reset another user's password, and delete users safely from the Users page.
+- **Login email immutability**: user email is set at creation and cannot be changed from Profile or the Users page.
+- **Last sign-in tracking**: successful login records `last_signed_in_at` and shows it on the Users page.
+- **Admin safety protections**: blocks self-deletion, self-demotion, deletion of the last admin, and demotion of the last admin; an admin's own role is read-only on the Users page.
+- **Daily summary subscriptions**: admins can view and change another user's `daily_summary_enabled` on the Users page.
+- **CLI provisioning** still available: `contextual-console:create-admin-user` and `contextual-console:promote-user-to-admin`.
+
+### Profile account settings
+
+- **Profile page** (`/profile`): signed-in users can update their **name** and **password** (current password required).
+- **Login email** remains **read-only** on Profile (managed at account creation; admins see it on the Users page).
+- **Daily summary subscription** can still be managed on Profile; admins can also view and change subscriptions for other users on the Users page.
+
+### Notes
+
+- No invite emails, forgot-password flow, or per-source notification preferences in this release.
+- Role model is **admin** and **operator** only (not full RBAC).
+
 ## [1.0.0] - 2026-05-26
 
 First **production-ready** release candidate after the **v0.10.x** daily monitoring stabilisation work. Operator workflows for issue investigation, source and run diagnostics, and daily summary notifications are suitable for production use. Ingest, comparison, change detection, and plot dataset issue detection rules are unchanged.
