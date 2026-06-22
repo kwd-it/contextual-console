@@ -12,13 +12,13 @@
 
             <header class="cc-page-header">
                 <h1 class="cc-page-title"><span>Users</span></h1>
-                <p class="cc-page-sub">Manage user roles and daily summary email subscriptions.</p>
+                <p class="cc-page-sub">Manage user accounts, roles, and daily summary email subscriptions.</p>
             </header>
 
             <section class="cc-card" aria-labelledby="hdr-user-list" data-test="admin-users-page">
                 <div class="cc-card-header">
                     <h2 class="cc-card-title" id="hdr-user-list"><span>User list</span></h2>
-                    <p class="cc-card-desc">Admins can change roles, email addresses, and daily summary subscriptions. Last sign-in times use the app display timezone.</p>
+                    <p class="cc-card-desc">Admins can change names, roles, and daily summary subscriptions. Login email is set when a user is created and cannot be changed here. Last sign-in times use the app display timezone.</p>
                 </div>
                 @if (session('status'))
                     <p class="cc-flash cc-flash--notice" role="status" data-test="admin-users-status">{{ session('status') }}</p>
@@ -42,24 +42,22 @@
                             @foreach ($users as $user)
                                 @php($formId = 'admin-user-form-'.$user->id)
                                 <tr data-test="admin-user-row" data-user-id="{{ $user->id }}">
-                                    <td data-test="admin-user-name">{{ $user->name }}</td>
                                     <td>
-                                        @if ($user->is(auth()->user()))
-                                            <span class="mono" data-test="admin-user-email-readonly">{{ $user->email }}</span>
-                                        @else
-                                            <label>
-                                                <span class="muted">Email</span>
-                                                <input
-                                                    type="email"
-                                                    name="email"
-                                                    form="{{ $formId }}"
-                                                    value="{{ $user->email }}"
-                                                    class="mono cc-admin-user-email-input"
-                                                    data-test="admin-user-email-input"
-                                                    required
-                                                >
-                                            </label>
-                                        @endif
+                                        <label>
+                                            <span class="muted">Name</span>
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                form="{{ $formId }}"
+                                                value="{{ $user->name }}"
+                                                class="cc-admin-user-name-input"
+                                                data-test="admin-user-name-input"
+                                                required
+                                            >
+                                        </label>
+                                    </td>
+                                    <td>
+                                        <span class="mono" data-test="admin-user-email-readonly">{{ $user->email }}</span>
                                     </td>
                                     <td>
                                         <label>

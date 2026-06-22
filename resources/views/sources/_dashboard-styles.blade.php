@@ -519,6 +519,7 @@
     .cc-table--compact thead th {
         font-size: 0.6875rem;
     }
+    .cc-admin-user-name-input,
     .cc-admin-user-email-input {
         min-width: 12rem;
         padding: 7px 10px;
