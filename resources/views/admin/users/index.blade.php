@@ -18,7 +18,7 @@
             <section class="cc-card" aria-labelledby="hdr-user-list" data-test="admin-users-page">
                 <div class="cc-card-header">
                     <h2 class="cc-card-title" id="hdr-user-list"><span>User list</span></h2>
-                    <p class="cc-card-desc">Admins can change roles and daily summary subscriptions. Last sign-in times use the app display timezone.</p>
+                    <p class="cc-card-desc">Admins can change roles, email addresses, and daily summary subscriptions. Last sign-in times use the app display timezone.</p>
                 </div>
                 @if (session('status'))
                     <p class="cc-flash cc-flash--notice" role="status" data-test="admin-users-status">{{ session('status') }}</p>
@@ -43,7 +43,24 @@
                                 @php($formId = 'admin-user-form-'.$user->id)
                                 <tr data-test="admin-user-row" data-user-id="{{ $user->id }}">
                                     <td data-test="admin-user-name">{{ $user->name }}</td>
-                                    <td class="mono" data-test="admin-user-email">{{ $user->email }}</td>
+                                    <td>
+                                        @if ($user->is(auth()->user()))
+                                            <span class="mono" data-test="admin-user-email-readonly">{{ $user->email }}</span>
+                                        @else
+                                            <label>
+                                                <span class="muted">Email</span>
+                                                <input
+                                                    type="email"
+                                                    name="email"
+                                                    form="{{ $formId }}"
+                                                    value="{{ $user->email }}"
+                                                    class="mono cc-admin-user-email-input"
+                                                    data-test="admin-user-email-input"
+                                                    required
+                                                >
+                                            </label>
+                                        @endif
+                                    </td>
                                     <td>
                                         <label>
                                             <span class="muted">Role</span>

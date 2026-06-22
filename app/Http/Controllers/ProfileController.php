@@ -35,6 +35,37 @@ class ProfileController extends Controller
             ->with('status', 'Daily summary preferences saved.');
     }
 
+    public function updateAccount(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+        $user->name = $validated['name'];
+        $user->save();
+
+        return redirect()
+            ->route('profile.edit')
+            ->with('account_status', 'Account details saved.');
+    }
+
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'string', 'min:12', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+        $user->password = $request->string('password');
+        $user->save();
+
+        return redirect()
+            ->route('profile.edit')
+            ->with('password_status', 'Password updated.');
+    }
+
     public function sendDailySummaryTestEmail(
         Request $request,
         DailyMonitoringSummaryBuilder $builder,

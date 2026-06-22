@@ -519,6 +519,17 @@
     .cc-table--compact thead th {
         font-size: 0.6875rem;
     }
+    .cc-admin-user-email-input {
+        min-width: 12rem;
+        padding: 7px 10px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--cc-text);
+        background: var(--cc-surface);
+        border: 1px solid var(--cc-border-strong);
+        border-radius: var(--cc-radius-sm);
+        box-sizing: border-box;
+    }
     .cc-details {
         margin-top: 6px;
         font-size: 0.75rem;
@@ -788,7 +799,9 @@
         letter-spacing: normal;
         font-size: 0.8125rem;
     }
-    .cc-profile-form__fields input[type="email"] {
+    .cc-profile-form__fields input[type="email"],
+    .cc-profile-form__fields input[type="text"],
+    .cc-profile-form__fields input[type="password"] {
         width: 100%;
         padding: 7px 10px;
         font-size: 0.8125rem;
@@ -798,6 +811,11 @@
         border: 1px solid var(--cc-border-strong);
         border-radius: var(--cc-radius-sm);
         box-sizing: border-box;
+    }
+    .cc-profile-form__fields input[readonly] {
+        color: var(--cc-muted);
+        background: var(--cc-surface-muted);
+        cursor: not-allowed;
     }
     .cc-filter-form.cc-profile-form label.cc-profile-form__checkbox {
         display: inline-flex;

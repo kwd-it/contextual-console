@@ -15,24 +15,113 @@
                 <p class="cc-page-sub">Personal account settings for the signed-in user.</p>
             </header>
 
-            <section class="cc-card cc-profile-account-summary" aria-labelledby="hdr-signed-in-user" data-test="profile-account-summary">
+            <section class="cc-card" aria-labelledby="hdr-account-details" data-test="profile-account-details">
                 <div class="cc-card-header">
-                    <h2 class="cc-card-title" id="hdr-signed-in-user"><span>Signed in as</span></h2>
+                    <h2 class="cc-card-title" id="hdr-account-details"><span>Account details</span></h2>
+                    <p class="cc-card-desc">Update your display name. Login email is managed by admins.</p>
                 </div>
-                <div class="cc-card-body">
-                    <table class="cc-kv">
-                        <tbody>
-                            <tr>
-                                <th>Name</th>
-                                <td data-test="profile-user-name">{{ $user->name }}</td>
-                            </tr>
-                            <tr>
-                                <th>Login email</th>
-                                <td data-test="profile-user-email">{{ $user->email }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                @if (session('account_status'))
+                    <p class="cc-flash cc-flash--notice" role="status" data-test="profile-account-status">{{ session('account_status') }}</p>
+                @endif
+                <form
+                    class="cc-filter-form cc-profile-form"
+                    method="post"
+                    action="{{ route('profile.update-account') }}"
+                    aria-label="Account details"
+                    data-test="profile-account-form"
+                >
+                    @csrf
+                    @method('PUT')
+                    <div class="cc-profile-form__fields">
+                        <label>
+                            <span>Name</span>
+                            <input
+                                type="text"
+                                name="name"
+                                value="{{ old('name', $user->name) }}"
+                                autocomplete="name"
+                                required
+                                data-test="profile-name-input"
+                            >
+                            @error('name')
+                                <p class="cc-profile-form__error" data-test="profile-name-error">{{ $message }}</p>
+                            @enderror
+                        </label>
+                        <label>
+                            <span>Login email</span>
+                            <input
+                                type="email"
+                                value="{{ $user->email }}"
+                                readonly
+                                data-test="profile-email-readonly"
+                            >
+                        </label>
+                    </div>
+                    <div class="cc-filter-form__actions">
+                        <button type="submit" data-test="profile-account-save">Save account details</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="cc-card" aria-labelledby="hdr-password" data-test="profile-password-section">
+                <div class="cc-card-header">
+                    <h2 class="cc-card-title" id="hdr-password"><span>Password</span></h2>
+                    <p class="cc-card-desc">Change your password. New passwords must be at least 12 characters.</p>
                 </div>
+                @if (session('password_status'))
+                    <p class="cc-flash cc-flash--notice" role="status" data-test="profile-password-status">{{ session('password_status') }}</p>
+                @endif
+                <form
+                    class="cc-filter-form cc-profile-form"
+                    method="post"
+                    action="{{ route('profile.update-password') }}"
+                    aria-label="Update password"
+                    data-test="profile-password-form"
+                >
+                    @csrf
+                    @method('PUT')
+                    <div class="cc-profile-form__fields">
+                        <label>
+                            <span>Current password</span>
+                            <input
+                                type="password"
+                                name="current_password"
+                                autocomplete="current-password"
+                                required
+                                data-test="profile-current-password-input"
+                            >
+                            @error('current_password')
+                                <p class="cc-profile-form__error" data-test="profile-current-password-error">{{ $message }}</p>
+                            @enderror
+                        </label>
+                        <label>
+                            <span>New password</span>
+                            <input
+                                type="password"
+                                name="password"
+                                autocomplete="new-password"
+                                required
+                                data-test="profile-new-password-input"
+                            >
+                            @error('password')
+                                <p class="cc-profile-form__error" data-test="profile-new-password-error">{{ $message }}</p>
+                            @enderror
+                        </label>
+                        <label>
+                            <span>Confirm new password</span>
+                            <input
+                                type="password"
+                                name="password_confirmation"
+                                autocomplete="new-password"
+                                required
+                                data-test="profile-password-confirmation-input"
+                            >
+                        </label>
+                    </div>
+                    <div class="cc-filter-form__actions">
+                        <button type="submit" data-test="profile-password-save">Update password</button>
+                    </div>
+                </form>
             </section>
 
             <section class="cc-card" aria-labelledby="hdr-daily-summary">

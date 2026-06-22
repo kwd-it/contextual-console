@@ -28,8 +28,10 @@ it('allows admin users to view the users page', function () {
         ->assertSeeText('Users')
         ->assertSeeText('Admin User')
         ->assertSeeText('admin@example.test')
+        ->assertSee('data-test="admin-user-email-readonly"', false)
         ->assertSeeText('Operator User')
-        ->assertSeeText('operator@example.test')
+        ->assertSee('value="operator@example.test"', false)
+        ->assertSee('data-test="admin-user-email-input"', false)
         ->assertSee('data-test="admin-user-daily-summary-badge"', false)
         ->assertSeeText('Subscribed')
         ->assertSeeText('Not subscribed');
@@ -99,6 +101,7 @@ it('allows an admin to demote another admin when at least one other admin remain
     $this->actingAs($firstAdmin)
         ->put(route('admin.users.update', $secondAdmin), [
             'role' => User::ROLE_OPERATOR,
+            'email' => $secondAdmin->email,
         ])
         ->assertRedirect(route('admin.users.index'))
         ->assertSessionHas('status');
@@ -114,6 +117,7 @@ it('allows admin users to update another users role', function () {
     $this->actingAs($admin)
         ->put(route('admin.users.update', $operator), [
             'role' => User::ROLE_ADMIN,
+            'email' => $operator->email,
         ])
         ->assertRedirect(route('admin.users.index'))
         ->assertSessionHas('status');
@@ -130,6 +134,7 @@ it('allows admin users to update another users daily summary preference', functi
     $this->actingAs($admin)
         ->put(route('admin.users.update', $operator), [
             'role' => User::ROLE_OPERATOR,
+            'email' => $operator->email,
             'daily_summary_enabled' => '1',
         ])
         ->assertRedirect(route('admin.users.index'));
@@ -146,6 +151,7 @@ it('allows admin users to disable daily summary for another user', function () {
     $this->actingAs($admin)
         ->put(route('admin.users.update', $operator), [
             'role' => User::ROLE_OPERATOR,
+            'email' => $operator->email,
         ])
         ->assertRedirect(route('admin.users.index'));
 
@@ -159,6 +165,7 @@ it('forbids operator users from updating another user', function () {
     $this->actingAs($operator)
         ->put(route('admin.users.update', $other), [
             'role' => User::ROLE_ADMIN,
+            'email' => $other->email,
         ])
         ->assertForbidden();
 
@@ -258,4 +265,37 @@ it('treats promote command as idempotent for users who are already admin', funct
 
     expect($exitCode)->toBe(0);
     expect(User::query()->where('email', 'ops@example.test')->value('role'))->toBe(User::ROLE_ADMIN);
+});
+
+it('prevents an admin from changing their own email address', function () {
+    $admin = User::factory()->admin()->create([
+        'email' => 'admin@example.test',
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.users.update', $admin), [
+            'role' => User::ROLE_ADMIN,
+            'email' => 'changed@example.test',
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHas('status');
+
+    expect($admin->fresh()->email)->toBe('admin@example.test');
+});
+
+it('allows an admin to change another users email address', function () {
+    $admin = User::factory()->admin()->create();
+    $operator = User::factory()->create([
+        'email' => 'operator@example.test',
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.users.update', $operator), [
+            'role' => User::ROLE_OPERATOR,
+            'email' => 'updated@example.test',
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHas('status');
+
+    expect($operator->fresh()->email)->toBe('updated@example.test');
 });

@@ -67,14 +67,21 @@ it('allows authenticated users to view the profile page with account and email p
         ->assertOk()
         ->assertSeeText('Profile')
         ->assertSeeText('Personal account settings for the signed-in user.')
-        ->assertSeeText('Signed in as')
+        ->assertSeeText('Account details')
+        ->assertSeeText('Login email is managed by admins.')
         ->assertSeeText('Name')
         ->assertSeeText('Login email')
-        ->assertSeeText('Alex Operator')
-        ->assertSeeText('alex@example.test')
-        ->assertSee('data-test="profile-user-name"', false)
-        ->assertSee('data-test="profile-user-email"', false)
-        ->assertSee('data-test="profile-account-summary"', false)
+        ->assertSeeText('Password')
+        ->assertSeeText('Current password')
+        ->assertSeeText('New password')
+        ->assertSeeText('Confirm new password')
+        ->assertSee('data-test="profile-account-form"', false)
+        ->assertSee('data-test="profile-name-input"', false)
+        ->assertSee('data-test="profile-email-readonly"', false)
+        ->assertSee('readonly', false)
+        ->assertSee('value="Alex Operator"', false)
+        ->assertSee('value="alex@example.test"', false)
+        ->assertSee('data-test="profile-password-form"', false)
         ->assertSeeText('Daily summary email')
         ->assertSeeText('When enabled, the daily monitoring summary is sent to your login email address shown above.')
         ->assertSeeText('Send me the daily monitoring summary email')
@@ -298,4 +305,120 @@ it('shows a success flash after sending a daily summary test email', function ()
         ->assertSee('data-test="profile-daily-summary-test-flash"', false)
         ->assertSee('data-test-flash-type="success"', false)
         ->assertSee('cc-flash--success', false);
+});
+
+it('allows authenticated users to update their own name', function () {
+    $user = User::factory()->create([
+        'name' => 'Alex Operator',
+    ]);
+
+    $this->actingAs($user)
+        ->put(route('profile.update-account'), [
+            'name' => 'Alex Updated',
+        ])
+        ->assertRedirect(route('profile.edit'))
+        ->assertSessionHas('account_status', 'Account details saved.');
+
+    expect($user->fresh()->name)->toBe('Alex Updated');
+});
+
+it('does not allow authenticated users to update their own email from the profile page', function () {
+    $user = User::factory()->create([
+        'email' => 'alex@example.test',
+    ]);
+
+    $this->actingAs($user)
+        ->put(route('profile.update-account'), [
+            'name' => $user->name,
+            'email' => 'changed@example.test',
+        ])
+        ->assertRedirect(route('profile.edit'));
+
+    expect($user->fresh()->email)->toBe('alex@example.test');
+});
+
+it('displays email as read-only on the profile page', function () {
+    $user = User::factory()->create([
+        'email' => 'readonly@example.test',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('profile.edit'))
+        ->assertOk()
+        ->assertSee('data-test="profile-email-readonly"', false)
+        ->assertSee('readonly', false)
+        ->assertSee('value="readonly@example.test"', false)
+        ->assertDontSee('name="email"', false);
+});
+
+it('allows authenticated users to update their password with the correct current password', function () {
+    $currentPassword = 'a-long-secure-password';
+    $newPassword = 'another-long-secure-password';
+
+    $user = User::factory()->create([
+        'password' => $currentPassword,
+    ]);
+
+    $this->actingAs($user)
+        ->put(route('profile.update-password'), [
+            'current_password' => $currentPassword,
+            'password' => $newPassword,
+            'password_confirmation' => $newPassword,
+        ])
+        ->assertRedirect(route('profile.edit'))
+        ->assertSessionHas('password_status', 'Password updated.');
+
+    $this->assertTrue(password_verify($newPassword, $user->fresh()->password));
+});
+
+it('rejects password updates with an incorrect current password', function () {
+    $user = User::factory()->create([
+        'password' => 'a-long-secure-password',
+    ]);
+
+    $this->actingAs($user)
+        ->put(route('profile.update-password'), [
+            'current_password' => 'wrong-current-password',
+            'password' => 'another-long-secure-password',
+            'password_confirmation' => 'another-long-secure-password',
+        ])
+        ->assertSessionHasErrors('current_password');
+
+    $this->assertTrue(password_verify('a-long-secure-password', $user->fresh()->password));
+});
+
+it('validates password confirmation and minimum length on profile password update', function () {
+    $user = User::factory()->create([
+        'password' => 'a-long-secure-password',
+    ]);
+
+    $this->actingAs($user)
+        ->put(route('profile.update-password'), [
+            'current_password' => 'a-long-secure-password',
+            'password' => 'short',
+            'password_confirmation' => 'short',
+        ])
+        ->assertSessionHasErrors('password');
+
+    $this->actingAs($user)
+        ->put(route('profile.update-password'), [
+            'current_password' => 'a-long-secure-password',
+            'password' => 'another-long-secure-password',
+            'password_confirmation' => 'mismatched-long-secure-password',
+        ])
+        ->assertSessionHasErrors('password');
+});
+
+it('redirects unauthenticated users from profile account update to login', function () {
+    $this->put(route('profile.update-account'), [
+        'name' => 'Guest User',
+    ])->assertRedirect(route('login'));
+});
+
+it('redirects unauthenticated users from profile password update to login', function () {
+    $this->put(route('profile.update-password'), [
+        'current_password' => 'a-long-secure-password',
+        'password' => 'another-long-secure-password',
+        'password_confirmation' => 'another-long-secure-password',
+    ])->assertRedirect(route('login'));
 });
