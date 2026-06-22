@@ -70,7 +70,7 @@ it('does not show the users link in navigation for operator users', function () 
         ->assertDontSee('href="'.route('admin.users.index').'"', false);
 });
 
-it('prevents an admin from demoting their own account', function () {
+it('preserves an admins own role when they submit a crafted role change', function () {
     $admin = User::factory()->admin()->create();
     User::factory()->admin()->create();
 
@@ -80,7 +80,7 @@ it('prevents an admin from demoting their own account', function () {
             'role' => User::ROLE_OPERATOR,
         ])
         ->assertRedirect(route('admin.users.index'))
-        ->assertSessionHas('error', 'You cannot change your own role from admin to operator.');
+        ->assertSessionHas('status');
 
     expect($admin->fresh()->role)->toBe(User::ROLE_ADMIN);
 });
@@ -94,7 +94,7 @@ it('prevents demoting the last remaining admin', function () {
             'role' => User::ROLE_OPERATOR,
         ])
         ->assertRedirect(route('admin.users.index'))
-        ->assertSessionHas('error', 'At least one admin is required. Promote another user to admin first.');
+        ->assertSessionHas('status');
 
     expect($soleAdmin->fresh()->role)->toBe(User::ROLE_ADMIN);
 });
@@ -315,12 +315,46 @@ it('allows an admin to update their own name from the users page', function () {
     $this->actingAs($admin)
         ->put(route('admin.users.update', $admin), [
             'name' => 'Updated Admin',
-            'role' => User::ROLE_ADMIN,
         ])
         ->assertRedirect(route('admin.users.index'))
         ->assertSessionHas('status');
 
     expect($admin->fresh()->name)->toBe('Updated Admin');
+});
+
+it('allows an admin to update their own daily summary preference from the users page', function () {
+    $admin = User::factory()->admin()->create([
+        'daily_summary_enabled' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.users.update', $admin), [
+            'name' => $admin->name,
+            'daily_summary_enabled' => '1',
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHas('status');
+
+    expect($admin->fresh()->daily_summary_enabled)->toBeTrue();
+});
+
+it('shows the signed-in admins own role as read-only on the users page', function () {
+    $admin = User::factory()->admin()->create([
+        'name' => 'Admin User',
+        'email' => 'admin@example.test',
+    ]);
+
+    User::factory()->create([
+        'name' => 'Operator User',
+        'email' => 'operator@example.test',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.users.index'))
+        ->assertOk()
+        ->assertSee('data-test="admin-user-role-readonly"', false)
+        ->assertSeeText('Admin')
+        ->assertSee('data-test="admin-user-role"', false);
 });
 
 it('allows an admin to update another users name from the users page', function () {

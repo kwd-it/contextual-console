@@ -19,13 +19,24 @@ class UsersController extends Controller
 
     public function update(Request $request, User $user): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'role' => ['required', 'in:'.User::ROLE_ADMIN.','.User::ROLE_OPERATOR],
-            'daily_summary_enabled' => ['sometimes', 'boolean'],
-        ]);
+        $isSelfUpdate = $request->user()?->is($user) ?? false;
 
-        $isDemotion = $validated['role'] === User::ROLE_OPERATOR && $user->isAdmin();
+        $rules = [
+            'name' => ['required', 'string', 'max:255'],
+            'daily_summary_enabled' => ['sometimes', 'boolean'],
+        ];
+
+        if ($isSelfUpdate) {
+            $rules['role'] = ['sometimes', 'in:'.User::ROLE_ADMIN.','.User::ROLE_OPERATOR];
+        } else {
+            $rules['role'] = ['required', 'in:'.User::ROLE_ADMIN.','.User::ROLE_OPERATOR];
+        }
+
+        $validated = $request->validate($rules);
+
+        $role = $isSelfUpdate ? $user->role : $validated['role'];
+
+        $isDemotion = $role === User::ROLE_OPERATOR && $user->isAdmin();
 
         if ($isDemotion) {
             $adminCount = User::query()->where('role', User::ROLE_ADMIN)->count();
@@ -35,16 +46,10 @@ class UsersController extends Controller
                     ->route('admin.users.index')
                     ->with('error', 'At least one admin is required. Promote another user to admin first.');
             }
-
-            if ($request->user()?->is($user)) {
-                return redirect()
-                    ->route('admin.users.index')
-                    ->with('error', 'You cannot change your own role from admin to operator.');
-            }
         }
 
         $user->name = $validated['name'];
-        $user->role = $validated['role'];
+        $user->role = $role;
         $user->daily_summary_enabled = $request->boolean('daily_summary_enabled');
 
         $user->save();

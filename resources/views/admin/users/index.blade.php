@@ -60,14 +60,18 @@
                                         <span class="mono" data-test="admin-user-email-readonly">{{ $user->email }}</span>
                                     </td>
                                     <td>
-                                        <label>
-                                            <span class="muted">Role</span>
-                                            <select name="role" form="{{ $formId }}" data-test="admin-user-role">
-                                                @foreach (\App\Models\User::roleLabels() as $value => $label)
-                                                    <option value="{{ $value }}" @selected($user->role === $value)>{{ $label }}</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
+                                        @if (auth()->id() === $user->id)
+                                            <span data-test="admin-user-role-readonly">{{ \App\Models\User::roleLabels()[$user->role] ?? $user->role }}</span>
+                                        @else
+                                            <label>
+                                                <span class="muted">Role</span>
+                                                <select name="role" form="{{ $formId }}" data-test="admin-user-role">
+                                                    @foreach (\App\Models\User::roleLabels() as $value => $label)
+                                                        <option value="{{ $value }}" @selected($user->role === $value)>{{ $label }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </label>
+                                        @endif
                                     </td>
                                     <td>
                                         <label class="cc-profile-form__checkbox">
