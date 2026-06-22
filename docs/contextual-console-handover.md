@@ -18,7 +18,9 @@ This file is the **version-controlled project handover** for Contextual Console.
 
 ## 3. Current project state
 
-**Current release: v1.1.0** (see `CHANGELOG.md`).
+**Current release: v1.1.1** (see `CHANGELOG.md`).
+
+**v1.1.1** completes the `/admin/users` UI actions from the **v1.1.0** admin and profile work: create user with an initial password (no invite emails or self-service password reset), immutable login email, reset password for other users, safe delete for eligible users, and existing self/last-admin protections.
 
 Implemented today:
 
@@ -40,7 +42,7 @@ Implemented today:
 | **Profile daily summary preference** | Per-user opt-in on Profile page (`daily_summary_enabled`); **Send test email** to login address only |
 | **Profile account settings** | Signed-in users can update **name** and **password** (current password required); login email is read-only |
 | **User roles** | **Admin** and **operator**; admin-only routes protected by middleware |
-| **Admin Users page** | `/admin/users` (admin only): create, edit, and delete users; list name, login email, role, daily summary subscription, and last sign-in; reset another user's password; login email is read-only after creation |
+| **Admin Users page** | `/admin/users` (admin only): **Create user** form (name, login email, role, initial password, daily summary subscription). Login email is immutable after creation. Initial password is set manually because invite emails and self-service password reset are not implemented. User list supports edit (name, role, subscription), **Reset password** for other users (compact details control), and **Delete** for eligible users. Lists name, login email, role, subscription, and last sign-in. Self-deletion, self-demotion, last-admin deletion, and last-admin demotion are blocked; an admin's own role is read-only on the page |
 | **Last sign-in tracking** | Updated on successful login; shown on the Admin Users page in the display timezone |
 | **Admin safety protections** | Blocks self-deletion, self-demotion, last admin deletion, and last admin demotion; an admin's own role is read-only on the Users page |
 | **User provisioning CLI** | `contextual-console:create-admin-user`, `contextual-console:promote-user-to-admin` |
@@ -67,8 +69,8 @@ Implemented today:
 - **Profile page** (`/profile`): signed-in users can update **name** and **password** (current password required). **Login email** is read-only (set when the account is created).
 - **Daily summary email** checkbox controls only the signed-in user's `daily_summary_enabled`.
 - Saving preferences updates the subscription only; email goes to the **login email**, not a separate address field.
-- **Admins** can create, edit, and delete users, reset passwords, and manage daily summary subscriptions on the **Users** page (`/admin/users`). Login email is set at creation and is read-only in the UI.
-- **Not implemented**: invite emails, forgot-password flow, per-source notification preferences, or login email changes from the UI.
+- **Admins** manage accounts on the **Users** page (`/admin/users`): create users with an **initial password** (no invite emails or self-service password reset); edit name, role, and daily summary subscription; reset another user's password; delete eligible users. Login email is set at creation and is read-only in the UI. Self-deletion, self-demotion, last-admin deletion, and last-admin demotion remain blocked.
+- **Not implemented**: invite emails, forgot-password or emailed reset links, self-service registration, per-source notification preferences, or login email changes from the UI.
 
 ## 6. Monitoring and issue behaviour
 
@@ -134,7 +136,7 @@ Investigation order when data looks wrong: **Console issue -> Housebuilder Pack 
 ## 11. Known limitations / not yet implemented
 
 - No invite emails or self-service account registration
-- No forgot-password or password-reset email flow (admins can reset another user's password on the Users page; there is no emailed reset link)
+- No forgot-password or password-reset email flow (admins set an **initial password** when creating a user and can reset another user's password on the Users page; there is no emailed reset link)
 - No per-source email preferences or frequency options
 - No Slack / Microsoft Teams alerts
 - **`CONTEXTUAL_CONSOLE_DAILY_SUMMARY_TO`** env fallback still used when no subscribers (temporary operational bridge)

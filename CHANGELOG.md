@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-06-22
+
+Patch release completing the admin user management UI introduced in **v1.1.0**. Ingest, comparison, change detection, and plot dataset issue detection rules are unchanged.
+
+### Fixed
+
+- Completed the admin user management UI on `/admin/users`, including user creation, admin password reset for other users, and safe deletion of eligible users. The UI now uses an initial password flow because invite emails and self-service password reset are not yet implemented. Existing self-deletion, self-demotion, last-admin deletion, and last-admin demotion protections remain in place.
+
 ## [1.1.0] - 2026-06-22
 
 Adds **admin user management** and **profile account controls** on top of the **v1.0.0** monitoring baseline. Ingest, comparison, change detection, and plot dataset issue detection rules are unchanged.
