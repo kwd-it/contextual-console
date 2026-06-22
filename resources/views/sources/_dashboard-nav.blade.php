@@ -5,6 +5,7 @@
     $changesActive = $routeName === 'changes.index';
     $issuesActive = in_array($routeName, ['issues.index', 'issues.show'], true);
     $profileActive = in_array($routeName, ['profile.edit', 'profile.update', 'profile.daily-summary-test-email'], true);
+    $adminUsersActive = in_array($routeName, ['admin.users.index', 'admin.users.update'], true);
 @endphp
 <div class="cc-app-bar">
     <div class="cc-brand">
@@ -32,6 +33,14 @@
             class="cc-nav__link {{ $issuesActive ? 'cc-nav__link--current' : '' }}"
             @if ($issuesActive) aria-current="page" @endif
         ><span class="cc-icon-label">@include('sources._dashboard-icon', ['name' => 'issue'])<span>Issues</span></span></a>
+        @if (auth()->user()?->isAdmin())
+            <a
+                href="{{ route('admin.users.index') }}"
+                class="cc-nav__link {{ $adminUsersActive ? 'cc-nav__link--current' : '' }}"
+                @if ($adminUsersActive) aria-current="page" @endif
+                data-test="nav-admin-users"
+            ><span>Users</span></a>
+        @endif
         <a
             href="{{ route('profile.edit') }}"
             class="cc-nav__link {{ $profileActive ? 'cc-nav__link--current' : '' }}"

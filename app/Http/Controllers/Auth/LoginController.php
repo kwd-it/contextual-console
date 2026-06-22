@@ -35,6 +35,10 @@ class LoginController extends Controller
                 ->onlyInput('email');
         }
 
+        $request->user()?->forceFill([
+            'last_signed_in_at' => now(),
+        ])->save();
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard.index'));

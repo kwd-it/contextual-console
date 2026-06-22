@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ChangesController;
 use App\Http\Controllers\DashboardController;
@@ -66,4 +67,12 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/profile/daily-summary-test-email', [ProfileController::class, 'sendDailySummaryTestEmail'])
         ->name('profile.daily-summary-test-email');
+
+    Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/users', [UsersController::class, 'index'])
+            ->name('users.index');
+
+        Route::put('/users/{user}', [UsersController::class, 'update'])
+            ->name('users.update');
+    });
 });

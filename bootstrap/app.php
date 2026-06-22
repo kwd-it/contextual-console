@@ -3,6 +3,7 @@
 use App\Http\Middleware\RestrictToLocalOrDevelopmentEnvironment;
 use App\Console\Commands\BackupDatabaseCommand;
 use App\Console\Commands\CreateAdminUserCommand;
+use App\Console\Commands\PromoteUserToAdminCommand;
 use App\Console\Commands\DailySummaryCommand;
 use App\Console\Commands\ProductionSmokeTestCommand;
 use App\Console\Commands\RunHttpPlotSourceCommand;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         BackupDatabaseCommand::class,
         CreateAdminUserCommand::class,
+        PromoteUserToAdminCommand::class,
         DailySummaryCommand::class,
         ProductionSmokeTestCommand::class,
         RunPlotSourceCommand::class,
@@ -40,7 +42,9 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->alias([
+            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
