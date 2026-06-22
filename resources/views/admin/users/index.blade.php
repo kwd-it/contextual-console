@@ -15,6 +15,90 @@
                 <p class="cc-page-sub">Manage user accounts, roles, and daily summary email subscriptions.</p>
             </header>
 
+            <section class="cc-card" aria-labelledby="hdr-create-user" data-test="admin-users-create-section">
+                <div class="cc-card-header">
+                    <h2 class="cc-card-title" id="hdr-create-user"><span>Create user</span></h2>
+                    <p class="cc-card-desc">Add a new account. Login email cannot be changed after creation.</p>
+                </div>
+                <form
+                    class="cc-filter-form cc-profile-form"
+                    method="post"
+                    action="{{ route('admin.users.store') }}"
+                    aria-label="Create user"
+                    data-test="admin-user-create-form"
+                >
+                    @csrf
+                    <div class="cc-profile-form__fields">
+                        <label>
+                            <span>Name</span>
+                            <input
+                                type="text"
+                                name="name"
+                                value="{{ old('name') }}"
+                                autocomplete="name"
+                                required
+                                data-test="admin-user-create-name-input"
+                            >
+                            @error('name')
+                                <p class="cc-profile-form__error" data-test="admin-user-create-name-error">{{ $message }}</p>
+                            @enderror
+                        </label>
+                        <label>
+                            <span>Login email</span>
+                            <input
+                                type="email"
+                                name="email"
+                                value="{{ old('email') }}"
+                                autocomplete="email"
+                                required
+                                data-test="admin-user-create-email-input"
+                            >
+                            @error('email')
+                                <p class="cc-profile-form__error" data-test="admin-user-create-email-error">{{ $message }}</p>
+                            @enderror
+                        </label>
+                        <label>
+                            <span>Role</span>
+                            <select name="role" data-test="admin-user-create-role">
+                                @foreach (\App\Models\User::roleLabels() as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('role', \App\Models\User::ROLE_OPERATOR) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('role')
+                                <p class="cc-profile-form__error" data-test="admin-user-create-role-error">{{ $message }}</p>
+                            @enderror
+                        </label>
+                        <label>
+                            <span>Initial password</span>
+                            <input
+                                type="password"
+                                name="password"
+                                autocomplete="new-password"
+                                required
+                                data-test="admin-user-create-password-input"
+                            >
+                            <span class="cc-field-hint">Contextual Console does not send invite emails or offer self-service password reset. Set an initial password here and share it securely with the new user.</span>
+                            @error('password')
+                                <p class="cc-profile-form__error" data-test="admin-user-create-password-error">{{ $message }}</p>
+                            @enderror
+                        </label>
+                        <label class="cc-profile-form__checkbox">
+                            <input
+                                type="checkbox"
+                                name="daily_summary_enabled"
+                                value="1"
+                                data-test="admin-user-create-daily-summary-enabled"
+                                @checked(old('daily_summary_enabled'))
+                            >
+                            <span>Daily summary subscription</span>
+                        </label>
+                    </div>
+                    <div class="cc-filter-form__actions">
+                        <button type="submit" data-test="admin-user-create-submit">Create user</button>
+                    </div>
+                </form>
+            </section>
+
             <section class="cc-card" aria-labelledby="hdr-user-list" data-test="admin-users-page">
                 <div class="cc-card-header">
                     <h2 class="cc-card-title" id="hdr-user-list"><span>User list</span></h2>
@@ -40,7 +124,14 @@
                         </thead>
                         <tbody>
                             @foreach ($users as $user)
-                                @php($formId = 'admin-user-form-'.$user->id)
+                                @php
+                                    $formId = 'admin-user-form-'.$user->id;
+                                    $passwordFormId = 'admin-user-password-form-'.$user->id;
+                                    $deleteFormId = 'admin-user-delete-form-'.$user->id;
+                                    $isSelf = auth()->id() === $user->id;
+                                    $canDelete = ! $isSelf && ! ($user->isAdmin() && $adminCount <= 1);
+                                    $canResetPassword = ! $isSelf;
+                                @endphp
                                 <tr data-test="admin-user-row" data-user-id="{{ $user->id }}">
                                     <td>
                                         <label>
@@ -60,7 +151,7 @@
                                         <span class="mono" data-test="admin-user-email-readonly">{{ $user->email }}</span>
                                     </td>
                                     <td>
-                                        @if (auth()->id() === $user->id)
+                                        @if ($isSelf)
                                             <span data-test="admin-user-role-readonly">{{ \App\Models\User::roleLabels()[$user->role] ?? $user->role }}</span>
                                         @else
                                             <label>
@@ -95,7 +186,51 @@
                                         {{ \App\Support\DisplayTimestamp::format($user->last_signed_in_at) }}
                                     </td>
                                     <td>
-                                        <button type="submit" form="{{ $formId }}" data-test="admin-user-save">Save</button>
+                                        <div class="cc-admin-user-actions">
+                                            <div class="cc-admin-user-actions__primary">
+                                                <button type="submit" form="{{ $formId }}" class="cc-btn-save" data-test="admin-user-save">Save</button>
+                                                @if ($canResetPassword)
+                                                    <details class="cc-admin-user-reset" data-test="admin-user-reset-details">
+                                                        <summary data-test="admin-user-reset-password">Reset password</summary>
+                                                        <form
+                                                            id="{{ $passwordFormId }}"
+                                                            class="cc-admin-user-password-reset"
+                                                            method="post"
+                                                            action="{{ route('admin.users.reset-password', $user) }}"
+                                                            data-test="admin-user-password-form"
+                                                        >
+                                                            @csrf
+                                                            @method('PUT')
+                                                            <label>
+                                                                <span class="muted">New password</span>
+                                                                <input
+                                                                    type="password"
+                                                                    name="password"
+                                                                    autocomplete="new-password"
+                                                                    required
+                                                                    data-test="admin-user-reset-password-input"
+                                                                >
+                                                            </label>
+                                                            <button type="submit" data-test="admin-user-reset-password-submit">Update password</button>
+                                                        </form>
+                                                    </details>
+                                                @endif
+                                                @if ($canDelete)
+                                                    <form
+                                                        id="{{ $deleteFormId }}"
+                                                        class="cc-admin-user-delete"
+                                                        method="post"
+                                                        action="{{ route('admin.users.destroy', $user) }}"
+                                                        data-test="admin-user-delete-form"
+                                                        onsubmit="return confirm('Delete {{ $user->name }}? This cannot be undone.');"
+                                                    >
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="cc-btn-danger-outline" data-test="admin-user-delete">Delete</button>
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        </div>
                                         <form
                                             id="{{ $formId }}"
                                             method="post"

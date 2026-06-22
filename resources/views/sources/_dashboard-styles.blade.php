@@ -531,6 +531,139 @@
         border-radius: var(--cc-radius-sm);
         box-sizing: border-box;
     }
+    .cc-admin-user-actions {
+        min-width: 9rem;
+    }
+    .cc-admin-user-actions__primary {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+    }
+    .cc-btn-save,
+    .cc-admin-user-password-reset button,
+    .cc-admin-user-reset > summary {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1.3;
+        border-radius: var(--cc-radius-sm);
+        cursor: pointer;
+        font-family: inherit;
+    }
+    .cc-btn-save {
+        color: var(--cc-on-accent);
+        background: var(--cc-accent);
+        border: 1px solid var(--cc-accent);
+    }
+    .cc-btn-save:hover {
+        background: var(--cc-link-hover);
+        border-color: var(--cc-link-hover);
+    }
+    .cc-admin-user-reset {
+        position: relative;
+    }
+    .cc-admin-user-reset > summary {
+        display: inline-block;
+        list-style: none;
+        color: var(--cc-text);
+        background: transparent;
+        border: 1px solid var(--cc-border-strong);
+    }
+    .cc-admin-user-reset > summary::-webkit-details-marker {
+        display: none;
+    }
+    .cc-admin-user-reset > summary:hover {
+        background: var(--cc-surface-muted);
+    }
+    .cc-admin-user-reset[open] > summary {
+        margin-bottom: 8px;
+    }
+    .cc-admin-user-password-reset {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        margin: 0;
+        min-width: 11rem;
+        padding: 8px 10px;
+        background: var(--cc-surface-muted);
+        border: 1px solid var(--cc-border);
+        border-radius: var(--cc-radius-sm);
+    }
+    .cc-admin-user-password-reset label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+        margin: 0;
+        font-size: inherit;
+        font-weight: inherit;
+        letter-spacing: normal;
+        text-transform: none;
+        color: inherit;
+    }
+    .cc-admin-user-password-reset input[type="password"] {
+        width: 100%;
+        min-width: 0;
+        padding: 5px 8px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--cc-text);
+        background: var(--cc-surface);
+        border: 1px solid var(--cc-border-strong);
+        border-radius: var(--cc-radius-sm);
+        box-sizing: border-box;
+    }
+    .cc-admin-user-password-reset button {
+        color: var(--cc-on-accent);
+        background: var(--cc-accent);
+        border: 1px solid var(--cc-accent);
+    }
+    .cc-admin-user-password-reset button:hover {
+        background: var(--cc-link-hover);
+        border-color: var(--cc-link-hover);
+    }
+    .cc-admin-user-delete {
+        margin: 0;
+    }
+    .cc-btn-danger-outline {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1.3;
+        font-family: inherit;
+        color: var(--cc-danger, #b91c1c);
+        background: transparent;
+        border: 1px solid var(--cc-danger, #b91c1c);
+        border-radius: var(--cc-radius-sm);
+        cursor: pointer;
+    }
+    .cc-btn-danger-outline:hover {
+        color: #fff;
+        background: var(--cc-danger, #b91c1c);
+    }
+    .cc-field-hint {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.75rem;
+        font-weight: 400;
+        line-height: 1.45;
+        color: var(--cc-muted);
+        text-transform: none;
+        letter-spacing: normal;
+    }
+    .cc-profile-form__fields select {
+        width: 100%;
+        padding: 7px 10px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--cc-text);
+        background: var(--cc-surface);
+        border: 1px solid var(--cc-border-strong);
+        border-radius: var(--cc-radius-sm);
+        box-sizing: border-box;
+    }
     .cc-details {
         margin-top: 6px;
         font-size: 0.75rem;

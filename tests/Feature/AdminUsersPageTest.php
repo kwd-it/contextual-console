@@ -5,6 +5,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
 uses(RefreshDatabase::class);
@@ -33,11 +34,18 @@ it('allows admin users to view the users page', function () {
         ->assertSee('value="Operator User"', false)
         ->assertSeeText('operator@example.test')
         ->assertDontSee('data-test="admin-user-email-input"', false)
-        ->assertDontSee('name="email"', false)
+        ->assertSee('data-test="admin-user-create-email-input"', false)
         ->assertSeeText('Login email is set when a user is created and cannot be changed here.')
         ->assertSee('data-test="admin-user-daily-summary-badge"', false)
         ->assertSeeText('Subscribed')
-        ->assertSeeText('Not subscribed');
+        ->assertSeeText('Not subscribed')
+        ->assertSee('data-test="admin-users-create-section"', false)
+        ->assertSee('data-test="admin-user-create-form"', false)
+        ->assertSeeText('Initial password')
+        ->assertSeeText('Contextual Console does not send invite emails or offer self-service password reset.')
+        ->assertSee('data-test="admin-user-reset-details"', false)
+        ->assertSee('data-test="admin-user-reset-password"', false)
+        ->assertSee('data-test="admin-user-delete"', false);
 });
 
 it('forbids operator users from viewing the users page', function () {
@@ -372,4 +380,268 @@ it('allows an admin to update another users name from the users page', function 
         ->assertSessionHas('status');
 
     expect($operator->fresh()->name)->toBe('Updated Operator');
+});
+
+it('allows an admin to create a user from the users page', function () {
+    $admin = User::factory()->admin()->create();
+    $password = 'a-long-secure-password';
+
+    $this->actingAs($admin)
+        ->post(route('admin.users.store'), [
+            'name' => 'New Operator',
+            'email' => 'new-operator@example.test',
+            'role' => User::ROLE_OPERATOR,
+            'password' => $password,
+            'daily_summary_enabled' => '1',
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHas('status');
+
+    $user = User::query()->where('email', 'new-operator@example.test')->first();
+
+    expect($user)->not->toBeNull();
+    expect($user->name)->toBe('New Operator');
+    expect($user->role)->toBe(User::ROLE_OPERATOR);
+    expect($user->daily_summary_enabled)->toBeTrue();
+    expect(Hash::check($password, $user->password))->toBeTrue();
+});
+
+it('validates required fields when creating a user from the users page', function () {
+    $admin = User::factory()->admin()->create();
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->post(route('admin.users.store'), [])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHasErrors(['name', 'email', 'role', 'password']);
+
+    expect(User::query()->count())->toBe(1);
+});
+
+it('rejects duplicate email addresses when creating a user from the users page', function () {
+    $admin = User::factory()->admin()->create();
+    User::factory()->create(['email' => 'taken@example.test']);
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->post(route('admin.users.store'), [
+            'name' => 'Duplicate User',
+            'email' => 'taken@example.test',
+            'role' => User::ROLE_OPERATOR,
+            'password' => 'a-long-secure-password',
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHasErrors(['email']);
+
+    expect(User::query()->count())->toBe(2);
+});
+
+it('forbids operator users from creating users', function () {
+    $this->actingAs(User::factory()->create())
+        ->post(route('admin.users.store'), [
+            'name' => 'Blocked User',
+            'email' => 'blocked@example.test',
+            'role' => User::ROLE_OPERATOR,
+            'password' => 'a-long-secure-password',
+        ])
+        ->assertForbidden();
+
+    expect(User::query()->count())->toBe(1);
+});
+
+it('allows an admin to reset another users password from the users page', function () {
+    $admin = User::factory()->admin()->create();
+    $operator = User::factory()->create();
+    $newPassword = 'another-long-password';
+
+    $this->actingAs($admin)
+        ->put(route('admin.users.reset-password', $operator), [
+            'password' => $newPassword,
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHas('status');
+
+    expect(Hash::check($newPassword, $operator->fresh()->password))->toBeTrue();
+});
+
+it('prevents an admin from resetting their own password from the users page', function () {
+    $admin = User::factory()->admin()->create([
+        'password' => 'original-long-password',
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.users.reset-password', $admin), [
+            'password' => 'replacement-long-password',
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHas('error');
+
+    expect(Hash::check('original-long-password', $admin->fresh()->password))->toBeTrue();
+});
+
+it('validates password length when resetting another users password', function () {
+    $admin = User::factory()->admin()->create();
+    $operator = User::factory()->create([
+        'password' => 'original-long-password',
+    ]);
+
+    $this->actingAs($admin)
+        ->from(route('admin.users.index'))
+        ->put(route('admin.users.reset-password', $operator), [
+            'password' => 'short',
+        ])
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHasErrors(['password']);
+
+    expect(Hash::check('original-long-password', $operator->fresh()->password))->toBeTrue();
+});
+
+it('forbids operator users from resetting another users password', function () {
+    $operator = User::factory()->create();
+    $other = User::factory()->create([
+        'password' => 'original-long-password',
+    ]);
+
+    $this->actingAs($operator)
+        ->put(route('admin.users.reset-password', $other), [
+            'password' => 'replacement-long-password',
+        ])
+        ->assertForbidden();
+
+    expect(Hash::check('original-long-password', $other->fresh()->password))->toBeTrue();
+});
+
+it('allows an admin to delete another user from the users page', function () {
+    $admin = User::factory()->admin()->create();
+    $operator = User::factory()->create([
+        'email' => 'delete-me@example.test',
+    ]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.users.destroy', $operator))
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHas('status');
+
+    expect(User::query()->where('email', 'delete-me@example.test')->exists())->toBeFalse();
+});
+
+it('prevents an admin from deleting their own account from the users page', function () {
+    $admin = User::factory()->admin()->create([
+        'email' => 'admin@example.test',
+    ]);
+
+    $this->actingAs($admin)
+        ->delete(route('admin.users.destroy', $admin))
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHas('error');
+
+    expect(User::query()->where('email', 'admin@example.test')->exists())->toBeTrue();
+});
+
+it('allows deleting an admin when another admin remains', function () {
+    $soleAdmin = User::factory()->admin()->create([
+        'email' => 'sole-admin@example.test',
+    ]);
+    $actingAdmin = User::factory()->admin()->create();
+
+    $this->actingAs($actingAdmin)
+        ->delete(route('admin.users.destroy', $soleAdmin))
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHas('status');
+
+    expect(User::query()->where('email', 'sole-admin@example.test')->exists())->toBeFalse();
+});
+
+it('prevents deleting the last admin when only one admin exists', function () {
+    $soleAdmin = User::factory()->admin()->create([
+        'email' => 'sole-admin@example.test',
+    ]);
+    User::factory()->create([
+        'email' => 'operator@example.test',
+    ]);
+
+    $this->actingAs($soleAdmin)
+        ->delete(route('admin.users.destroy', $soleAdmin))
+        ->assertRedirect(route('admin.users.index'))
+        ->assertSessionHas('error');
+
+    expect(User::query()->where('email', 'sole-admin@example.test')->exists())->toBeTrue();
+});
+
+it('forbids operator users from deleting another user', function () {
+    $operator = User::factory()->create();
+    $other = User::factory()->create([
+        'email' => 'protected@example.test',
+    ]);
+
+    $this->actingAs($operator)
+        ->delete(route('admin.users.destroy', $other))
+        ->assertForbidden();
+
+    expect(User::query()->where('email', 'protected@example.test')->exists())->toBeTrue();
+});
+
+it('hides self-service password reset and delete controls on the signed-in admins row', function () {
+    $admin = User::factory()->admin()->create([
+        'name' => 'Admin User',
+        'email' => 'admin@example.test',
+    ]);
+
+    User::factory()->create([
+        'name' => 'Operator User',
+        'email' => 'operator@example.test',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.users.index'))
+        ->assertOk();
+
+    $html = $response->getContent();
+
+    expect($html)->toContain('data-user-id="'.$admin->id.'"');
+    expect($html)->toContain('data-test="admin-user-reset-password"');
+    expect($html)->toContain('data-test="admin-user-delete"');
+
+    preg_match(
+        '/<tr[^>]*data-user-id="'.$admin->id.'"[^>]*>.*?<\/tr>/s',
+        $html,
+        $adminRow,
+    );
+
+    expect($adminRow)->not->toBeEmpty();
+    expect($adminRow[0])->not->toContain('data-test="admin-user-reset-password"');
+    expect($adminRow[0])->not->toContain('data-test="admin-user-delete"');
+});
+
+it('hides delete for the only admin in the system', function () {
+    $soleAdmin = User::factory()->admin()->create([
+        'email' => 'sole-admin@example.test',
+    ]);
+    User::factory()->create([
+        'email' => 'operator@example.test',
+    ]);
+
+    $response = $this->actingAs($soleAdmin)
+        ->get(route('admin.users.index'))
+        ->assertOk();
+
+    $html = $response->getContent();
+
+    preg_match(
+        '/<tr[^>]*data-user-id="'.$soleAdmin->id.'"[^>]*>.*?<\/tr>/s',
+        $html,
+        $soleAdminRow,
+    );
+
+    expect($soleAdminRow)->not->toBeEmpty();
+    expect($soleAdminRow[0])->not->toContain('data-test="admin-user-delete"');
+
+    preg_match(
+        '/<tr[^>]*data-user-id="'.User::query()->where('email', 'operator@example.test')->value('id').'"[^>]*>.*?<\/tr>/s',
+        $html,
+        $operatorRow,
+    );
+
+    expect($operatorRow)->not->toBeEmpty();
+    expect($operatorRow[0])->toContain('data-test="admin-user-delete"');
 });
