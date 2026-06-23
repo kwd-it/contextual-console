@@ -12,19 +12,49 @@ class PlotHttpIngestNormalizer
      * @param  array<int, mixed>  $records
      * @return array<int, mixed>
      */
+    /** @var array<int, string> */
+    private const LOWERCASE_ASSET_STRING_FIELDS = [
+        'floor_plan_completeness_status',
+        'intro_media_completeness_status',
+        'intro_media_type',
+    ];
+
+    /**
+     * @param  array<int, mixed>  $records
+     * @return array<int, mixed>
+     */
     public function normalize(MonitoredSource $source, array $records): array
     {
         $adapter = (string) ($source->http_plot_payload_adapter ?? '');
-        if ($adapter !== self::ADAPTER_CONTEXTUALWP_LIST_CONTEXTS) {
-            return $records;
+
+        if ($adapter === self::ADAPTER_CONTEXTUALWP_LIST_CONTEXTS) {
+            $records = array_map(
+                fn (mixed $item) => $this->normalizeContextualWpListContextsItem($item),
+                $records,
+            );
         }
 
-        $out = [];
-        foreach ($records as $item) {
-            $out[] = $this->normalizeContextualWpListContextsItem($item);
+        return array_map(
+            fn (mixed $item) => $this->normalizeAssetCompletenessFields($item),
+            $records,
+        );
+    }
+
+    private function normalizeAssetCompletenessFields(mixed $item): mixed
+    {
+        if (! is_array($item)) {
+            return $item;
         }
 
-        return $out;
+        foreach (self::LOWERCASE_ASSET_STRING_FIELDS as $field) {
+            if (! array_key_exists($field, $item) || ! is_string($item[$field])) {
+                continue;
+            }
+
+            $item[$field] = strtolower(trim($item[$field]));
+        }
+
+        return $item;
     }
 
     private function normalizeContextualWpListContextsItem(mixed $item): mixed

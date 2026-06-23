@@ -367,6 +367,73 @@ it('preserves last_modified_by on stored snapshot payloads', function () {
     expect($snapshot->payload[0]['last_modified_by'])->toBe('mark');
 });
 
+it('preserves asset completeness fields on stored snapshot payloads', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:asset-completeness-persist',
+        'name' => 'Asset Completeness Persist',
+    ]);
+
+    $payload = [
+        [
+            'id' => 14,
+            'price' => 100_000,
+            'status' => 'available',
+            'has_floor_plan' => false,
+            'floor_plan_required' => null,
+            'floor_plan_completeness_status' => 'unknown',
+            'has_intro_video' => false,
+            'has_intro_image' => false,
+            'intro_media_type' => 'none',
+            'intro_media_completeness_status' => 'unknown',
+        ],
+    ];
+
+    app(PlotDatasetRunService::class)->run($source, $payload);
+
+    $snapshot = DatasetSnapshot::query()->where('source_id', $source->id)->latest('id')->firstOrFail();
+
+    expect($snapshot->payload[0])->toMatchArray([
+        'has_floor_plan' => false,
+        'floor_plan_required' => null,
+        'floor_plan_completeness_status' => 'unknown',
+        'has_intro_video' => false,
+        'has_intro_image' => false,
+        'intro_media_type' => 'none',
+        'intro_media_completeness_status' => 'unknown',
+    ]);
+});
+
+it('persists asset completeness warnings on a baseline run', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:asset-completeness-issues',
+        'name' => 'Asset Completeness Issues',
+    ]);
+
+    $payload = [
+        [
+            'id' => 1,
+            'price' => 100_000,
+            'status' => 'available',
+            'floor_plan_required' => true,
+            'floor_plan_completeness_status' => 'missing',
+            'intro_media_completeness_status' => 'missing',
+        ],
+    ];
+
+    $run = app(PlotDatasetRunService::class)->run($source, $payload);
+
+    $issues = DatasetIssue::query()->where('dataset_comparison_run_id', $run->id)->get();
+
+    expect($issues)->toHaveCount(2);
+    expect($issues->pluck('field')->sort()->values()->all())
+        ->toBe(['floor_plan_completeness_status', 'intro_media_completeness_status']);
+    expect($issues->pluck('message')->sort()->values()->all())
+        ->toBe([
+            'Linked development intro media is missing.',
+            'Required floor plan is missing.',
+        ]);
+});
+
 it('does not record changes or issues when only last_modified_by changes between runs', function () {
     $source = MonitoredSource::create([
         'key' => 'hb:last-modified-by-only',

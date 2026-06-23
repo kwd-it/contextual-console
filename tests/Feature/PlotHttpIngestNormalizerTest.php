@@ -81,3 +81,27 @@ it('passes through non-array items without crashing', function () {
 
     expect($out[0])->toBe('not-an-array');
 });
+
+it('lowercases asset completeness string fields on all records', function () {
+    $source = MonitoredSource::create([
+        'key' => 'hb:norm-asset-fields',
+        'name' => 'Norm Asset Fields',
+    ]);
+
+    $records = [
+        [
+            'id' => 1,
+            'floor_plan_completeness_status' => 'Unknown',
+            'intro_media_completeness_status' => 'MISSING',
+            'intro_media_type' => 'None',
+        ],
+    ];
+
+    $out = app(PlotHttpIngestNormalizer::class)->normalize($source, $records);
+
+    expect($out[0])->toMatchArray([
+        'floor_plan_completeness_status' => 'unknown',
+        'intro_media_completeness_status' => 'missing',
+        'intro_media_type' => 'none',
+    ]);
+});

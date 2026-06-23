@@ -38,6 +38,30 @@ it('does not log a change when only last_modified_by changes', function () {
     expect(ChangeLog::count())->toBe(0);
 });
 
+it('does not log a change when only asset completeness fields change', function () {
+    $detector = new PlotChangeDetector(new ChangeDetectionService);
+
+    $logged = $detector->detect(
+        [
+            'id' => 1,
+            'price' => 100_000,
+            'status' => 'available',
+            'floor_plan_completeness_status' => 'unknown',
+            'intro_media_completeness_status' => 'unknown',
+        ],
+        [
+            'id' => 1,
+            'price' => 100_000,
+            'status' => 'available',
+            'floor_plan_completeness_status' => 'missing',
+            'intro_media_completeness_status' => 'missing',
+        ],
+    );
+
+    expect($logged)->toBe(0);
+    expect(ChangeLog::count())->toBe(0);
+});
+
 it('does nothing when plot price is unchanged', function () {
     $detector = new PlotChangeDetector(new ChangeDetectionService);
 

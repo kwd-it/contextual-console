@@ -17,6 +17,12 @@ class PlotDatasetIssueDetector
     /** @var array<int, string> */
     private const ALLOWED_STATUSES = ['available', 'coming_soon', 'reserved', 'sold'];
 
+    private const COMPLETENESS_STATUS_MISSING = 'missing';
+
+    private const FIELD_FLOOR_PLAN_COMPLETENESS_STATUS = 'floor_plan_completeness_status';
+    private const FIELD_FLOOR_PLAN_REQUIRED = 'floor_plan_required';
+    private const FIELD_INTRO_MEDIA_COMPLETENESS_STATUS = 'intro_media_completeness_status';
+
     /**
      * @param  array<int, mixed>  $payload
      * @return array<int, array{
@@ -127,9 +133,86 @@ class PlotDatasetIssueDetector
                     );
                 }
             }
+
+            $this->detectAssetCompletenessIssues($issues, $plot, $id, $index);
         }
 
         return $issues;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $issues
+     * @param  array<string, mixed>  $plot
+     */
+    private function detectAssetCompletenessIssues(array &$issues, array $plot, ?string $id, int $index): void
+    {
+        if ($this->shouldWarnMissingFloorPlan($plot)) {
+            $issues[] = $this->issue(
+                entityId: $id,
+                field: self::FIELD_FLOOR_PLAN_COMPLETENESS_STATUS,
+                issueType: self::ISSUE_TYPE_MISSING_REQUIRED_FIELD,
+                severity: self::SEVERITY_WARNING,
+                message: 'Required floor plan is missing.',
+                context: [
+                    'index' => $index,
+                    self::FIELD_FLOOR_PLAN_REQUIRED => $plot[self::FIELD_FLOOR_PLAN_REQUIRED] ?? null,
+                    self::FIELD_FLOOR_PLAN_COMPLETENESS_STATUS => $plot[self::FIELD_FLOOR_PLAN_COMPLETENESS_STATUS] ?? null,
+                ],
+            );
+        }
+
+        if ($this->shouldWarnMissingIntroMedia($plot)) {
+            $issues[] = $this->issue(
+                entityId: $id,
+                field: self::FIELD_INTRO_MEDIA_COMPLETENESS_STATUS,
+                issueType: self::ISSUE_TYPE_MISSING_REQUIRED_FIELD,
+                severity: self::SEVERITY_WARNING,
+                message: 'Linked development intro media is missing.',
+                context: [
+                    'index' => $index,
+                    self::FIELD_INTRO_MEDIA_COMPLETENESS_STATUS => $plot[self::FIELD_INTRO_MEDIA_COMPLETENESS_STATUS] ?? null,
+                ],
+            );
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $plot
+     */
+    private function shouldWarnMissingFloorPlan(array $plot): bool
+    {
+        if (($plot[self::FIELD_FLOOR_PLAN_REQUIRED] ?? null) !== true) {
+            return false;
+        }
+
+        return $this->completenessStatus($plot, self::FIELD_FLOOR_PLAN_COMPLETENESS_STATUS) === self::COMPLETENESS_STATUS_MISSING;
+    }
+
+    /**
+     * @param  array<string, mixed>  $plot
+     */
+    private function shouldWarnMissingIntroMedia(array $plot): bool
+    {
+        return $this->completenessStatus($plot, self::FIELD_INTRO_MEDIA_COMPLETENESS_STATUS) === self::COMPLETENESS_STATUS_MISSING;
+    }
+
+    /**
+     * @param  array<string, mixed>  $plot
+     */
+    private function completenessStatus(array $plot, string $field): ?string
+    {
+        if (! array_key_exists($field, $plot)) {
+            return null;
+        }
+
+        $value = $plot[$field];
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $normalized = strtolower(trim($value));
+
+        return $normalized === '' ? null : $normalized;
     }
 
     /**

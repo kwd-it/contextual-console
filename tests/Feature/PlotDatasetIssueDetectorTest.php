@@ -210,3 +210,114 @@ it('can return multiple issues from one payload', function () {
     expect(collect($issues)->where('field', 'status')->pluck('issue_type')->values()->all())
         ->toBe(['invalid_value']);
 });
+
+function plotWithAssetCompletenessFields(array $overrides = []): array
+{
+    return array_merge([
+        'id' => 1,
+        'price' => 100_000,
+        'status' => 'available',
+        'has_floor_plan' => false,
+        'floor_plan_required' => null,
+        'floor_plan_completeness_status' => 'unknown',
+        'has_intro_video' => false,
+        'has_intro_image' => false,
+        'intro_media_type' => 'none',
+        'intro_media_completeness_status' => 'unknown',
+    ], $overrides);
+}
+
+it('raises a missing floor plan warning when floor plan is required and completeness status is missing', function () {
+    $payload = [
+        plotWithAssetCompletenessFields([
+            'floor_plan_required' => true,
+            'floor_plan_completeness_status' => 'missing',
+        ]),
+    ];
+
+    $issues = app(PlotDatasetIssueDetector::class)->detect($payload);
+
+    expect($issues)->toHaveCount(1);
+    expect($issues[0])->toMatchArray([
+        'entity_type' => 'plot',
+        'entity_id' => '1',
+        'field' => 'floor_plan_completeness_status',
+        'issue_type' => 'missing_required_field',
+        'severity' => 'warning',
+        'message' => 'Required floor plan is missing.',
+    ]);
+});
+
+it('does not raise a floor plan warning when floor plan completeness status is unknown', function () {
+    $payload = [
+        plotWithAssetCompletenessFields([
+            'floor_plan_required' => true,
+            'floor_plan_completeness_status' => 'unknown',
+        ]),
+    ];
+
+    $issues = app(PlotDatasetIssueDetector::class)->detect($payload);
+
+    expect(collect($issues)->where('field', 'floor_plan_completeness_status'))->toBeEmpty();
+});
+
+it('does not raise a floor plan warning simply because has_floor_plan is false', function () {
+    $payload = [
+        plotWithAssetCompletenessFields([
+            'has_floor_plan' => false,
+            'floor_plan_required' => null,
+            'floor_plan_completeness_status' => 'unknown',
+        ]),
+    ];
+
+    $issues = app(PlotDatasetIssueDetector::class)->detect($payload);
+
+    expect(collect($issues)->where('field', 'floor_plan_completeness_status'))->toBeEmpty();
+});
+
+it('raises a missing linked development intro media warning when intro media completeness status is missing', function () {
+    $payload = [
+        plotWithAssetCompletenessFields([
+            'intro_media_completeness_status' => 'missing',
+        ]),
+    ];
+
+    $issues = app(PlotDatasetIssueDetector::class)->detect($payload);
+
+    expect($issues)->toHaveCount(1);
+    expect($issues[0])->toMatchArray([
+        'entity_type' => 'plot',
+        'entity_id' => '1',
+        'field' => 'intro_media_completeness_status',
+        'issue_type' => 'missing_required_field',
+        'severity' => 'warning',
+        'message' => 'Linked development intro media is missing.',
+    ]);
+});
+
+it('does not raise an intro media warning when intro media completeness status is unknown', function () {
+    $payload = [
+        plotWithAssetCompletenessFields([
+            'intro_media_completeness_status' => 'unknown',
+        ]),
+    ];
+
+    $issues = app(PlotDatasetIssueDetector::class)->detect($payload);
+
+    expect(collect($issues)->where('field', 'intro_media_completeness_status'))->toBeEmpty();
+});
+
+it('does not raise an intro media warning simply because has_intro_video and has_intro_image are false', function () {
+    $payload = [
+        plotWithAssetCompletenessFields([
+            'has_intro_video' => false,
+            'has_intro_image' => false,
+            'intro_media_type' => 'none',
+            'intro_media_completeness_status' => 'unknown',
+        ]),
+    ];
+
+    $issues = app(PlotDatasetIssueDetector::class)->detect($payload);
+
+    expect(collect($issues)->where('field', 'intro_media_completeness_status'))->toBeEmpty();
+});
