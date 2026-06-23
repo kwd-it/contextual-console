@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-06-23
+
+Adds **Housebuilder Pack asset completeness** support on top of the **v1.1.x** admin and monitoring baseline. Admin user management, profile account controls, ingest/comparison flow, and existing plot field change detection are unchanged.
+
+### Asset completeness (Housebuilder Pack plot payloads)
+
+- **Preserves** new asset completeness fields on stored **`DatasetSnapshot`** plot payloads when the upstream HTTP source returns them: `has_floor_plan`, `floor_plan_required`, `floor_plan_completeness_status`, `has_intro_video`, `has_intro_image`, `intro_media_type`, and `intro_media_completeness_status`.
+- **Normalises** asset completeness string fields during HTTP ingest (`floor_plan_completeness_status`, `intro_media_completeness_status`, `intro_media_type`) to lowercase for consistent issue checks.
+- **Warns** when a **required floor plan is missing**: `floor_plan_required === true` and `floor_plan_completeness_status === "missing"`.
+- **Warns** when **linked development intro media is missing**: `intro_media_completeness_status === "missing"`. Intro media fields are exposed on each plot row but the warning wording reflects that the content is development-related.
+- **Does not warn** just because `has_floor_plan`, `has_intro_video`, or `has_intro_image` is `false`.
+- **Treats `unknown` as non-actionable**: completeness statuses of `unknown` (or absent/other values) are stored when present but do not create issues.
+- **Asset completeness fields are not plot change-detection fields**: they do not create change logs or affect comparison summaries when they change alone.
+- **`last_modified_by` remains display-only** snapshot metadata (unchanged from earlier releases).
+
+### Notes
+
+- **Upstream dependency**: live HTTP payloads need **ContextualWP Housebuilder Pack v0.4.6 or later** for these asset completeness fields to appear. Console cannot invent them from older endpoints.
+- **Actionable upstream statuses only**: Console raises missing-asset warnings only when the source payload sends completeness statuses of **`missing`**. If upstream sends **`unknown`**, Console deliberately does not warn. Whether a given site produces live **`missing`** warnings still depends on Housebuilder Pack mapping/rules and real source data; deploying **v1.2.0** alone does not guarantee new warnings on any particular monitored source (for example Wyatt/Wired) until upstream data is actionable.
+- Admin user management, profile account settings, and existing plot validation rules (`id`, `status`, status-aware `price`, and so on) are unchanged.
+
 ## [1.1.1] - 2026-06-22
 
 Patch release completing the admin user management UI introduced in **v1.1.0**. Ingest, comparison, change detection, and plot dataset issue detection rules are unchanged.

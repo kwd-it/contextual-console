@@ -18,9 +18,13 @@ This file is the **version-controlled project handover** for Contextual Console.
 
 ## 3. Current project state
 
-**Current release: v1.1.1** (see `CHANGELOG.md`).
+**Current release: v1.2.0** (see `CHANGELOG.md`).
 
-**v1.1.1** completes the `/admin/users` UI actions from the **v1.1.0** admin and profile work: create user with an initial password (no invite emails or self-service password reset), immutable login email, reset password for other users, safe delete for eligible users, and existing self/last-admin protections.
+**v1.2.0** adds **Housebuilder Pack asset completeness** support on the **v1.1.x** baseline. Console preserves the new plot payload fields, normalises completeness string values during HTTP ingest, and raises conservative warnings when upstream data reports actionable **`missing`** statuses (required floor plan missing; linked development intro media missing). It treats **`unknown`** as non-actionable, does not warn just because boolean `has_*` flags are false, and does not track asset completeness fields for plot change detection. **`last_modified_by`** remains display-only metadata.
+
+Live HTTP payloads need **ContextualWP Housebuilder Pack v0.4.6 or later** for the asset completeness fields to appear. Whether a monitored source actually produces live missing-asset warnings still depends on Housebuilder Pack mapping/rules and real source data; deploying Console **v1.2.0** alone does not guarantee new warnings on any particular site until upstream payloads send actionable **`missing`** statuses.
+
+**v1.1.1** completed the `/admin/users` UI actions from the **v1.1.0** admin and profile work: create user with an initial password (no invite emails or self-service password reset), immutable login email, reset password for other users, safe delete for eligible users, and existing self/last-admin protections.
 
 Implemented today:
 
@@ -79,6 +83,13 @@ Implemented today:
 - Change-driven and other issues may store **`old_value` / `new_value`** in context; issue rows, source detail, and daily emails can show these as **`old -> new`** transitions where relevant.
 - **Active** issue counts (dashboard, email, filters) use statuses **open** and **acknowledged**; **ignored** and **resolved** are excluded where appropriate.
 - **Review statuses**: open, acknowledged, ignored, resolved. Issues can be updated on the Issues page individually or via **bulk status** POST.
+- **Asset completeness warnings** (Housebuilder Pack plot payloads, **v0.4.6+**): Console stores `has_floor_plan`, `floor_plan_required`, `floor_plan_completeness_status`, `has_intro_video`, `has_intro_image`, `intro_media_type`, and `intro_media_completeness_status` on snapshots when returned. Warnings are raised only when upstream sends actionable **`missing`** statuses:
+  - **Required floor plan is missing** when `floor_plan_required === true` and `floor_plan_completeness_status === "missing"`.
+  - **Linked development intro media is missing** when `intro_media_completeness_status === "missing"`.
+  - **`unknown`** (and other non-`missing` values) are deliberately non-actionable.
+  - **`has_floor_plan` / `has_intro_video` / `has_intro_image` being false alone does not warn.**
+  - Asset completeness fields are **not** plot change-detection fields; **`last_modified_by`** remains display-only.
+  - Whether a live monitored source produces these warnings depends on Housebuilder Pack rules and real payload data, not Console version alone.
 
 Investigation order when data looks wrong: **Console issue -> Housebuilder Pack endpoint output -> WordPress/admin data -> raw post meta**. Details in the `monitoring-investigation` skill.
 
@@ -92,8 +103,10 @@ Investigation order when data looks wrong: **Console issue -> Housebuilder Pack 
 | **DatasetIssue** | Detected problems (e.g. `source_run_failed`, plot warnings); severity, status, context JSON |
 | **Change logs** | Field-level and presence changes between snapshots |
 | **Housebuilder / plot payloads** | Normalised plot records under `app/Domains/Housebuilder` |
+| **Asset completeness fields** | When **Housebuilder Pack v0.4.6+** returns them: stored on snapshots; conservative plot warnings for actionable **`missing`** completeness statuses only |
+| **Plot display metadata** | **`last_modified_by`** shown as **Last modified by: {label}** when present; display-only (not change detection or issues) |
 
-**HTTP ingestion**: `contextual-console:run-http-plot-source` and scheduled runs fetch JSON from configured endpoints. **`contextualwp_list_contexts`** adapter reads the default contexts array from contextualwp-style wrapped list responses when configured on the source. **`page_per_page`** pagination mode is supported via `http_pagination_mode`, `http_per_page_param`, and `http_per_page` on `MonitoredSource` (see `HttpJsonSourceFetcher`).
+**HTTP ingestion**: `contextual-console:run-http-plot-source` and scheduled runs fetch JSON from configured endpoints. **`contextualwp_list_contexts`** adapter reads the default contexts array from contextualwp-style wrapped list responses when configured on the source. **`page_per_page`** pagination mode is supported via `http_pagination_mode`, `http_per_page_param`, and `http_per_page` on `MonitoredSource` (see `HttpJsonSourceFetcher`). Asset completeness string fields are lowercased during normalisation. Live payloads need **Housebuilder Pack v0.4.6 or later** for asset completeness fields.
 
 ## 8. Operational notes
 
