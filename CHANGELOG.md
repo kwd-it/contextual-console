@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-06-25
+
+Patch release that corrects how **development intro media** asset completeness is reported. Plot-level floor plan checks, ingest, comparison, change detection, and all other plot dataset issue rules are unchanged.
+
+### Fixed
+
+- **Stops development intro media being raised as duplicate plot-level warnings.** Intro media (`intro_media_completeness_status` / `intro_media_type`) describes the linked **development**, not the individual plot. Because the source repeats that development-level information on every plot row, the previous behaviour produced one **missing linked development intro media** warning per plot assigned to the same development (and surfaced a false positive where the intro video actually existed). Console no longer creates a plot-level issue for missing intro media.
+
+### Unchanged
+
+- **Missing floor plan warnings remain plot-level.** A required floor plan still warns when `floor_plan_required === true` and `floor_plan_completeness_status === "missing"`.
+- **Intro media fields are still preserved** on stored **`DatasetSnapshot`** plot payloads (and still normalised to lowercase during HTTP ingest); only the plot-level issue is removed.
+
+### Notes
+
+- **Development-level completeness is deferred, not lost.** Detecting and reporting development-level completeness (such as missing intro media) once per development needs a dedicated **development ingest/snapshot/issue path**. Until that exists, intro media is intentionally ignored for issue detection and is documented as such in `PlotDatasetIssueDetector`.
+
 ## [1.2.0] - 2026-06-23
 
 Adds **Housebuilder Pack asset completeness** support on top of the **v1.1.x** admin and monitoring baseline. Admin user management, profile account controls, ingest/comparison flow, and existing plot field change detection are unchanged.
@@ -302,7 +319,7 @@ This is the **first deployment-ready monitoring release**.
 
 ### Changed
 
-- Housebuilder plot dataset issue detection (`PlotDatasetIssueDetector`): accept `coming_soon` as a valid status; warn on missing `price` only when `status` is `available`; do not warn on missing `price` for `coming_soon`, `reserved`, or `sold`. Missing or invalid `status` still warns. When `price` is present and non-empty, it must still be numeric and ≥ 0.
+- Housebuilder plot dataset issue detection (`PlotDatasetIssueDetector`): accept `coming_soon` as a valid status; warn on missing `price` only when `status` is `available`; do not warn on missing `price` for `coming_soon`, `reserved`, or `sold`. Missing or invalid `status` still warns. When `price` is present and non-empty, it must still be numeric and >= 0.
 
 ### Documentation
 

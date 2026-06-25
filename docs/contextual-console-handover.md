@@ -18,9 +18,11 @@ This file is the **version-controlled project handover** for Contextual Console.
 
 ## 3. Current project state
 
-**Current release: v1.2.0** (see `CHANGELOG.md`).
+**Current release: v1.2.1** (see `CHANGELOG.md`).
 
-**v1.2.0** adds **Housebuilder Pack asset completeness** support on the **v1.1.x** baseline. Console preserves the new plot payload fields, normalises completeness string values during HTTP ingest, and raises conservative warnings when upstream data reports actionable **`missing`** statuses (required floor plan missing; linked development intro media missing). It treats **`unknown`** as non-actionable, does not warn just because boolean `has_*` flags are false, and does not track asset completeness fields for plot change detection. **`last_modified_by`** remains display-only metadata.
+**v1.2.1** corrects how **development intro media** asset completeness is reported. Intro media (`intro_media_completeness_status` / `intro_media_type`) describes the linked **development**, not the individual plot, and the source repeats that information on every plot row, so the previous behaviour created one **missing linked development intro media** warning per plot assigned to the same development (including a false positive where the intro video existed). As of **v1.2.1**, Console no longer raises a plot-level issue for missing intro media. **Missing floor plan warnings remain plot-level**, and intro media fields are **still preserved** on stored snapshot payloads (and still lowercased during HTTP ingest). Development-level completeness should be handled later through a dedicated **development ingest/snapshot/issue path**; until then intro media is intentionally ignored for issue detection (documented in `PlotDatasetIssueDetector`).
+
+**v1.2.0** originally added **Housebuilder Pack asset completeness** support on the **v1.1.x** baseline. Console preserves the new plot payload fields, normalises completeness string values during HTTP ingest, and raised conservative warnings when upstream data reported actionable **`missing`** statuses for **both** a required floor plan and linked development intro media. **v1.2.1** then changed that behaviour so missing intro media is **no longer** raised as a plot-level warning (see above): the current behaviour is that a missing required floor plan still warns at plot level, missing intro media does not, intro media fields are preserved on snapshots, and development-level completeness is deferred to a future development ingest/snapshot/issue path. v1.2.0 already treats **`unknown`** as non-actionable, does not warn just because boolean `has_*` flags are false, and does not track asset completeness fields for plot change detection. **`last_modified_by`** remains display-only metadata.
 
 Live HTTP payloads need **ContextualWP Housebuilder Pack v0.4.6 or later** for the asset completeness fields to appear. Whether a monitored source actually produces live missing-asset warnings still depends on Housebuilder Pack mapping/rules and real source data; deploying Console **v1.2.0** alone does not guarantee new warnings on any particular site until upstream payloads send actionable **`missing`** statuses.
 
@@ -83,13 +85,14 @@ Implemented today:
 - Change-driven and other issues may store **`old_value` / `new_value`** in context; issue rows, source detail, and daily emails can show these as **`old -> new`** transitions where relevant.
 - **Active** issue counts (dashboard, email, filters) use statuses **open** and **acknowledged**; **ignored** and **resolved** are excluded where appropriate.
 - **Review statuses**: open, acknowledged, ignored, resolved. Issues can be updated on the Issues page individually or via **bulk status** POST.
-- **Asset completeness warnings** (Housebuilder Pack plot payloads, **v0.4.6+**): Console stores `has_floor_plan`, `floor_plan_required`, `floor_plan_completeness_status`, `has_intro_video`, `has_intro_image`, `intro_media_type`, and `intro_media_completeness_status` on snapshots when returned. Warnings are raised only when upstream sends actionable **`missing`** statuses:
+- **Asset completeness warnings** (Housebuilder Pack plot payloads, **v0.4.6+**): Console stores `has_floor_plan`, `floor_plan_required`, `floor_plan_completeness_status`, `has_intro_video`, `has_intro_image`, `intro_media_type`, and `intro_media_completeness_status` on snapshots when returned. The only plot-level warning is raised when upstream sends an actionable **`missing`** status:
   - **Required floor plan is missing** when `floor_plan_required === true` and `floor_plan_completeness_status === "missing"`.
-  - **Linked development intro media is missing** when `intro_media_completeness_status === "missing"`.
+  - **Intro media is development-level, not plot-level (v1.2.1).** Missing intro media (`intro_media_completeness_status === "missing"`) is **not** raised as a plot issue, because the source repeats development-level intro media on every plot row and that produced duplicate warnings per development. The intro media fields are still stored on snapshots for a future development-level path.
   - **`unknown`** (and other non-`missing` values) are deliberately non-actionable.
   - **`has_floor_plan` / `has_intro_video` / `has_intro_image` being false alone does not warn.**
   - Asset completeness fields are **not** plot change-detection fields; **`last_modified_by`** remains display-only.
-  - Whether a live monitored source produces these warnings depends on Housebuilder Pack rules and real payload data, not Console version alone.
+  - Whether a live monitored source produces the floor plan warning depends on Housebuilder Pack rules and real payload data, not Console version alone.
+  - **TODO (development-level completeness):** detecting and reporting development-level completeness (such as missing intro media) once per development needs a dedicated **development ingest/snapshot/issue path**. This is deferred, not lost.
 
 Investigation order when data looks wrong: **Console issue -> Housebuilder Pack endpoint output -> WordPress/admin data -> raw post meta**. Details in the `monitoring-investigation` skill.
 
@@ -103,7 +106,7 @@ Investigation order when data looks wrong: **Console issue -> Housebuilder Pack 
 | **DatasetIssue** | Detected problems (e.g. `source_run_failed`, plot warnings); severity, status, context JSON |
 | **Change logs** | Field-level and presence changes between snapshots |
 | **Housebuilder / plot payloads** | Normalised plot records under `app/Domains/Housebuilder` |
-| **Asset completeness fields** | When **Housebuilder Pack v0.4.6+** returns them: stored on snapshots; conservative plot warnings for actionable **`missing`** completeness statuses only |
+| **Asset completeness fields** | When **Housebuilder Pack v0.4.6+** returns them: stored on snapshots; the only plot warning is an actionable **`missing`** required floor plan. Intro media is preserved but **not** raised as a plot issue (development-level; deferred to a future development path) |
 | **Plot display metadata** | **`last_modified_by`** shown as **Last modified by: {label}** when present; display-only (not change detection or issues) |
 
 **HTTP ingestion**: `contextual-console:run-http-plot-source` and scheduled runs fetch JSON from configured endpoints. **`contextualwp_list_contexts`** adapter reads the default contexts array from contextualwp-style wrapped list responses when configured on the source. **`page_per_page`** pagination mode is supported via `http_pagination_mode`, `http_per_page_param`, and `http_per_page` on `MonitoredSource` (see `HttpJsonSourceFetcher`). Asset completeness string fields are lowercased during normalisation. Live payloads need **Housebuilder Pack v0.4.6 or later** for asset completeness fields.
