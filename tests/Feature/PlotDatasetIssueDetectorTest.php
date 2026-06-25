@@ -275,7 +275,9 @@ it('does not raise a floor plan warning simply because has_floor_plan is false',
     expect(collect($issues)->where('field', 'floor_plan_completeness_status'))->toBeEmpty();
 });
 
-it('raises a missing linked development intro media warning when intro media completeness status is missing', function () {
+it('does not raise a plot issue when intro media completeness status is missing', function () {
+    // Intro media describes the linked development, not the plot, so a missing intro media
+    // status must not surface as a plot-level issue.
     $payload = [
         plotWithAssetCompletenessFields([
             'intro_media_completeness_status' => 'missing',
@@ -284,15 +286,31 @@ it('raises a missing linked development intro media warning when intro media com
 
     $issues = app(PlotDatasetIssueDetector::class)->detect($payload);
 
-    expect($issues)->toHaveCount(1);
-    expect($issues[0])->toMatchArray([
-        'entity_type' => 'plot',
-        'entity_id' => '1',
-        'field' => 'intro_media_completeness_status',
-        'issue_type' => 'missing_required_field',
-        'severity' => 'warning',
-        'message' => 'Linked development intro media is missing.',
-    ]);
+    expect($issues)->toBe([]);
+});
+
+it('does not create one intro media warning per plot assigned to the same development', function () {
+    // The source repeats development-level intro media on every plot row. Treating it as a
+    // plot issue used to produce a duplicate warning per plot; assert none are created now.
+    $payload = [
+        plotWithAssetCompletenessFields([
+            'id' => 1,
+            'intro_media_completeness_status' => 'missing',
+        ]),
+        plotWithAssetCompletenessFields([
+            'id' => 2,
+            'intro_media_completeness_status' => 'missing',
+        ]),
+        plotWithAssetCompletenessFields([
+            'id' => 3,
+            'intro_media_completeness_status' => 'missing',
+        ]),
+    ];
+
+    $issues = app(PlotDatasetIssueDetector::class)->detect($payload);
+
+    expect(collect($issues)->where('field', 'intro_media_completeness_status'))->toBeEmpty();
+    expect($issues)->toBe([]);
 });
 
 it('does not raise an intro media warning when intro media completeness status is unknown', function () {

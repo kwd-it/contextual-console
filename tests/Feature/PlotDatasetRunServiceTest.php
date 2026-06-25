@@ -403,7 +403,7 @@ it('preserves asset completeness fields on stored snapshot payloads', function (
     ]);
 });
 
-it('persists asset completeness warnings on a baseline run', function () {
+it('persists the floor plan warning but not an intro media issue on a baseline run', function () {
     $source = MonitoredSource::create([
         'key' => 'hb:asset-completeness-issues',
         'name' => 'Asset Completeness Issues',
@@ -424,14 +424,17 @@ it('persists asset completeness warnings on a baseline run', function () {
 
     $issues = DatasetIssue::query()->where('dataset_comparison_run_id', $run->id)->get();
 
-    expect($issues)->toHaveCount(2);
-    expect($issues->pluck('field')->sort()->values()->all())
-        ->toBe(['floor_plan_completeness_status', 'intro_media_completeness_status']);
-    expect($issues->pluck('message')->sort()->values()->all())
-        ->toBe([
-            'Linked development intro media is missing.',
-            'Required floor plan is missing.',
-        ]);
+    // Floor plans are a per-plot asset, so the missing floor plan warning is persisted.
+    // Intro media is development-level, so it must not create a plot issue.
+    expect($issues)->toHaveCount(1);
+    expect($issues->pluck('field')->all())->toBe(['floor_plan_completeness_status']);
+    expect($issues->pluck('message')->all())->toBe(['Required floor plan is missing.']);
+
+    // The raw intro media field is still preserved on the stored snapshot payload.
+    $snapshot = DatasetSnapshot::query()->where('source_id', $source->id)->latest('id')->first();
+    expect($snapshot->payload[0])->toMatchArray([
+        'intro_media_completeness_status' => 'missing',
+    ]);
 });
 
 it('does not record changes or issues when only last_modified_by changes between runs', function () {

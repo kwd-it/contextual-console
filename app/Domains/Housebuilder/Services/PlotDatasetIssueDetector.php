@@ -21,7 +21,6 @@ class PlotDatasetIssueDetector
 
     private const FIELD_FLOOR_PLAN_COMPLETENESS_STATUS = 'floor_plan_completeness_status';
     private const FIELD_FLOOR_PLAN_REQUIRED = 'floor_plan_required';
-    private const FIELD_INTRO_MEDIA_COMPLETENESS_STATUS = 'intro_media_completeness_status';
 
     /**
      * @param  array<int, mixed>  $payload
@@ -141,6 +140,22 @@ class PlotDatasetIssueDetector
     }
 
     /**
+     * Plot-level asset completeness checks.
+     *
+     * Floor plans are a genuine per-plot asset, so a missing required floor plan stays a plot issue.
+     *
+     * Intro media (intro_media_completeness_status / intro_media_type) describes the linked
+     * development, not the individual plot. The source currently repeats that development-level
+     * information on every plot row, so treating it as a plot issue produces one false/duplicate
+     * warning per plot assigned to the same development. We deliberately do NOT raise a plot issue
+     * for missing intro media here. The incoming fields are still preserved in the raw snapshot
+     * payload for later use.
+     *
+     * TODO: Development-level completeness (e.g. missing intro media) needs a dedicated
+     * development ingest/snapshot/issue path so it can be detected and reported once per
+     * development rather than per plot. Until that exists, intro media is intentionally ignored
+     * for issue detection.
+     *
      * @param  array<int, array<string, mixed>>  $issues
      * @param  array<string, mixed>  $plot
      */
@@ -160,20 +175,6 @@ class PlotDatasetIssueDetector
                 ],
             );
         }
-
-        if ($this->shouldWarnMissingIntroMedia($plot)) {
-            $issues[] = $this->issue(
-                entityId: $id,
-                field: self::FIELD_INTRO_MEDIA_COMPLETENESS_STATUS,
-                issueType: self::ISSUE_TYPE_MISSING_REQUIRED_FIELD,
-                severity: self::SEVERITY_WARNING,
-                message: 'Linked development intro media is missing.',
-                context: [
-                    'index' => $index,
-                    self::FIELD_INTRO_MEDIA_COMPLETENESS_STATUS => $plot[self::FIELD_INTRO_MEDIA_COMPLETENESS_STATUS] ?? null,
-                ],
-            );
-        }
     }
 
     /**
@@ -186,14 +187,6 @@ class PlotDatasetIssueDetector
         }
 
         return $this->completenessStatus($plot, self::FIELD_FLOOR_PLAN_COMPLETENESS_STATUS) === self::COMPLETENESS_STATUS_MISSING;
-    }
-
-    /**
-     * @param  array<string, mixed>  $plot
-     */
-    private function shouldWarnMissingIntroMedia(array $plot): bool
-    {
-        return $this->completenessStatus($plot, self::FIELD_INTRO_MEDIA_COMPLETENESS_STATUS) === self::COMPLETENESS_STATUS_MISSING;
     }
 
     /**
