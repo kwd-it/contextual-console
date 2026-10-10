@@ -31,6 +31,7 @@ Default workflow for developing Contextual Console without scope creep or unsafe
 - **Do not tag** unless explicitly asked.
 - **Do not bump versions** unless explicitly asked.
 - **Do not store live credentials** in code, docs, commits, or chat output. Use env vars and operator channels per `docs/DEPLOYMENT.md`.
+- **Claude Code and Codex sessions** follow `CLAUDE.md` and `AGENTS.md` in the repository root. The landing rule there (commit and push to a dedicated task branch, open a pull request, never merge, tag or bump) is the explicit authorisation those sessions have; the three rules above otherwise still apply.
 
 ## Branch naming
 

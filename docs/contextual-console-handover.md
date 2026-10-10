@@ -179,3 +179,5 @@ Load these in prompts instead of pasting long workflow text into chats:
 | **`monitoring-investigation`** | Source run failures, plot discrepancies, unexpected dashboard or daily summary content |
 
 Full index: [`.cursor/skills-catalogue.md`](../.cursor/skills-catalogue.md).
+
+Claude Code and Codex sessions use [`CLAUDE.md`](../CLAUDE.md) and [`AGENTS.md`](../AGENTS.md) in the repository root, which reference these skills and record the landing rule (task branch and pull request; no merge, tag or version bump without authorisation).
