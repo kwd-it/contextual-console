@@ -2,6 +2,8 @@
 
 Project-level Cursor skills live under `.cursor/skills/`. Reference them explicitly in prompts so the agent loads the right guidance.
 
+Claude Code and Codex sessions read `CLAUDE.md` and `AGENTS.md` in the repository root instead; those files point back to these skills as the repository's conventions.
+
 ## Skills
 
 ### no-mojibake-ui-text
