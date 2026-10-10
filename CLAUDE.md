@@ -11,7 +11,7 @@ Contextual Console is a Laravel application that monitors ContextualWP sites: it
 
 ## Platform
 
-- `composer.json` declares PHP ^8.3 and Laravel ^13; SQLite is the default database. The committed `composer.lock` resolves Symfony packages that require PHP 8.4 or later, so tests and local runs need a PHP 8.4 binary. Treat this gap as a documentation inconsistency to raise, not something to fix silently.
+- `composer.json` declares PHP ^8.3 and Laravel ^13; SQLite is the default database. `config.platform.php` pins Composer resolution to 8.3.0 so `composer update` keeps the lock installable on the declared minimum even when run on a newer PHP; do not remove the pin or raise the minimum without a recorded decision.
 
 ## Conventions
 
@@ -20,7 +20,7 @@ Contextual Console is a Laravel application that monitors ContextualWP sites: it
 
 ## Validation
 
-- `composer test` runs `config:clear` then the Pest suite with SQLite in memory. It must run under a PHP 8.4 binary (see Platform); with `composer` bound to an older PHP, run `php artisan config:clear` and `php artisan test` with that binary directly.
+- `composer test` runs `config:clear` then the Pest suite with SQLite in memory. Run it on the declared minimum (PHP 8.3) and, where a binary is available, on the deployment target (PHP 8.4, see `docs/DEPLOYMENT.md`).
 - Run the grep check from `.cursor/skills/no-mojibake-ui-text/SKILL.md` on touched user-visible files before finishing.
 - Never read, print or copy `.env`; `.env.example` documents the variable names.
 
