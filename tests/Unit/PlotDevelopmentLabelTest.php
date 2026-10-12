@@ -24,24 +24,24 @@ it('uses development_name when development is blank', function () {
 it('falls back to development slug from plot URL when fields are blank', function () {
     $label = PlotDevelopmentLabel::fromPlot([
         'development' => '',
-        'url' => 'https://www.wyatthomes.co.uk/developments/brimsmore-townhouse-collection/plot-241/',
+        'url' => 'https://example.test/developments/meadowbrook-townhouse-collection/plot-241/',
     ]);
 
-    expect($label)->toBe('Brimsmore Townhouse Collection');
+    expect($label)->toBe('Meadowbrook Townhouse Collection');
 });
 
 it('title-cases URL-derived fallback labels from hyphenated slugs', function () {
     expect(PlotDevelopmentLabel::fromPlot([
-        'url' => '/developments/brimsmore-townhouse-collection/plot-241/',
-    ]))->toBe('Brimsmore Townhouse Collection');
+        'url' => '/developments/meadowbrook-townhouse-collection/plot-241/',
+    ]))->toBe('Meadowbrook Townhouse Collection');
 });
 
 it('decodes URL-encoded development slugs in plot URLs', function () {
     $label = PlotDevelopmentLabel::fromPlot([
-        'url' => 'https://example.test/developments/brimsmore%20townhouse%20collection/plot-1/',
+        'url' => 'https://example.test/developments/meadowbrook%20townhouse%20collection/plot-1/',
     ]);
 
-    expect($label)->toBe('Brimsmore Townhouse Collection');
+    expect($label)->toBe('Meadowbrook Townhouse Collection');
 });
 
 it('uses unknown fallback when development fields and URL are unusable', function () {
@@ -58,9 +58,9 @@ it('uses unknown fallback when development fields and URL are unusable', functio
 it('matches plots by resolved label including URL fallback', function () {
     $plot = [
         'development' => '',
-        'url' => 'https://example.test/developments/brimsmore-townhouse-collection/plot-241/',
+        'url' => 'https://example.test/developments/meadowbrook-townhouse-collection/plot-241/',
     ];
 
-    expect(PlotDevelopmentLabel::plotMatches($plot, 'Brimsmore Townhouse Collection'))->toBeTrue();
+    expect(PlotDevelopmentLabel::plotMatches($plot, 'Meadowbrook Townhouse Collection'))->toBeTrue();
     expect(PlotDevelopmentLabel::plotMatches($plot, 'Unknown development'))->toBeFalse();
 });

@@ -7,12 +7,12 @@ uses(TestCase::class);
 
 it('returns display_name when set', function () {
     $source = MonitoredSource::make([
-        'key' => 'wyatt:housebuilder',
-        'name' => 'Wyatt Homes Housebuilder',
-        'display_name' => 'Wyatt Homes',
+        'key' => 'example:housebuilder',
+        'name' => 'Example Homes Housebuilder',
+        'display_name' => 'Example Homes',
     ]);
 
-    expect($source->display_label)->toBe('Wyatt Homes');
+    expect($source->display_label)->toBe('Example Homes');
 });
 
 it('falls back to name when display_name is empty', function () {

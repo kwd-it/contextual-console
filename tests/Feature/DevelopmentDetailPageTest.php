@@ -200,11 +200,11 @@ it('groups dashboard development overview using URL-derived labels when developm
             'price' => 110_000,
             'status' => 'available',
             'development' => '',
-            'url' => 'https://www.wyatthomes.co.uk/developments/brimsmore-townhouse-collection/plot-241/',
+            'url' => 'https://example.test/developments/meadowbrook-townhouse-collection/plot-241/',
         ],
     ]);
 
-    $fallbackLabel = 'Brimsmore Townhouse Collection';
+    $fallbackLabel = 'Meadowbrook Townhouse Collection';
     $developmentHref = route('sources.developments.show', [
         $source,
         DevelopmentRouteSlug::encode($fallbackLabel),
@@ -236,7 +236,7 @@ it('lists development detail plots matched by URL-derived fallback labels', func
             'price' => 110_000,
             'status' => 'available',
             'development' => '',
-            'url' => 'https://www.wyatthomes.co.uk/developments/brimsmore-townhouse-collection/plot-241/',
+            'url' => 'https://example.test/developments/meadowbrook-townhouse-collection/plot-241/',
         ],
         [
             'id' => 2,
@@ -247,12 +247,12 @@ it('lists development detail plots matched by URL-derived fallback labels', func
         ],
     ]);
 
-    $slug = DevelopmentRouteSlug::encode('Brimsmore Townhouse Collection');
+    $slug = DevelopmentRouteSlug::encode('Meadowbrook Townhouse Collection');
 
     $this->actingAs($user)
         ->get(route('sources.developments.show', [$source, $slug]))
         ->assertOk()
-        ->assertSeeText('Brimsmore Townhouse Collection')
+        ->assertSeeText('Meadowbrook Townhouse Collection')
         ->assertSeeText('Plot 241')
         ->assertDontSeeText('Other Plot')
         ->assertDontSeeText('Known Site')

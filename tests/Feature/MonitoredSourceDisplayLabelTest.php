@@ -12,17 +12,17 @@ uses(RefreshDatabase::class);
 
 it('uses display_name in source status summaries when set', function () {
     $source = MonitoredSource::create([
-        'key' => 'wyatt:housebuilder',
-        'name' => 'Wyatt Homes Housebuilder',
-        'display_name' => 'Wyatt Homes',
+        'key' => 'example:housebuilder',
+        'name' => 'Example Homes Housebuilder',
+        'display_name' => 'Example Homes',
     ]);
 
     $summaries = app(MonitoredSourceStatusService::class)->summaries();
     $summary = collect($summaries)->firstWhere('source_key', $source->key);
 
     expect($summary)->not->toBeNull();
-    expect($summary['source_name'])->toBe('Wyatt Homes');
-    expect($summary['source_key'])->toBe('wyatt:housebuilder');
+    expect($summary['source_name'])->toBe('Example Homes');
+    expect($summary['source_key'])->toBe('example:housebuilder');
 });
 
 it('falls back to name in source status summaries when display_name is unset', function () {
@@ -40,17 +40,17 @@ it('falls back to name in source status summaries when display_name is unset', f
 
 it('shows display label on the sources list without the source key column', function () {
     $source = MonitoredSource::create([
-        'key' => 'wyatt:housebuilder',
-        'name' => 'Wyatt Homes Housebuilder',
-        'display_name' => 'Wyatt Homes',
+        'key' => 'example:housebuilder',
+        'name' => 'Example Homes Housebuilder',
+        'display_name' => 'Example Homes',
     ]);
 
     $html = $this->actingAs(User::factory()->create())
         ->get('/sources')
         ->assertOk()
-        ->assertSeeText('Wyatt Homes')
-        ->assertDontSeeText('Wyatt Homes Housebuilder')
-        ->assertDontSeeText('wyatt:housebuilder')
+        ->assertSeeText('Example Homes')
+        ->assertDontSeeText('Example Homes Housebuilder')
+        ->assertDontSeeText('example:housebuilder')
         ->getContent();
 
     expect($html)->not->toContain('<th>Source key</th>');
@@ -58,25 +58,25 @@ it('shows display label on the sources list without the source key column', func
 
 it('shows display label on the source detail heading while keeping the source key visible', function () {
     $source = MonitoredSource::create([
-        'key' => 'wyatt:housebuilder',
-        'name' => 'Wyatt Homes Housebuilder',
-        'display_name' => 'Wyatt Homes',
+        'key' => 'example:housebuilder',
+        'name' => 'Example Homes Housebuilder',
+        'display_name' => 'Example Homes',
     ]);
 
     $this->actingAs(User::factory()->create())
         ->get(route('sources.show', $source))
         ->assertOk()
-        ->assertSeeText('Wyatt Homes')
-        ->assertDontSeeText('Wyatt Homes Housebuilder')
-        ->assertSeeText('Source key: wyatt:housebuilder');
+        ->assertSeeText('Example Homes')
+        ->assertDontSeeText('Example Homes Housebuilder')
+        ->assertSeeText('Source key: example:housebuilder');
 });
 
 it('shows display label on dashboard, issues, changes, and run detail pages', function () {
     $user = User::factory()->create();
     $source = MonitoredSource::create([
-        'key' => 'wyatt:housebuilder',
-        'name' => 'Wyatt Homes Housebuilder',
-        'display_name' => 'Wyatt Homes',
+        'key' => 'example:housebuilder',
+        'name' => 'Example Homes Housebuilder',
+        'display_name' => 'Example Homes',
     ]);
 
     $run = DatasetComparisonRun::create([
@@ -112,27 +112,27 @@ it('shows display label on dashboard, issues, changes, and run detail pages', fu
     $this->actingAs($user)
         ->get('/dashboard')
         ->assertOk()
-        ->assertSeeText('Wyatt Homes')
-        ->assertDontSeeText('Wyatt Homes Housebuilder');
+        ->assertSeeText('Example Homes')
+        ->assertDontSeeText('Example Homes Housebuilder');
 
     $this->actingAs($user)
         ->get('/changes')
         ->assertOk()
-        ->assertSeeText('Wyatt Homes')
-        ->assertDontSeeText('Wyatt Homes Housebuilder');
+        ->assertSeeText('Example Homes')
+        ->assertDontSeeText('Example Homes Housebuilder');
 
     $this->actingAs($user)
         ->get('/issues')
         ->assertOk()
-        ->assertSeeText('Wyatt Homes')
-        ->assertDontSeeText('Wyatt Homes Housebuilder');
+        ->assertSeeText('Example Homes')
+        ->assertDontSeeText('Example Homes Housebuilder');
 
     $this->actingAs($user)
         ->get(route('sources.runs.show', [$source, $run]))
         ->assertOk()
-        ->assertSeeText('Wyatt Homes')
-        ->assertDontSeeText('Wyatt Homes Housebuilder')
-        ->assertSeeText('Source key: wyatt:housebuilder');
+        ->assertSeeText('Example Homes')
+        ->assertDontSeeText('Example Homes Housebuilder')
+        ->assertSeeText('Source key: example:housebuilder');
 });
 
 it('uses source name on UI pages when display_name is not set', function () {

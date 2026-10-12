@@ -22,7 +22,7 @@ Earlier releases introduced deployment-ready monitoring (**v0.4.0**), scheduler 
 
 See `CHANGELOG.md` and `docs/contextual-console-handover.md` for operator detail.
 
-- **Monitored sources** (`MonitoredSource`): identify feeds by stable `key`, with a configured endpoint and optional HTTP ingest settings. Optional `display_name` provides a cleaner UI label (for example **Wyatt Homes**); when unset, the UI falls back to `name`. Source keys and ingest behaviour are unchanged.
+- **Monitored sources** (`MonitoredSource`): identify feeds by stable `key`, with a configured endpoint and optional HTTP ingest settings. Optional `display_name` provides a cleaner UI label (for example **Example Homes**); when unset, the UI falls back to `name`. Source keys and ingest behaviour are unchanged.
 - **HTTP JSON plot ingest**: read-only GET via `php artisan contextual-console:run-http-plot-source`.
 - **Auth header values from env** (optional): `auth_header_name` + `auth_token_env_key` send a full header value from environment (nothing secret stored in DB).
 - **Wrapped JSON list payloads** (optional): unwrap list responses via `http_json_items_key`.
@@ -191,12 +191,12 @@ To ingest real production data from a remote JSON endpoint (read-only), configur
 
 Very large responses may hit the HTTP client default timeout; prefer smaller responses (for example server-side `limit`) or enable Console pagination on the monitored source when supported by the endpoint.
 
-### Example: Wyatt Housebuilder Pack plots endpoint (paginated)
+### Example: Housebuilder Pack plots endpoint (paginated)
 
 ```php
-\App\Core\Models\MonitoredSource::where('key', 'wyatt:housebuilder')->update([
-    'display_name' => 'Wyatt Homes',
-    'endpoint_url' => 'https://www.wyatthomes.co.uk/wp-json/contextualwp-housebuilder/v1/plots',
+\App\Core\Models\MonitoredSource::where('key', 'example:housebuilder')->update([
+    'display_name' => 'Example Homes',
+    'endpoint_url' => 'https://www.example-homes.test/wp-json/contextualwp-housebuilder/v1/plots',
     'http_pagination_mode' => 'page_per_page',
     'http_page_param' => 'page',
     'http_per_page_param' => 'limit',
@@ -208,7 +208,7 @@ Very large responses may hit the HTTP client default timeout; prefer smaller res
 For an existing local row, set the display label without changing the source key:
 
 ```php
-\App\Core\Models\MonitoredSource::where('key', 'wyatt:housebuilder')->update(['display_name' => 'Wyatt Homes']);
+\App\Core\Models\MonitoredSource::where('key', 'example:housebuilder')->update(['display_name' => 'Example Homes']);
 ```
 
 Example (no real credentials):
@@ -240,14 +240,14 @@ Your laptop can call a **public** WordPress HTTPS URL; the site does **not** nee
 1. In `.env`, define a placeholder env var holding the **value** that will be sent on the configured header (for Application Password Basic auth that is typically `Basic <base64-placeholder>`, without an `Authorization:` prefix). Example names only:
 
    ```env
-   WYATT_CONTEXTUALWP_AUTH="Basic <base64-placeholder>"
+   EXAMPLE_CONTEXTUALWP_AUTH="Basic <base64-placeholder>"
    ```
 
 2. Insert or update a `monitored_sources` row with (example placeholders):
 
    - `endpoint_url`: `https://example.com/wp-json/mcp/v1/list_contexts?post_type=plots&limit=10`
    - `auth_header_name`: `Authorization` (separate from the env value above)
-   - `auth_token_env_key`: `WYATT_CONTEXTUALWP_AUTH`
+   - `auth_token_env_key`: `EXAMPLE_CONTEXTUALWP_AUTH`
    - `http_plot_payload_adapter`: `contextualwp_list_contexts` (unwraps `contexts` by default and normalises common field shapes)
 
 3. Run:
