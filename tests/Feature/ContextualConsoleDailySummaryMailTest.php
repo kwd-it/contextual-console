@@ -65,9 +65,9 @@ it('renders html and plain text parts from the structured report', function () {
 
 it('uses the source display label in the email heading and plain text', function () {
     $source = MonitoredSource::create([
-        'key' => 'wyatt:housebuilder',
-        'name' => 'Wyatt Homes Housebuilder',
-        'display_name' => 'Wyatt Homes',
+        'key' => 'example:housebuilder',
+        'name' => 'Example Homes Housebuilder',
+        'display_name' => 'Example Homes',
     ]);
     $snapshot = DatasetSnapshot::create(['source_id' => $source->id, 'payload' => []]);
     DatasetComparisonRun::create([
@@ -83,12 +83,12 @@ it('uses the source display label in the email heading and plain text', function
     $mail = dailySummaryMailFromBuilder();
     $html = dailySummaryHtml($mail);
 
-    $mail->assertSeeInText('Wyatt Homes');
-    $mail->assertSeeInText('Source key: wyatt:housebuilder');
-    $mail->assertDontSeeInText('Wyatt Homes Housebuilder');
-    expect($html)->toContain('Wyatt Homes');
-    expect($html)->toContain('Source key: wyatt:housebuilder');
-    expect($html)->not->toContain('Wyatt Homes Housebuilder');
+    $mail->assertSeeInText('Example Homes');
+    $mail->assertSeeInText('Source key: example:housebuilder');
+    $mail->assertDontSeeInText('Example Homes Housebuilder');
+    expect($html)->toContain('Example Homes');
+    expect($html)->toContain('Source key: example:housebuilder');
+    expect($html)->not->toContain('Example Homes Housebuilder');
 });
 
 it('includes status and price change details in html and text', function () {

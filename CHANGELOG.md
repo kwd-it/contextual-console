@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Client-identifying example values neutralised in documentation and tests.** The README source example and the test fixtures used a real monitored site's brand, hostname and development name; they now use neutral example values (`example:housebuilder`, `Example Homes`, `https://example.test`, `https://www.example-homes.test`). Ingest behaviour, issue detection and all production configuration (including existing `auth_token_env_key` names and `.env` variable names) are unchanged; `.env.example` and the deployment and operations guides still document the variable name production reads, pending a decision on renaming it with a backwards-compatible alias.
 - **Dependencies resolved for the declared PHP minimum.** `composer.lock` had been generated on PHP 8.4 and locked Symfony 8.0 components, which require PHP 8.4 and whose branch left maintenance in July 2026, so the application could not install or run on PHP 8.3 despite `composer.json` declaring `^8.3`. The lock now pins Symfony 7.4 (LTS) for the same Laravel 13.4 constraints and `composer.json` pins the Composer resolution platform to PHP 8.3.0 so future updates keep honouring the declared minimum. No application code changed; PHP 8.4 remains fully supported for deployment.
 
 ## [1.2.1] - 2026-06-25
