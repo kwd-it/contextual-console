@@ -16,4 +16,4 @@ Repository-specific priorities for reviewing changes to Contextual Console. Univ
 
 ## Landing
 
-A change is complete when it sits on a task branch with a pull request against `master`. Merging, version bumps in `CHANGELOG.md`, tags and deployment belong to the product owner; flag any diff that performs them without explicit authorisation in the task.
+A change is complete when it sits on a task branch with a pull request against `master`. Merging belongs to the product owner, except documentation and test-only maintenance merged by the steward under the stewardship policy D-016 through its `tooling/merge/autonomous-merge.mjs`; flag any pull request presented as eligible for that policy whose diff touches anything outside Markdown, `docs/` and `tests/`, weakens a test, or whose description lacks a `Reviewed head:` line matching the head commit. Version bumps in `CHANGELOG.md`, tags and deployment belong to the product owner; flag any diff that performs them without explicit authorisation in the task.
