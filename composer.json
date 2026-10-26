@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "kwd-it/contextual-console",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Monitors ContextualWP sites: ingests plot datasets, compares runs, raises issues and sends a daily summary email.",
     "keywords": [
         "laravel",
         "framework"
